@@ -300,7 +300,7 @@ function createTruck() {
   const blueLight = new THREE.PointLight('#88d9ff', 0, 8);
   blueLight.position.set(0, 2.9, -.15); firetruck.add(blueLight);
   firetruck.userData.blueLight = blueLight;
-  waterEffect = createWaterEffect(THREE, firetruck);
+  waterEffect = createWaterEffect(THREE, scene, firetruck, getSurfaceHeight, surfaceAt);
   firetruck.position.set(player.x,ROAD_Y,player.z);
   firetruck.rotation.y=player.heading;
 }
@@ -359,7 +359,7 @@ function updateSkids(isBraking, speed) {
 }
 const keys = new Set();
 let playing=false, orbit=-.28, pitch=.7, zoom=36, cameraPointer=null, lastX=0,lastY=0;
-const vehicleSound=createVehicleSound();
+const vehicleSound=createVehicleSound(undefined,`${import.meta.env.BASE_URL}assets/tire-skid.mp3`);
 const touchControls=createTouchControls({
   root:document.querySelector('#touch-controls'),
   stick:document.querySelector('#drive-stick'),

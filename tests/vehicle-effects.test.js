@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advanceJetGrowth} from '../src/water-effect.js';
+import * as THREE from 'three';
+import {advanceJetGrowth, createWaterEffect} from '../src/water-effect.js';
 import {soundLevels} from '../src/vehicle-sound.js';
 
 test('water jet extends over several frames and retracts after release', () => {
@@ -27,4 +28,35 @@ test('driving and braking sounds follow motion, not idle button presses', () => 
   assert.ok(braking.brakeGain > 0);
   assert.equal(driving.boostGain, 0);
   assert.ok(boosting.boostGain > 0);
+});
+
+test('boost droplets stay in world space, land, and leave temporary ovals', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement: () => ({getContext: () => ({beginPath() {}, arc() {}, fill() {}})}),
+  };
+  try {
+    const scene = new THREE.Scene(), truck = new THREE.Group();
+    scene.add(truck);
+    const effect = createWaterEffect(THREE, scene, truck, () => 0, () => 'road');
+    const droplets = scene.children.find(item => item.isPoints);
+    const ovals = scene.children.find(item => item.isMesh);
+    for (let i = 0; i < 4; i++) effect.update(true, i * .05, .05);
+    assert.ok(droplets.geometry.drawRange.count > 0);
+    const firstX = droplets.geometry.attributes.position.getX(0);
+    truck.position.x = 20;
+    effect.update(false, .2, .01);
+    assert.ok(Math.abs(droplets.geometry.attributes.position.getX(0) - firstX) < 1);
+    let landed = false;
+    for (let i = 0; i < 20; i++) {
+      effect.update(false, .21 + i * .05, .05);
+      landed ||= ovals.geometry.drawRange.count > 0;
+    }
+    assert.ok(landed);
+    for (let i = 0; i < 30; i++) effect.update(false, 1.21 + i * .05, .05);
+    assert.equal(droplets.geometry.drawRange.count, 0);
+    assert.equal(ovals.geometry.drawRange.count, 0);
+  } finally {
+    globalThis.document = previousDocument;
+  }
 });

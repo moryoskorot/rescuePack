@@ -1,5 +1,5 @@
-// Lightweight, generated vehicle audio. The AudioContext is created on the
-// start-button gesture so the game can play in browsers with autoplay limits.
+// The engine and water are generated, while the tires use a real skid sample.
+// Audio starts on the start-button gesture for browsers with autoplay limits.
 export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake = false, boost = false}) {
   const pace = Math.min(Math.max(speed, 0) / 36, 1);
   const pedal = Math.min(Math.abs(throttle), 1);
@@ -7,14 +7,14 @@ export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake
   return {
     enginePitch: 59 + pace * 104 + pedal * 38,
     engineGain: .045 + pace * .085 + pedal * .037,
-    brakeGain: brake * .16,
+    brakeGain: brake * .64,
     boostGain: boost ? .21 : 0,
   };
 }
 
-export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext) {
+export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext, skidUrl = 'assets/tire-skid.mp3') {
   let context, master, engine, engineBody, engineGain, bodyGain;
-  let brakeScrubGain, brakeGrindGain, boostGain, boostFilter;
+  let skidGain, skidBuffer, skidSource, boostGain, boostFilter;
   let pauseTimer, audible = false;
 
   function ramp(param, value, seconds = .09) {
@@ -78,10 +78,15 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     engineBody = makeOscillator('sine', 29.5, 1, bodyGain).oscillator;
 
     const noise = makeNoiseBuffer();
-    // Broad tire scrub and a quieter, rough lower layer. A pitched oscillator
-    // here sounded like the truck's siren when braking speed changed.
-    brakeScrubGain = makeNoise(noise, 'bandpass', 2100, .55, 0).volume;
-    brakeGrindGain = makeNoise(noise, 'bandpass', 520, .5, 0).volume;
+    skidGain = context.createGain();
+    skidGain.gain.value = 0;
+    skidGain.connect(master);
+    fetch(skidUrl).then(response => {
+      if (!response.ok) throw new Error(`Skid audio returned ${response.status}`);
+      return response.arrayBuffer();
+    }).then(data => context.decodeAudioData(data)).then(buffer => {
+      skidBuffer = buffer;
+    }).catch(error => console.warn('Could not load tire-skid sound:', error));
     const water = makeNoise(noise, 'bandpass', 900, .38, 0);
     boostGain = water.volume;
     boostFilter = water.filter;
@@ -104,14 +109,28 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
       ramp(engineBody.frequency, levels.enginePitch / 2, .12);
       ramp(engineGain.gain, levels.engineGain, .1);
       ramp(bodyGain.gain, levels.engineGain * .55, .1);
-      ramp(brakeScrubGain.gain, levels.brakeGain, .035);
-      ramp(brakeGrindGain.gain, levels.brakeGain * .36, .055);
+      if (levels.brakeGain > 0 && skidBuffer && !skidSource) {
+        skidSource = context.createBufferSource();
+        skidSource.buffer = skidBuffer;
+        skidSource.loop = true;
+        skidSource.connect(skidGain);
+        skidSource.start();
+      }
+      ramp(skidGain.gain, levels.brakeGain, .04);
+      if (levels.brakeGain === 0 && skidSource) {
+        skidSource.stop(context.currentTime + .18);
+        skidSource = null;
+      }
       ramp(boostGain.gain, levels.boostGain, input.boost ? .16 : .08);
       ramp(boostFilter.frequency, input.boost ? 1150 : 700, .16);
     },
     pause() {
       if (!context) return;
       audible = false;
+      if (skidSource) {
+        skidSource.stop();
+        skidSource = null;
+      }
       clearTimeout(pauseTimer);
       ramp(master.gain, 0, .035);
       pauseTimer = setTimeout(() => {
