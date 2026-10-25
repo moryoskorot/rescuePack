@@ -7,15 +7,14 @@ export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake
   return {
     enginePitch: 59 + pace * 104 + pedal * 38,
     engineGain: .045 + pace * .085 + pedal * .037,
-    brakeGain: brake * .11,
-    brakePitch: 690 + Math.min(speed, 30) * 13,
+    brakeGain: brake * .16,
     boostGain: boost ? .21 : 0,
   };
 }
 
 export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext) {
   let context, master, engine, engineBody, engineGain, bodyGain;
-  let brakeNoiseGain, brakeTone, brakeToneGain, boostGain, boostFilter;
+  let brakeScrubGain, brakeGrindGain, boostGain, boostFilter;
   let pauseTimer, audible = false;
 
   function ramp(param, value, seconds = .09) {
@@ -79,10 +78,10 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     engineBody = makeOscillator('sine', 29.5, 1, bodyGain).oscillator;
 
     const noise = makeNoiseBuffer();
-    brakeNoiseGain = makeNoise(noise, 'bandpass', 1650, .65, 0).volume;
-    const brakeToneNode = makeOscillator('triangle', 690, 0, master);
-    brakeTone = brakeToneNode.oscillator;
-    brakeToneGain = brakeToneNode.volume;
+    // Broad tire scrub and a quieter, rough lower layer. A pitched oscillator
+    // here sounded like the truck's siren when braking speed changed.
+    brakeScrubGain = makeNoise(noise, 'bandpass', 2100, .55, 0).volume;
+    brakeGrindGain = makeNoise(noise, 'bandpass', 520, .5, 0).volume;
     const water = makeNoise(noise, 'bandpass', 900, .38, 0);
     boostGain = water.volume;
     boostFilter = water.filter;
@@ -105,9 +104,8 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
       ramp(engineBody.frequency, levels.enginePitch / 2, .12);
       ramp(engineGain.gain, levels.engineGain, .1);
       ramp(bodyGain.gain, levels.engineGain * .55, .1);
-      ramp(brakeNoiseGain.gain, levels.brakeGain, .035);
-      ramp(brakeTone.frequency, levels.brakePitch, .05);
-      ramp(brakeToneGain.gain, levels.brakeGain * .2, .035);
+      ramp(brakeScrubGain.gain, levels.brakeGain, .035);
+      ramp(brakeGrindGain.gain, levels.brakeGain * .36, .055);
       ramp(boostGain.gain, levels.boostGain, input.boost ? .16 : .08);
       ramp(boostFilter.frequency, input.boost ? 1150 : 700, .16);
     },
