@@ -1,6 +1,13 @@
 // Shared city plan. All positions are in metres; the truck's local front is +Z.
 export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 113]);
 export const STREET_Z = Object.freeze([-62, -30, 5, 38, 70]);
+// A few local streets end at a through road, creating larger, less regular blocks.
+export const AVENUE_SEGMENTS = Object.freeze(AVENUE_X.map(x => Object.freeze({
+  x, minZ: -82, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
+})));
+export const STREET_SEGMENTS = Object.freeze(STREET_Z.map(z => Object.freeze({
+  z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 122,
+})));
 export const ROAD_HALF_WIDTH = 4.6;
 export const SIDEWALK_OUTER = 6.25;
 export const ROAD_Y = .12;
@@ -21,8 +28,8 @@ export function insideRect(x, z, rect, padding = 0) {
 }
 
 function inRoadNetwork(x, z, halfWidth) {
-  return AVENUE_X.some(center => Math.abs(x - center) <= halfWidth && z >= ROAD_BOUNDS.minZ && z <= ROAD_BOUNDS.maxZ)
-    || STREET_Z.some(center => Math.abs(z - center) <= halfWidth && x >= ROAD_BOUNDS.minX && x <= ROAD_BOUNDS.maxX);
+  return AVENUE_SEGMENTS.some(road => Math.abs(x - road.x) <= halfWidth && z >= road.minZ && z <= road.maxZ)
+    || STREET_SEGMENTS.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX);
 }
 
 export function isRoad(x, z, padding = 0) {
@@ -56,8 +63,14 @@ export function getSurfaceHeight(x, z) {
 export function createRoadSurfaceRects() {
   const xCuts = new Set([ROAD_BOUNDS.minX, ROAD_BOUNDS.maxX]);
   const zCuts = new Set([ROAD_BOUNDS.minZ, ROAD_BOUNDS.maxZ]);
-  for (const x of AVENUE_X) for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) xCuts.add(x + offset);
-  for (const z of STREET_Z) for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) zCuts.add(z + offset);
+  for (const road of AVENUE_SEGMENTS) {
+    for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) xCuts.add(road.x + offset);
+    zCuts.add(road.minZ); zCuts.add(road.maxZ);
+  }
+  for (const road of STREET_SEGMENTS) {
+    for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) zCuts.add(road.z + offset);
+    xCuts.add(road.minX); xCuts.add(road.maxX);
+  }
   for (const rect of DRIVEWAYS) {
     xCuts.add(rect.minX); xCuts.add(rect.maxX); zCuts.add(rect.minZ); zCuts.add(rect.maxZ);
   }
@@ -169,16 +182,19 @@ export function buildWorldSurfaces(THREE, materials) {
   const markingMaterial = materials.line.clone();
   markingMaterial.polygonOffset = true; markingMaterial.polygonOffsetFactor = -1; markingMaterial.polygonOffsetUnits = -2;
   const mark = (x, z, w, d) => plane({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 }, ROAD_Y + .012, markingMaterial);
-  for (const x of AVENUE_X) for (let z = -78; z < 71; z += 8) {
-    if (STREET_Z.every(crossing => Math.abs(crossing - z) > 8.6)) mark(x, z, .16, 3);
+  for (const road of AVENUE_SEGMENTS) for (let z = road.minZ + 4; z < road.maxZ - 3; z += 8) {
+    if (STREET_SEGMENTS.every(crossing => z < crossing.z - 8.6 || z > crossing.z + 8.6 || road.x < crossing.minX || road.x > crossing.maxX)) mark(road.x, z, .16, 3);
   }
-  for (const z of STREET_Z) for (let x = -118; x < 120; x += 8) {
-    if (AVENUE_X.every(crossing => Math.abs(crossing - x) > 8.6)) mark(x, z, 3, .16);
+  for (const road of STREET_SEGMENTS) for (let x = road.minX + 4; x < road.maxX - 3; x += 8) {
+    if (AVENUE_SEGMENTS.every(crossing => x < crossing.x - 8.6 || x > crossing.x + 8.6 || road.z < crossing.minZ || road.z > crossing.maxZ)) mark(x, road.z, 3, .16);
   }
-  for (const x of AVENUE_X) for (const z of STREET_Z) for (let stripe = -3; stripe <= 3; stripe++) {
+  for (const x of AVENUE_X) for (const z of STREET_Z) if (
+    AVENUE_SEGMENTS.some(road => road.x === x && z >= road.minZ && z <= road.maxZ)
+    && STREET_SEGMENTS.some(road => road.z === z && x >= road.minX && x <= road.maxX)
+  ) for (let stripe = -3; stripe <= 3; stripe++) {
     for (const side of [-1, 1]) {
-      if (z + side * 6.1 + .7 <= ROAD_BOUNDS.maxZ) mark(x + stripe * 1.15, z + side * 6.1, .7, 1.4);
-      mark(x + side * 6.1, z + stripe * 1.15, 1.4, .7);
+      if (isRoad(x, z + side * 6.1)) mark(x + stripe * 1.15, z + side * 6.1, .7, 1.4);
+      if (isRoad(x + side * 6.1, z)) mark(x + side * 6.1, z + stripe * 1.15, 1.4, .7);
     }
   }
   // Disjoint deck rectangles: the pier starts where the boardwalk ends.

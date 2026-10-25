@@ -280,7 +280,7 @@ function details() {
   // Lamppost bases occupy the sidewalk's outer edge and avoid driveways.
   for(const x of avenueX)for(const z of [-46,-12,22,54]) {
     const lx=x+5.5;
-    if(!solids.some(b=>Math.abs(lx-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3))
+    if(surfaceAt(lx,z)==='pavement'&&!solids.some(b=>Math.abs(lx-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3))
       model('roads','light-curved',lx,z,6.2,Math.PI/2,getSurfaceHeight(lx,z));
   }
   for(const [x,z,r] of [[-9,60,0],[8,60,Math.PI],[-94,80,Math.PI],[-65,80,Math.PI],[-37,80,Math.PI],[37,80,Math.PI],[66,80,Math.PI],[99,80,Math.PI]]) {

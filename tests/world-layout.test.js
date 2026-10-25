@@ -19,7 +19,10 @@ test('road and sidewalk faces form a disjoint partition, including every interse
   }
   for (const x of AVENUE_X) for (const z of STREET_Z) {
     const roadFaces = rectangles.filter(rect => rect.kind === 'road' && insideRect(x, z, rect));
-    assert.equal(roadFaces.length, 1, `intersection ${x},${z} has one asphalt face`);
+    assert.equal(roadFaces.length, Number(isRoad(x, z)), `junction ${x},${z} has the correct asphalt face`);
+  }
+  for (const [x, z] of [[-84, 5], [-18, 55], [85, 38], [-100, 5], [85, 50]]) {
+    assert.equal(isRoad(x, z), false, `local street ends before ${x},${z}`);
   }
   // Sample away from cell boundaries, checking both lane continuity and walkways.
   for (let x = -121.73; x < 122; x += 1.47) for (let z = -81.71; z < 76; z += 1.31) {
