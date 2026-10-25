@@ -13,9 +13,11 @@ pnpm install --frozen-lockfile
 pnpm dev --port 5174
 ```
 
-Open [localhost:5174](http://127.0.0.1:5174/). Use **WASD** or **arrow keys** to drive, **Space** to handbrake and drift, **drag the mouse** to change the camera angle, and **scroll** to zoom. Drifting leaves tire marks on the ground.
+Open [localhost:5174](http://127.0.0.1:5174/). Use **WASD** or **arrow keys** to drive, **Space** to handbrake and drift, **Shift** or the **BOOST** button while driving forward to fire the water jets, **drag the mouse** to change the camera angle, and **scroll** to zoom. Drifting leaves tire marks on the ground.
 
-On a touchscreen, driving controls appear automatically: move the **left thumbstick** up to accelerate, down to reverse, and sideways to steer. Hold **B** on the right to brake and drift, including while steering with your other thumb. Drag anywhere outside the controls to change the camera angle.
+On a touchscreen, driving controls appear automatically: move the **left thumbstick** up to accelerate, down to reverse, and sideways to steer. Hold **B** on the right to brake and drift, or hold **BOOST** above it while driving forward. Drag anywhere outside the controls to change the camera angle.
+
+Water boost starts full and drains at 18% per second while spraying. When idle it refills at **1% per second**, or **25% per second** within range of a fire hydrant. A blue ring and the tank display signal the faster hydrant refill. After running completely dry, release boost to restart once the tank has refilled to 5%.
 
 ## Build and deployment
 

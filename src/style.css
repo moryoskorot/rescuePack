@@ -5,8 +5,8 @@
 .menu-screen{position:absolute;inset:0;z-index:10;background-image:url('/assets/MENU.png');background-position:center center;background-size:cover;font-family:Fredoka,Arial,sans-serif}.menu-shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(12,33,80,.53),rgba(14,42,90,.02) 44%)}.menu-actions{position:absolute;left:50%;bottom:4.1%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:13px;white-space:nowrap}.menu-kicker{font-size:clamp(10px,1.4vw,15px);font-weight:700;letter-spacing:.23em;color:#fff;text-shadow:0 2px 7px #142b68}.start-button{border:5px solid #072c68;border-radius:22px;padding:13px 29px 13px 24px;display:flex;align-items:center;gap:18px;background:linear-gradient(#ffe86a 0%,#ffcc2f 45%,#ff9b23 100%);box-shadow:0 7px 0 #a74116,0 11px 0 #092b67,0 18px 26px #08245d70;color:#112c60;text-shadow:1px 2px 0 #fff5ae;font-size:clamp(20px,2.6vw,36px);font-weight:700;letter-spacing:.035em;transition:transform .15s,box-shadow .15s}.start-button:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 10px 0 #a74116,0 14px 0 #092b67,0 20px 30px #08245d80}.start-button:active{transform:translateY(6px);box-shadow:0 1px 0 #a74116,0 4px 0 #092b67}.button-spark{color:#e34232;text-shadow:none;font-size:.72em}.button-arrow{color:#e34232;text-shadow:none}.menu-tip{font-family:Nunito,Arial,sans-serif;font-weight:900;letter-spacing:.15em;font-size:clamp(8px,.85vw,12px);text-shadow:0 2px 5px #0a245d}
 .hud{position:absolute;inset:0;pointer-events:none;font-family:Fredoka,Arial,sans-serif}.hud button{pointer-events:auto}.hud-top{position:absolute;top:20px;left:22px;right:22px;display:flex;align-items:flex-start;gap:13px}.brand{display:flex;align-items:center;gap:9px;background:#103b77e6;border:3px solid #fff;border-radius:18px;padding:7px 15px 7px 7px;box-shadow:0 6px 0 #092f64,0 11px 20px #143a6560}.brand-icon{display:grid;place-items:center;background:#ffcf32;border:3px solid #fff;border-radius:11px;width:48px;height:48px;font-size:26px}.brand strong{display:block;color:#ffd849;font-size:21px;line-height:1.05;letter-spacing:.035em;text-shadow:0 2px #9b351d}.brand small{display:block;font-size:10px;letter-spacing:.22em;margin-top:3px}.district{align-self:center;display:flex;align-items:center;gap:8px;margin-left:auto;padding:10px 16px;background:#fffdf2e8;border:3px solid #fff;border-radius:40px;color:#174371;box-shadow:0 5px 0 #265f8e77;font-size:14px;letter-spacing:.08em}.district-dot{width:9px;height:9px;border-radius:50%;background:#f05a42;box-shadow:0 0 0 4px #f05a4230}.round-button{align-self:center;border:3px solid #fff;background:#164478eb;border-radius:14px;width:43px;height:43px;color:white;font-size:21px;box-shadow:0 5px 0 #0b3064}.round-button:hover{background:#e94134}
 .world-labels{position:absolute;inset:0;overflow:hidden}.world-label{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;display:flex;align-items:center;gap:7px;padding:6px 11px;border:2px solid #fff;border-radius:99px;background:#fffdf1f2;color:#144069;box-shadow:0 3px 0 #2a5888a0,0 6px 15px #18436950;font-size:12px;letter-spacing:.04em}.world-label i{width:8px;height:8px;border-radius:50%;background:var(--marker,#f35a46)}
-.hud-bottom{position:absolute;left:22px;right:22px;bottom:20px;display:flex;align-items:end;gap:16px}.guide,.speed-card,.minimap-card{background:#103b77e8;border:3px solid #fff;border-radius:18px;box-shadow:0 6px 0 #092f64,0 10px 22px #103d6970}.guide{padding:10px 14px;color:#e9f8ff;font-family:Nunito,Arial,sans-serif;font-size:11px;font-weight:900;letter-spacing:.035em}.guide-heading{display:block;color:#ffcf38;font-family:Fredoka,sans-serif;font-size:13px;letter-spacing:.12em;margin-bottom:4px}.guide div{display:flex;align-items:center;gap:4px;margin-top:5px}.guide div>span:last-child{margin-left:5px}kbd{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:1px 4px;background:#fff;border-radius:5px;box-shadow:0 2px 0 #88a5c8;color:#124073;font-family:Fredoka,sans-serif;font-size:11px}.space-key{min-width:72px;font-size:10px;letter-spacing:.04em}.guide-or{padding:0 5px;color:#9cc0db}.arrows{color:#ffdf62;font-size:16px;line-height:1}.mouse-icon{color:#ffdf62;font-size:20px;line-height:.7}.guide-separator{color:#7da6cc}.speed-card{margin-left:auto;min-width:126px;padding:9px 14px 10px;display:grid;grid-template-columns:auto 1fr;align-items:center;color:#ffdd4a;text-shadow:0 2px 0 #a24729}.speed-icon{font-size:22px}.speed-card strong{font-size:38px;text-align:right;line-height:1}.speed-unit{grid-column:2;font-size:10px;letter-spacing:.2em;text-align:right;color:#fff;text-shadow:none}.drift-indicator{grid-column:1/3;height:18px;text-align:center;font-size:13px;color:#ffad36;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}.drift-indicator.active{opacity:1;transform:translateY(0)}.minimap-card{position:relative;padding:5px;width:220px;height:169px}.minimap-card canvas{width:210px;height:160px;border-radius:11px;background:#a8ca80}.minimap-label{position:absolute;top:10px;left:13px;border-radius:5px;padding:3px 5px;background:#123c73;color:#ffda56;font-size:9px;letter-spacing:.1em}
-@media(max-width:720px){.hud-top{top:10px;left:10px;right:10px}.brand{padding-right:10px}.brand-icon{width:35px;height:35px;font-size:19px}.brand strong{font-size:15px}.brand small{font-size:8px}.district{font-size:10px;padding:7px}.hud-bottom{left:10px;right:10px;bottom:10px;gap:8px}.guide{font-size:9px;padding:7px}.guide div{gap:2px}.guide div:last-child{display:none}.speed-card{min-width:76px;padding:6px}.speed-card strong{font-size:28px}.minimap-card{display:none}.menu-actions{bottom:5%}.menu-kicker,.menu-tip{display:none}.start-button{font-size:19px;padding:10px 16px;gap:8px}}
+.hud-bottom{position:absolute;left:22px;right:22px;bottom:20px;display:flex;align-items:end;gap:16px}.guide,.speed-card,.water-meter{background:#103b77e8;border:3px solid #fff;border-radius:18px;box-shadow:0 6px 0 #092f64,0 10px 22px #103d6970}.guide{padding:10px 14px;color:#e9f8ff;font-family:Nunito,Arial,sans-serif;font-size:11px;font-weight:900;letter-spacing:.035em}.guide-heading{display:block;color:#ffcf38;font-family:Fredoka,sans-serif;font-size:13px;letter-spacing:.12em;margin-bottom:4px}.guide div{display:flex;align-items:center;gap:4px;margin-top:5px}.guide div>span:last-child{margin-left:5px}kbd{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:1px 4px;background:#fff;border-radius:5px;box-shadow:0 2px 0 #88a5c8;color:#124073;font-family:Fredoka,sans-serif;font-size:11px}.space-key{min-width:72px;font-size:10px;letter-spacing:.04em}.guide-or{padding:0 5px;color:#9cc0db}.arrows{color:#ffdf62;font-size:16px;line-height:1}.mouse-icon{color:#ffdf62;font-size:20px;line-height:.7}.guide-separator{color:#7da6cc}.speed-card{margin-left:auto;min-width:126px;padding:9px 14px 10px;display:grid;grid-template-columns:auto 1fr;align-items:center;color:#ffdd4a;text-shadow:0 2px 0 #a24729}.speed-icon{font-size:22px}.speed-card strong{font-size:38px;text-align:right;line-height:1}.speed-unit{grid-column:2;font-size:10px;letter-spacing:.2em;text-align:right;color:#fff;text-shadow:none}.drift-indicator{grid-column:1/3;height:18px;text-align:center;font-size:13px;color:#ffad36;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}.drift-indicator.active{opacity:1;transform:translateY(0)}
+@media(max-width:720px){.hud-top{top:10px;left:10px;right:10px}.brand{padding-right:10px}.brand-icon{width:35px;height:35px;font-size:19px}.brand strong{font-size:15px}.brand small{font-size:8px}.district{font-size:10px;padding:7px}.hud-bottom{left:10px;right:10px;bottom:10px;gap:8px}.guide{font-size:9px;padding:7px}.guide div{gap:2px}.guide div:last-child{display:none}.speed-card{min-width:76px;padding:6px}.speed-card strong{font-size:28px}.menu-actions{bottom:5%}.menu-kicker,.menu-tip{display:none}.start-button{font-size:19px;padding:10px 16px;gap:8px}}
 @media(max-aspect-ratio:3/4){.menu-screen{background-size:auto 78%;background-repeat:no-repeat;background-position:center top;background-color:#358dcb}.menu-shade{background:linear-gradient(0deg,#173b7bc9 0%,#1b488640 36%,transparent 70%)}.menu-actions{bottom:9%}}
 
 /* Touch controls live at the edges, leaving the center free for the road. */
@@ -37,9 +37,6 @@
 .has-touch-controls .speed-unit{font-size:9px}
 .has-touch-controls .speed-icon{font-size:19px}
 .has-touch-controls .drift-indicator{font-size:10px;height:14px}
-.has-touch-controls .minimap-card{display:block;margin-left:auto;padding:4px;width:142px;height:111px;border-width:2px;border-radius:14px;background:#103b77c9;box-shadow:0 4px 0 #092f6477}
-.has-touch-controls .minimap-card canvas{display:block;width:130px;height:99px;border-radius:9px}
-.has-touch-controls .minimap-label{top:8px;left:9px;font-size:7px;padding:2px 4px}
 @media(max-width:480px){
   .has-touch-controls .hud-top{top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));right:calc(10px + env(safe-area-inset-right,0px));gap:7px}
   .has-touch-controls .brand{gap:5px;padding:6px 9px 6px 6px;border-width:2px;border-radius:13px}
@@ -60,7 +57,60 @@
   #touch-brake{width:78px;height:78px;font-size:39px}
   .touch-caption{font-size:10px}
   .has-touch-controls .hud-top{top:calc(10px + env(safe-area-inset-top,0px))}
-  .has-touch-controls .hud-bottom{left:50%;right:auto;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%)}
-  .has-touch-controls .minimap-card{display:none}
+  .has-touch-controls .hud-bottom{left:calc(50% - 134px);right:auto;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:none}
   .has-touch-controls .speed-card{min-width:90px}
+}
+
+/* Water is both the boost fuel and the visual theme for its controls. */
+.boost-panel{display:flex;align-items:end;gap:12px}
+.water-meter{width:218px;min-height:91px;padding:9px 12px 8px;display:flex;flex-direction:column;justify-content:center;gap:6px;background:#103b77e8}
+.water-meter-heading{display:flex;align-items:center;gap:5px;color:#e8fbff;font-size:13px;letter-spacing:.06em;white-space:nowrap}
+.water-meter-heading>span:first-child{font-size:18px;line-height:1}
+.water-meter-heading strong{font-weight:600}
+.water-meter-heading>span:last-child{margin-left:auto;color:#9cecff;font-size:14px}
+.water-track{height:15px;padding:2px;border-radius:99px;background:#082b5f;border:1px solid #9eddf1;overflow:hidden}
+.water-fill{height:100%;width:100%;position:relative;overflow:hidden;border-radius:99px;background:linear-gradient(90deg,#4ebeea,#98edff 65%,#e5ffff);box-shadow:0 0 9px #8deaff80;transition:width .12s linear}
+.water-fill::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(110deg,transparent 0 13px,#ffffff70 14px 18px,transparent 19px 31px);animation:water-flow .8s linear infinite}
+@keyframes water-flow{to{transform:translateX(32px)}}
+.boost-status{display:block;min-height:12px;color:#cae9fc;font-family:Nunito,Arial,sans-serif;font-size:9px;font-weight:900;letter-spacing:.06em;white-space:nowrap}
+.water-meter.near-hydrant{border-color:#9ef5ff;box-shadow:0 0 0 3px #63d9f655,0 6px 0 #092f64,0 10px 22px #103d6970}
+.water-meter.near-hydrant .boost-status{color:#9df0ff}
+.boost-button{width:88px;height:91px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:4px solid #e9fcff;border-radius:24px;background:linear-gradient(155deg,#b9f8ff,#5fd3f1 65%,#2ba5d9);box-shadow:0 6px 0 #125a93,0 10px 0 #092f64,0 14px 23px #0d3f7180;color:#124174;font-family:Fredoka,Arial,sans-serif;text-shadow:0 1px #efffff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s,filter .12s}
+.boost-button span{font-size:28px;line-height:1}
+.boost-button strong{font-size:15px;letter-spacing:.03em}
+.boost-button small{font-size:9px;line-height:1.15;letter-spacing:.13em}
+.boost-button.active,.boost-button:active{transform:translateY(5px);box-shadow:0 1px 0 #125a93,0 4px 0 #092f64,0 8px 16px #0d3f7180;filter:brightness(1.18)}
+.boost-button.empty{filter:saturate(.55);opacity:.72}
+.boost-button:focus-visible{outline:4px solid #fff;outline-offset:5px}
+
+@media(max-width:720px){
+  .water-meter{width:175px;padding:8px 9px}
+  .water-meter-heading{font-size:11px}
+  .water-meter-heading>span:last-child{font-size:12px}
+  .boost-panel{gap:8px}
+  .boost-button{width:72px;height:82px;border-radius:20px}
+  .boost-button span{font-size:24px}
+  .boost-button strong{font-size:12px}
+}
+@media(max-width:570px) and (any-pointer:fine){.guide{display:none}}
+.has-touch-controls .hud-bottom{bottom:calc(236px + env(safe-area-inset-bottom,0px))}
+.has-touch-controls .boost-panel{margin-left:auto}
+.has-touch-controls .water-meter{width:176px;min-height:76px;padding:7px 9px;gap:4px;border-width:2px;border-radius:14px;background:#103b77cb;box-shadow:0 4px 0 #092f6477}
+.has-touch-controls .water-meter-heading{font-size:11px}
+.has-touch-controls .water-meter-heading>span:last-child{font-size:12px}
+.has-touch-controls .boost-status{font-size:8px}
+.has-touch-controls .boost-button{position:fixed;right:calc(25px + env(safe-area-inset-right,0px));bottom:calc(155px + env(safe-area-inset-bottom,0px));width:78px;height:78px;border-radius:50%;z-index:3}
+.has-touch-controls .boost-button small{display:none}
+@media(max-width:480px){
+  .has-touch-controls .water-meter{width:155px}
+  .has-touch-controls .water-meter-heading{font-size:10px}
+  .has-touch-controls .boost-status{font-size:7px}
+  .has-touch-controls .boost-button{right:calc(20px + env(safe-area-inset-right,0px))}
+}
+@media(max-height:540px) and (orientation:landscape){
+  .has-touch-controls .hud-bottom{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+  .has-touch-controls .water-meter{width:160px;min-height:71px}
+  .has-touch-controls .boost-button{right:calc(28px + env(safe-area-inset-right,0px));bottom:calc(144px + env(safe-area-inset-bottom,0px));width:68px;height:68px}
+  .has-touch-controls .boost-button span{font-size:20px}
+  .has-touch-controls .boost-button strong{font-size:11px}
 }

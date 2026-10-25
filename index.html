@@ -44,10 +44,18 @@
             <span class="guide-heading">HOW TO DRIVE</span>
             <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="guide-or">or</span><span class="arrows">↑ ← ↓ →</span><span>Drive</span></div>
             <div><kbd class="space-key">SPACE</kbd><span>Handbrake & drift</span></div>
+            <div><kbd class="space-key">SHIFT</kbd><span>Hold for water boost</span></div>
             <div><span class="mouse-icon">◉</span><span>Drag to look around</span><span class="guide-separator">·</span><span>Scroll to zoom</span></div>
           </div>
           <div class="speed-card"><span class="speed-icon">⚡</span><strong id="speed-value">00</strong><span class="speed-unit">KM/H</span><div id="drift-indicator" class="drift-indicator">DRIFTING!</div></div>
-          <div class="minimap-card"><canvas id="minimap" width="210" height="160" aria-label="Town map"></canvas><span class="minimap-label">TOWN MAP</span></div>
+          <div class="boost-panel">
+            <div id="water-meter" class="water-meter" role="meter" aria-label="Water boost charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+              <div class="water-meter-heading"><span aria-hidden="true">💧</span><strong>WATER BOOST</strong><span id="boost-percent">100%</span></div>
+              <div class="water-track"><div id="boost-fill" class="water-fill"></div></div>
+              <span id="boost-status" class="boost-status">READY · HOLD SHIFT OR BOOST</span>
+            </div>
+            <button id="boost-button" class="boost-button" type="button" aria-label="Hold for water boost" aria-pressed="false"><span aria-hidden="true">💦</span><strong>BOOST</strong><small>SHIFT</small></button>
+          </div>
         </div>
 
         <div id="touch-controls" class="touch-controls hidden">

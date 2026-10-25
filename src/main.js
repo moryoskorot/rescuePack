@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
-import { AVENUE_X, STREET_Z, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
+import { AVENUE_X, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
 import { advanceVehicle } from './drive-world.js';
 import { createTouchControls } from './touch-controls.js';
+import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
+import { createWaterEffect } from './water-effect.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -47,7 +49,7 @@ const M = {
 const worldSurfaces = buildWorldSurfaces(THREE, M);
 scene.add(worldSurfaces);
 const waterMaterial = worldSurfaces.userData.waterMaterial;
-const avenueX = AVENUE_X, streetZ = STREET_Z;
+const avenueX = AVENUE_X;
 
 function box(parent, w, h, d, material, x = 0, y = 0, z = 0, cast = true) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -287,7 +289,7 @@ function details() {
   landmark('HARBOR WALK',12,89,4,'#49bad5');
 }
 
-let firetruck;
+let firetruck, waterEffect;
 function createTruck() {
   firetruck = new THREE.Group(); scene.add(firetruck);
   const truckModel = model('cars','firetruck',0,0,FIRETRUCK.scale,0,0,firetruck);
@@ -297,11 +299,21 @@ function createTruck() {
   const blueLight = new THREE.PointLight('#88d9ff', 0, 8);
   blueLight.position.set(0, 2.9, -.15); firetruck.add(blueLight);
   firetruck.userData.blueLight = blueLight;
+  waterEffect = createWaterEffect(THREE, firetruck);
   firetruck.position.set(player.x,ROAD_Y,player.z);
   firetruck.rotation.y=player.heading;
 }
 
 const player = createVehicleState({x:35,z:38,heading:-Math.PI/2});
+const waterBoost = createWaterBoostState();
+const refillRing = new THREE.Mesh(
+  new THREE.RingGeometry(1.3, 1.55, 40),
+  new THREE.MeshBasicMaterial({color:'#80eaff',transparent:true,opacity:.55,depthWrite:false,side:THREE.DoubleSide}),
+);
+refillRing.rotation.x = -Math.PI / 2;
+refillRing.visible = false;
+refillRing.renderOrder = 3;
+scene.add(refillRing);
 let physicsAccumulator=0;
 // One dynamic mesh holds the tire trails, so a long drift does not create hundreds of draw calls.
 const MAX_SKID_SEGMENTS = 2400;
@@ -353,13 +365,35 @@ const touchControls=createTouchControls({
   brake:document.querySelector('#touch-brake'),
   isPlaying:()=>playing,
 });
+const boostButton=document.querySelector('#boost-button');
+const boostPointers=new Set();
+function releaseBoost() {
+  const pointers=[...boostPointers];
+  boostPointers.clear();
+  pointers.forEach(id=>{if(boostButton.hasPointerCapture(id))boostButton.releasePointerCapture(id);});
+  boostButton.setAttribute('aria-pressed','false');
+}
+boostButton.addEventListener('pointerdown',e=>{
+  if(!playing||e.button!==0)return;
+  e.preventDefault();
+  boostPointers.add(e.pointerId);
+  boostButton.setPointerCapture(e.pointerId);
+  boostButton.setAttribute('aria-pressed','true');
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])boostButton.addEventListener(type,e=>{
+  if(!boostPointers.has(e.pointerId))return;
+  boostPointers.delete(e.pointerId);
+  if(boostButton.hasPointerCapture(e.pointerId))boostButton.releasePointerCapture(e.pointerId);
+  boostButton.setAttribute('aria-pressed',String(boostPointers.size>0));
+});
+boostButton.addEventListener('contextmenu',e=>e.preventDefault());
 function releaseCamera() {
   const pointerId=cameraPointer;
   cameraPointer=null;
   if(pointerId!==null&&canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
   canvas.style.cursor=playing?'grab':'default';
 }
-function resetInput() {keys.clear();touchControls.reset();releaseCamera();previousWheels=null;physicsAccumulator=0;}
+function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;waterBoost.active=false;refillRing.visible=false;boostButton.classList.remove('active');}
 window.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
@@ -382,10 +416,14 @@ function drive(dt) {
     steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
     handbrake:keys.has('Space')||touchControls.input.handbrake,
   };
+  const boostHeld=keys.has('ShiftLeft')||keys.has('ShiftRight')||boostPointers.size>0;
+  boostButton.setAttribute('aria-pressed',String(boostHeld));
   physicsAccumulator+=dt;
   let motion=vehicleMotion(player);
   while(physicsAccumulator>=VEHICLE_STEP){
-    motion=advanceVehicle(player,input,VEHICLE_STEP,solids);
+    const boost=boostHeld&&input.throttle>0&&waterBoost.charge>0&&!waterBoost.needsRelease;
+    motion=advanceVehicle(player,{...input,boost},VEHICLE_STEP,solids);
+    stepWaterBoost(waterBoost,player,{held:boostHeld&&!motion.blocked,throttle:input.throttle},VEHICLE_STEP);
     if(motion.blocked)previousWheels=null;
     updateSkids(input.handbrake,motion.speed);
     physicsAccumulator-=VEHICLE_STEP;
@@ -400,6 +438,26 @@ function drive(dt) {
   firetruck.userData.blueLight.intensity=.7+.7*Math.sin(performance.now()*.013)**8;
   document.querySelector('#speed-value').textContent=String(Math.round(motion.speed*3.6)).padStart(2,'0');
   document.querySelector('#drift-indicator').classList.toggle('active',input.handbrake&&motion.speed>3);
+  const charge=Math.round(waterBoost.charge);
+  const meter=document.querySelector('#water-meter');
+  meter.setAttribute('aria-valuenow',String(charge));
+  meter.classList.toggle('near-hydrant',Boolean(waterBoost.nearHydrant)&&charge<100&&!waterBoost.active);
+  document.querySelector('#boost-fill').style.width=`${waterBoost.charge}%`;
+  document.querySelector('#boost-percent').textContent=`${charge}%`;
+  document.querySelector('#boost-status').textContent=waterBoost.active?'WATER JET ACTIVE'
+    :waterBoost.nearHydrant&&charge<100?'HYDRANT NEARBY · +25%/s'
+    :waterBoost.needsRelease&&boostHeld?'RELEASE BOOST TO RESTART'
+    :boostHeld&&input.throttle<=0?'DRIVE TO USE BOOST'
+    :charge===100?(document.body.classList.contains('has-touch-controls')?'READY · DRIVE + BOOST':'READY · HOLD SHIFT OR BOOST')
+    :'RECHARGING · +1%/s';
+  boostButton.classList.toggle('active',waterBoost.active);
+  boostButton.classList.toggle('empty',charge===0);
+  const hydrant=waterBoost.nearHydrant;
+  refillRing.visible=Boolean(hydrant)&&charge<100&&!waterBoost.active;
+  if(refillRing.visible){
+    refillRing.position.set(hydrant.x,getSurfaceHeight(hydrant.x,hydrant.z)+.045,hydrant.z);
+    refillRing.scale.setScalar(1+.09*Math.sin(performance.now()*.006));
+  }
   const area=player.z>74?'HARBOR WALK':player.x<-51?'SUBURBS':player.x>52?'INDUSTRIAL YARDS':player.z<5?'DOWNTOWN':player.x>18?'FIRE STATION':'TOWN SQUARE';
   document.querySelector('#district-name').textContent=area;
 }
@@ -430,24 +488,6 @@ function updateLabels() {
     if(visible){mark.element.style.left=`${(p.x*.5+.5)*innerWidth}px`;mark.element.style.top=`${(-p.y*.5+.5)*innerHeight}px`;mark.element.style.opacity=String(THREE.MathUtils.clamp((75-dist)/25,.5,1));}
   }
 }
-const mapCanvas=document.querySelector('#minimap'), mapCtx=mapCanvas.getContext('2d');
-function drawMap() {
-  const c=mapCtx,w=210,h=160;
-  const X=x=>(x+122)/244*w, Z=z=>(z+82)/180*h;
-  c.fillStyle='#92c87a';c.fillRect(0,0,w,h);
-  c.fillStyle='#b6cea0';c.fillRect(X(-18),0,X(52)-X(-18),h);
-  c.fillStyle='#aeb9a2';c.fillRect(X(52),0,w-X(52),h);
-  c.fillStyle='#56bdd9';c.fillRect(0,Z(85),w,h-Z(85));
-  c.strokeStyle='#e8dfc8';c.lineWidth=8;
-  avenueX.forEach(x=>{c.beginPath();c.moveTo(X(x),Z(-80));c.lineTo(X(x),Z(73));c.stroke();});
-  streetZ.forEach(z=>{c.beginPath();c.moveTo(0,Z(z));c.lineTo(w,Z(z));c.stroke();});
-  c.strokeStyle='#617889';c.lineWidth=5;
-  avenueX.forEach(x=>{c.beginPath();c.moveTo(X(x),Z(-80));c.lineTo(X(x),Z(73));c.stroke();});
-  streetZ.forEach(z=>{c.beginPath();c.moveTo(0,Z(z));c.lineTo(w,Z(z));c.stroke();});
-  for(const mark of landmarks){c.fillStyle=mark.color;c.beginPath();c.arc(X(mark.x),Z(mark.z),2.8,0,Math.PI*2);c.fill();}
-  c.save();c.translate(X(player.x),Z(player.z));c.rotate(Math.PI-player.heading);c.fillStyle='#fff';c.strokeStyle='#153d73';c.lineWidth=2;c.beginPath();c.moveTo(0,-8);c.lineTo(6,6);c.lineTo(0,3);c.lineTo(-6,6);c.closePath();c.fill();c.stroke();c.restore();
-}
-
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);
 let previous=performance.now();
@@ -455,7 +495,8 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min((now-previous)/1000,.05);previous=now;
   drive(dt);updateCamera(dt);
-  if(playing){updateLabels();drawMap();}
+  if(playing)updateLabels();
+  if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);
   renderer.render(scene,camera);
 }
@@ -463,7 +504,7 @@ camera.position.set(54,21,64);camera.lookAt(25,3,22);
 requestAnimationFrame(animate);
 
 preload().then(()=>{
-  buildBlocks();fireStation();townHall();museum();school();hospital();square();details();createTruck();makeLabels();drawMap();
+  buildBlocks();fireStation();townHall();museum();school();hospital();square();details();createTruck();makeLabels();
   document.querySelector('#loading').classList.add('hidden');
   document.querySelector('#menu').classList.remove('hidden');
 }).catch(error=>{
