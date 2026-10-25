@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#173d72" />
+    <title>Rescue Pack — City Drive</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="world" aria-label="3D town driving game"></canvas>
+
+      <div id="loading" class="loading-screen" role="status">
+        <div class="loading-badge">🚒</div>
+        <strong>Building your town...</strong>
+        <span id="loading-copy">Unpacking the city blocks</span>
+        <div class="loading-track"><div id="loading-fill"></div></div>
+      </div>
+
+      <div id="menu" class="menu-screen hidden">
+        <div class="menu-shade"></div>
+        <div class="menu-actions">
+          <div class="menu-kicker">A LITTLE CITY. A BIG ADVENTURE.</div>
+          <button id="start-button" class="start-button" type="button">
+            <span class="button-spark">✦</span>
+            PRESS TO START
+            <span class="button-arrow">➜</span>
+          </button>
+          <div class="menu-tip">DRIVE THE FIRETRUCK · EXPLORE THE TOWN · MAKE SOME TIRE MARKS</div>
+        </div>
+      </div>
+
+      <div id="hud" class="hud hidden">
+        <header class="hud-top">
+          <div class="brand"><span class="brand-icon">🚒</span><div><strong>RESCUE PACK</strong><small>CITY DRIVE</small></div></div>
+          <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
+          <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
+        </header>
+
+        <div id="world-labels" class="world-labels" aria-hidden="true"></div>
+
+        <div class="hud-bottom">
+          <div class="guide">
+            <span class="guide-heading">HOW TO DRIVE</span>
+            <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="guide-or">or</span><span class="arrows">↑ ← ↓ →</span><span>Drive</span></div>
+            <div><kbd class="space-key">SPACE</kbd><span>Handbrake & drift</span></div>
+            <div><span class="mouse-icon">◉</span><span>Drag to look around</span><span class="guide-separator">·</span><span>Scroll to zoom</span></div>
+          </div>
+          <div class="speed-card"><span class="speed-icon">⚡</span><strong id="speed-value">00</strong><span class="speed-unit">KM/H</span><div id="drift-indicator" class="drift-indicator">DRIFTING!</div></div>
+          <div class="minimap-card"><canvas id="minimap" width="210" height="160" aria-label="Town map"></canvas><span class="minimap-label">TOWN MAP</span></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

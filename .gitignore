@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+dist/
+.DS_Store
+
+# Original downloads and design references; runtime assets are in public/assets.
+/kenney_*.zip
+/MENU.png
+/models/
+/ref/
+/screenshots/
+
+# Local runtime output and environment values.
+*.log
+.env
+.env.*
+!.env.example
