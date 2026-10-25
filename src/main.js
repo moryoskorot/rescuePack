@@ -5,6 +5,7 @@ import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContac
 import { AVENUE_X, STREET_Z, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
 import { advanceVehicle } from './drive-world.js';
+import { createTouchControls } from './touch-controls.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -344,28 +345,42 @@ function updateSkids(isBraking, speed) {
   previousWheels=wheels;
 }
 const keys = new Set();
-let playing=false, orbit=-.28, pitch=.7, zoom=36, dragging=false, lastX=0,lastY=0;
+let playing=false, orbit=-.28, pitch=.7, zoom=36, cameraPointer=null, lastX=0,lastY=0;
+const touchControls=createTouchControls({
+  root:document.querySelector('#touch-controls'),
+  stick:document.querySelector('#drive-stick'),
+  knob:document.querySelector('#drive-stick-knob'),
+  brake:document.querySelector('#touch-brake'),
+  isPlaying:()=>playing,
+});
+function releaseCamera() {
+  const pointerId=cameraPointer;
+  cameraPointer=null;
+  if(pointerId!==null&&canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
+  canvas.style.cursor=playing?'grab':'default';
+}
+function resetInput() {keys.clear();touchControls.reset();releaseCamera();previousWheels=null;physicsAccumulator=0;}
 window.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('blur',()=>{keys.clear();previousWheels=null;physicsAccumulator=0;});
-canvas.addEventListener('pointerdown',e=>{if(!playing)return;dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
-canvas.addEventListener('pointermove',e=>{if(!dragging)return;orbit-=(e.clientX-lastX)*.006;pitch=THREE.MathUtils.clamp(pitch+(e.clientY-lastY)*.004,.15,1.18);lastX=e.clientX;lastY=e.clientY;});
-canvas.addEventListener('pointerup',()=>{dragging=false;canvas.style.cursor='grab';});
-canvas.addEventListener('pointercancel',()=>{dragging=false;canvas.style.cursor='grab';});
+window.addEventListener('blur',resetInput);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInput();});
+canvas.addEventListener('pointerdown',e=>{if(!playing||cameraPointer!==null||e.button!==0)return;cameraPointer=e.pointerId;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
+canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;orbit-=(e.clientX-lastX)*.006;pitch=THREE.MathUtils.clamp(pitch+(e.clientY-lastY)*.004,.15,1.18);lastX=e.clientX;lastY=e.clientY;});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{playing=true;document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
-document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;keys.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');canvas.style.cursor='default';});
+document.querySelector('#start-button').addEventListener('click',()=>{resetInput();playing=true;document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
   if(!playing||!firetruck){physicsAccumulator=0;return;}
   const input={
-    throttle:Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')),
-    steer:Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),
-    handbrake:keys.has('Space'),
+    throttle:(Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')))||touchControls.input.throttle,
+    steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
+    handbrake:keys.has('Space')||touchControls.input.handbrake,
   };
   physicsAccumulator+=dt;
   let motion=vehicleMotion(player);

@@ -15,6 +15,8 @@ pnpm dev --port 5174
 
 Open [localhost:5174](http://127.0.0.1:5174/). Use **WASD** or **arrow keys** to drive, **Space** to handbrake and drift, **drag the mouse** to change the camera angle, and **scroll** to zoom. Drifting leaves tire marks on the ground.
 
+On a touchscreen, driving controls appear automatically: move the **left thumbstick** up to accelerate, down to reverse, and sideways to steer. Hold **B** on the right to brake and drift, including while steering with your other thumb. Drag anywhere outside the controls to change the camera angle.
+
 ## Build and deployment
 
 ```sh

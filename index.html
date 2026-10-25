@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#173d72" />
     <title>Rescue Pack — City Drive</title>
   </head>
@@ -48,6 +48,23 @@
           </div>
           <div class="speed-card"><span class="speed-icon">⚡</span><strong id="speed-value">00</strong><span class="speed-unit">KM/H</span><div id="drift-indicator" class="drift-indicator">DRIFTING!</div></div>
           <div class="minimap-card"><canvas id="minimap" width="210" height="160" aria-label="Town map"></canvas><span class="minimap-label">TOWN MAP</span></div>
+        </div>
+
+        <div id="touch-controls" class="touch-controls hidden">
+          <div class="touch-drive">
+            <div id="drive-stick" role="group" aria-label="Driving joystick: drag up to drive, down to reverse, left or right to steer">
+              <span class="stick-arrow stick-up" aria-hidden="true">▲</span>
+              <span class="stick-arrow stick-left" aria-hidden="true">◀</span>
+              <span class="stick-arrow stick-right" aria-hidden="true">▶</span>
+              <span class="stick-arrow stick-down" aria-hidden="true">▼</span>
+              <span id="drive-stick-knob" aria-hidden="true"><span></span></span>
+            </div>
+            <span class="touch-caption" aria-hidden="true">DRIVE</span>
+          </div>
+          <div class="touch-brake-control">
+            <button id="touch-brake" type="button" aria-label="Brake and drift">B</button>
+            <span class="touch-caption" aria-hidden="true">BRAKE / DRIFT</span>
+          </div>
         </div>
       </div>
     </div>
