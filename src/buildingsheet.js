@@ -4,6 +4,7 @@ import { BUILDING_TYPES, BUILDING_TYPES_BY_ID } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
 import { windowThird } from './building-fire.js';
 import { createBuildingFirePreview } from './building-fire-preview.js';
+import { INDUSTRIAL_CHIMNEYS } from './industrial-chimneys.js';
 import './buildingsheet.css';
 
 document.title = 'Building Sheet — Rescue Pack';
@@ -89,6 +90,17 @@ function renderModel(object, direction, width, height, modelBounds = null) {
     const label = w > 24 && h > 17 ? `<text x="${x + 2}" y="${Math.max(13, y - 3)}">${number}</text>` : '';
     return `<g data-window-id="${window.id}"><title>${window.id}</title><rect x="${x}" y="${y}" width="${w}" height="${h}"/>${label}</g>`;
   }).join('');
+  if (modelBounds) for (const chimney of INDUSTRIAL_CHIMNEYS[object.userData?.path] ?? []) {
+    const [x, y, z] = chimney.center;
+    const top = new THREE.Vector3(x, y, z).project(camera);
+    const edgeX = new THREE.Vector3(x + chimney.diameter / 2, y, z).project(camera);
+    const edgeZ = new THREE.Vector3(x, y, z + chimney.diameter / 2).project(camera);
+    const widthPixels = Math.max(8, Math.max(Math.abs(edgeX.x - top.x), Math.abs(edgeZ.x - top.x)) * width);
+    fireAnchors.push({
+      x: (top.x + 1) * width / 2, y: (1 - top.y) * height / 2,
+      width: widthPixels, height: widthPixels, chimney: true,
+    });
+  }
   scene.remove(model);
   return { image, overlay, fireAnchors };
 }

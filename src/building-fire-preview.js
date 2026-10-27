@@ -1,41 +1,42 @@
 import { windowFireStrength } from './building-fire.js';
+import { chimneyFireStrength } from './industrial-chimneys.js';
+
+const WINDOW_FLAME_RATE = [0, 4.5, 6.8, 10.2];
+const WINDOW_SMOKE_RATE = [2.8, 1.7, 3.1, 5.2];
+const CHIMNEY_FLAME_RATE = [0, 0, 6.8, 0];
+const CHIMNEY_SMOKE_RATE = [4.4, 0, 3.2, 0];
 
 // The sheet keeps its crisp GLB stills and draws moving particles between
 // each model image and the red window-ID overlay.
 function flameSprite(hue) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 96;
+  canvas.width = canvas.height = 64;
   const ctx = canvas.getContext('2d');
-  const glow = ctx.createRadialGradient(48, 48, 5, 48, 48, 47);
-  glow.addColorStop(0, `rgba(255,${hue},9,.45)`);
-  glow.addColorStop(.48, `rgba(255,${hue},5,.2)`);
-  glow.addColorStop(1, 'rgba(255,86,0,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, 96, 96);
-  ctx.shadowColor = '#ff8a00';
-  ctx.shadowBlur = 9;
+  ctx.fillStyle = 'rgba(215,61,8,.83)';
+  ctx.fillRect(8, 8, 48, 48);
   ctx.fillStyle = `rgb(255,${hue},7)`;
-  ctx.fillRect(28, 28, 40, 40);
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,220,55,.5)';
-  ctx.fillRect(36, 38, 21, 21);
+  ctx.fillRect(13, 13, 38, 38);
+  ctx.fillStyle = 'rgba(255,221,62,.7)';
+  ctx.fillRect(23, 23, 19, 19);
   return canvas;
 }
 
 function smokeSprite(variation) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 96;
+  canvas.width = canvas.height = 64;
   const ctx = canvas.getContext('2d');
-  const lobes = variation ? [[39, 47, 31], [57, 45, 27], [48, 34, 28]]
-    : [[42, 46, 30], [56, 51, 29], [47, 35, 27]];
+  const lobes = variation ? [[24, 34, 18], [42, 35, 17], [33, 21, 18]]
+    : [[22, 29, 18], [41, 32, 19], [31, 43, 15]];
   for (const [x, y, radius] of lobes) {
-    const grad = ctx.createRadialGradient(x, y, radius * .08, x, y, radius);
-    grad.addColorStop(0, 'rgba(49,53,56,.39)');
-    grad.addColorStop(.48, 'rgba(66,70,72,.31)');
-    grad.addColorStop(1, 'rgba(91,95,96,0)');
-    ctx.fillStyle = grad;
+    ctx.fillStyle = 'rgba(59,63,65,.55)';
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    for (let side = 0; side < 8; side++) {
+      const angle = side * Math.PI / 4;
+      const px = x + Math.cos(angle) * radius, py = y + Math.sin(angle) * radius;
+      if (side === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
     ctx.fill();
   }
   return canvas;
@@ -47,26 +48,37 @@ export function createBuildingFirePreview(views) {
   const smokes = [smokeSprite(0), smokeSprite(1)];
   for (const view of views) {
     view.context = view.canvas.getContext('2d');
+    view.context.imageSmoothingEnabled = false;
     view.particles = [];
-    view.anchors = view.anchors.map(anchor => ({ ...anchor, flameCarry: Math.random(), smokeCarry: Math.random() }));
+    view.anchors = view.anchors.map(anchor => ({
+      ...anchor,
+      mass: anchor.chimney ? Math.max(1, Math.min(2.1, anchor.width / 9))
+        : Math.max(.6, Math.min(5.5, Math.pow(anchor.width * anchor.height / 430, .7))),
+      flameLane: 0, flameCarry: Math.random(), smokeCarry: Math.random(),
+    }));
   }
 
   function spawn(view, anchor, kind, strength) {
     if (view.particles.length >= 480) return;
     const flame = kind === 'flame';
     const random = Math.random;
-    const scale = Math.max(.55, Math.min(2.5, Math.sqrt(anchor.width * anchor.height) / 18));
+    const scale = anchor.chimney ? .75 : Math.max(.65, Math.min(1.55, Math.sqrt(anchor.width * anchor.height) / 24));
     const ember = flame && random() < .16;
     const life = flame ? [.0, .4, .7, 1.05][strength] + random() * [.0, .28, .46, .65][strength]
       : 1.4 + random() * (strength === 3 ? 1.55 : 1.0);
     const size = (flame ? (5.5 + strength * 2.7) * (ember ? .37 : 1) : 15 + strength * 3.5)
       * scale * (.73 + random() * .53);
+    const lanes = Math.max(1, Math.min(9, Math.ceil(anchor.width / 11)));
+    const lane = flame ? anchor.flameLane++ % lanes : 0;
     view.particles.push({
       kind, age: 0, life, size, baseSize: size, ember,
-      x: anchor.x + (random() - .5) * anchor.width * (flame ? .56 : .75),
-      y: anchor.y + (random() - .5) * anchor.height * .32 - (flame ? 0 : anchor.height * .23),
+      x: anchor.x + (anchor.chimney ? (random() - .5) * anchor.width * .65
+        : flame ? ((lane + .15 + random() * .7) / lanes - .5) * anchor.width * .96
+          : (random() - .5) * anchor.width * .96),
+      y: anchor.chimney ? anchor.y : anchor.y + (random() - .5) * anchor.height * .78
+        - (flame ? 0 : anchor.height * .2),
       vx: (random() - .5) * (flame ? 12 : 20),
-      vy: -(flame ? (ember ? 36 : 23) + strength * 8 : 12) * (.7 + random() * .6),
+      vy: -(flame ? (ember ? 36 : 23) + strength * 8 : anchor.chimney ? 24 : 12) * (.7 + random() * .6),
       rotation: (random() - .5) * .85, spin: (random() - .5) * 1.2,
       sprite: flame ? Math.floor(random() * flames.length) : Math.floor(random() * smokes.length),
     });
@@ -82,11 +94,10 @@ export function createBuildingFirePreview(views) {
     }
     let spawned = 0;
     for (const anchor of anchors) {
-      const strength = windowFireStrength(percent, anchor.third);
+      const strength = anchor.chimney ? chimneyFireStrength(percent) : windowFireStrength(percent, anchor.third);
       if (strength < 0) continue;
-      const sizeFactor = Math.max(.5, Math.min(2.5, Math.sqrt(anchor.width * anchor.height) / 20));
-      anchor.flameCarry += [0, 4.5, 6.8, 10.2][strength] * sizeFactor * dt;
-      anchor.smokeCarry += [2.8, 1.7, 3.1, 5.2][strength] * sizeFactor * dt;
+      anchor.flameCarry += (anchor.chimney ? CHIMNEY_FLAME_RATE : WINDOW_FLAME_RATE)[strength] * anchor.mass * dt;
+      anchor.smokeCarry += (anchor.chimney ? CHIMNEY_SMOKE_RATE : WINDOW_SMOKE_RATE)[strength] * anchor.mass * dt;
       while (anchor.flameCarry >= 1 && spawned < 110) {
         spawn(view, anchor, 'flame', strength); anchor.flameCarry--; spawned++;
       }
@@ -126,7 +137,7 @@ export function createBuildingFirePreview(views) {
       context.translate(particle.x, particle.y);
       context.rotate(particle.rotation);
       const sprite = kind === 'smoke' ? smokes[particle.sprite] : flames[particle.sprite];
-      const extent = kind === 'smoke' ? size : size * 2.4;
+      const extent = kind === 'smoke' ? size : size * 1.8;
       context.drawImage(sprite, -extent / 2, -extent / 2, extent, extent);
       context.restore();
     }

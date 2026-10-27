@@ -8,6 +8,7 @@ import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
 import { createBuildingFireState } from './building-fire.js';
 import { createBuildingFireEffect } from './building-fire-effect.js';
+import { INDUSTRIAL_CHIMNEYS } from './industrial-chimneys.js';
 import { advanceVehicle } from './drive-world.js';
 import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
@@ -274,7 +275,7 @@ function building(site) {
   item.userData.buildingTypeId=BUILDING_TYPES_BY_PATH.get(`${pack}/${name}`)?.id;
   item.userData.worldBuildingId=site.worldBuildingId;
   const sourceBounds=new THREE.Box3().setFromObject(models.get(`${pack}/${name}`));
-  if(site.worldBuildingId)fireEffect.registerBuilding(site.worldBuildingId,item,WINDOW_MAP[`${pack}/${name}`]??[],sourceBounds.min.y,sourceBounds.max.y);
+  if(site.worldBuildingId)fireEffect.registerBuilding(site.worldBuildingId,item,WINDOW_MAP[`${pack}/${name}`]??[],sourceBounds.min.y,sourceBounds.max.y,INDUSTRIAL_CHIMNEYS[`${pack}/${name}`]??[]);
   return item;
 }
 function buildBlocks() {

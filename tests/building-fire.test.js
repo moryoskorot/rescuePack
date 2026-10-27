@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BUILDING_SITES } from '../src/city-plan.js';
 import { adjacentBuildingIds, createBuildingFireState, windowFireStrength, windowThird } from '../src/building-fire.js';
+import { INDUSTRIAL_CHIMNEYS, chimneyFireStrength } from '../src/industrial-chimneys.js';
 
 test('world building IDs are stable and distinct from model type IDs', () => {
   const buildings = BUILDING_SITES.filter(site => site.worldBuildingId);
@@ -26,6 +27,17 @@ test('fire strength follows the requested percentage and building thirds', () =>
   for (const [percent, strengths] of expected) {
     assert.deepEqual([0, 1, 2].map(third => windowFireStrength(percent, third)), strengths);
   }
+});
+
+test('only large tubular industrial chimneys emit smoke, then medium fire', () => {
+  assert.deepEqual(Object.keys(INDUSTRIAL_CHIMNEYS).sort(),
+    ['b', 'c', 'e', 'f', 'l', 'm', 'n'].map(letter => `industrial/building-${letter}`).sort());
+  assert.ok(Object.values(INDUSTRIAL_CHIMNEYS).every(chimneys => chimneys.length > 0));
+  assert.equal(chimneyFireStrength(0), -1);
+  assert.equal(chimneyFireStrength(1), 0);
+  assert.equal(chimneyFireStrength(80), 0);
+  assert.equal(chimneyFireStrength(81), 2);
+  assert.equal(chimneyFireStrength(100), 2);
 });
 
 test('zero removes a world building from the fire container', () => {

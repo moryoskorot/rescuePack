@@ -1,4 +1,10 @@
 import { windowFireStrength, windowThird } from './building-fire.js';
+import { chimneyFireStrength } from './industrial-chimneys.js';
+
+const WINDOW_FLAME_RATE = [0, 3.4, 5.0, 7.2];
+const WINDOW_SMOKE_RATE = [1.8, 1.3, 2.0, 3.2];
+const CHIMNEY_FLAME_RATE = [0, 0, 5.0, 0];
+const CHIMNEY_SMOKE_RATE = [3.2, 0, 2.5, 0];
 
 // A pair of dynamic point clouds keeps the visual cost bounded even when many
 // windows burn. Particle positions are calculated from each placed GLB's own
@@ -34,11 +40,10 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       float c = cos(vRotation), s = sin(vRotation);
       vec2 turned = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
       float square = max(abs(turned.x), abs(turned.y));
-      float block = 1.0 - smoothstep(0.32, 0.39, square);
-      float glow = (1.0 - smoothstep(0.18, 0.69, length(uv))) * 0.28;
-      float hotCore = 1.0 - smoothstep(0.08, 0.25, square);
-      vec3 color = mix(vColor.rgb, vec3(1.0, 0.83, 0.20), hotCore * 0.52);
-      gl_FragColor = vec4(color, vColor.a * max(block, glow));
+      float block = 1.0 - step(0.39, square);
+      float hotCore = 1.0 - step(0.21, square);
+      vec3 color = mix(vColor.rgb, vec3(1.0, 0.83, 0.20), hotCore * 0.5);
+      gl_FragColor = vec4(color, vColor.a * block);
     }
   `;
   const smokeShader = `
@@ -46,13 +51,13 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
     varying float vRotation;
     void main() {
       vec2 uv = (gl_PointCoord - 0.5) * 2.0;
-      float angle = atan(uv.y, uv.x) + vRotation;
-      float edge = 0.76 + 0.10 * sin(angle * 3.0 + vRotation * 2.0)
-        + 0.08 * sin(angle * 5.0 - vRotation * 3.0);
-      float radius = length(uv);
-      float puff = 1.0 - smoothstep(edge * 0.42, edge, radius);
-      float wisps = 1.0 - smoothstep(0.3, 0.96, radius);
-      gl_FragColor = vec4(vColor.rgb, vColor.a * puff * wisps);
+      float c = cos(vRotation), s = sin(vRotation);
+      vec2 turned = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
+      vec2 edge = abs(turned);
+      float octagon = max(max(edge.x, edge.y), (edge.x + edge.y) * 0.72);
+      float puff = 1.0 - step(0.76, octagon);
+      float core = 1.0 - step(0.42, octagon);
+      gl_FragColor = vec4(vColor.rgb, vColor.a * puff * (0.62 + core * 0.38));
     }
   `;
   for (const kind of ['flame', 'smoke']) {
@@ -84,7 +89,7 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
   const local = new THREE.Vector3();
   const outward = new THREE.Vector3();
   const sideways = new THREE.Vector3();
-  function registerBuilding(worldBuildingId, object, windows, modelMinY, modelMaxY) {
+  function registerBuilding(worldBuildingId, object, windows, modelMinY, modelMaxY, chimneys = []) {
     object.updateWorldMatrix(true, true);
     for (const window of windows) {
       const normal = window.side === '+X' ? [1, 0, 0] : window.side === '-X' ? [-1, 0, 0]
@@ -94,16 +99,34 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       outward.fromArray(normal).transformDirection(object.matrixWorld);
       sideways.set(window.side.endsWith('Z') ? 1 : 0, 0, window.side.endsWith('X') ? 1 : 0)
         .transformDirection(object.matrixWorld);
+      const width = window.width * object.scale.x;
+      const height = window.height * object.scale.y;
       emitters.push({
         worldBuildingId,
         center,
         outward: outward.clone(),
         sideways: sideways.clone(),
-        width: window.width * object.scale.x,
-        height: window.height * object.scale.y,
+        width, height,
+        mass: Math.max(.6, Math.min(5.5, Math.pow(width * height / 1.6, .7))),
         third: windowThird(window.center[1], modelMinY, modelMaxY),
+        chimney: false,
+        flameLane: 0,
         flameCarry: Math.random(),
         smokeCarry: Math.random(),
+      });
+    }
+    for (const chimney of chimneys) {
+      local.fromArray(chimney.center);
+      const center = object.localToWorld(local).clone();
+      const width = chimney.diameter * object.scale.x;
+      emitters.push({
+        worldBuildingId, center, chimney: true,
+        sideways: new THREE.Vector3(1, 0, 0).transformDirection(object.matrixWorld),
+        outward: new THREE.Vector3(0, 0, 1).transformDirection(object.matrixWorld),
+        width,
+        height: chimney.diameter * object.scale.y,
+        mass: Math.max(1, Math.min(2.3, width * 1.3)),
+        flameLane: 0, flameCarry: Math.random(), smokeCarry: Math.random(),
       });
     }
   }
@@ -112,9 +135,15 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
     const list = particles[kind];
     if (list.length >= capacities[kind]) return;
     const r = Math.random;
-    const offset = (r() - .5) * emitter.width * (kind === 'flame' ? .53 : .72);
-    const up = (r() - .5) * emitter.height * .33 + (kind === 'smoke' ? emitter.height * .27 : -.12);
-    const sizeFactor = Math.max(.6, Math.min(2.2, Math.sqrt(emitter.width * emitter.height)));
+    const lanes = Math.max(1, Math.min(9, Math.ceil(emitter.width / .75)));
+    const lane = kind === 'flame' ? emitter.flameLane++ % lanes : 0;
+    const offset = emitter.chimney ? (r() - .5) * emitter.width * .65
+      : kind === 'flame' ? ((lane + .15 + r() * .7) / lanes - .5) * emitter.width * .96
+        : (r() - .5) * emitter.width * .96;
+    const up = emitter.chimney ? .06 : (r() - .5) * emitter.height * .78
+      + (kind === 'smoke' ? emitter.height * .2 : 0);
+    const sizeFactor = emitter.chimney ? Math.max(.65, Math.min(1.25, emitter.width))
+      : Math.max(.7, Math.min(1.55, Math.sqrt(emitter.width * emitter.height) / 1.5));
     const flame = kind === 'flame';
     const ember = flame && r() < .14;
     const life = flame ? [.0, .4, .72, 1.05][strength] + r() * [.0, .25, .43, .65][strength]
@@ -123,11 +152,11 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       * sizeFactor * (.7 + r() * .65);
     const origin = emitter.center;
     list.push({
-      x: origin.x + emitter.sideways.x * offset + emitter.outward.x * .2,
+      x: origin.x + emitter.sideways.x * offset + emitter.outward.x * (emitter.chimney ? (r() - .5) * emitter.width * .65 : .2),
       y: origin.y + up,
-      z: origin.z + emitter.sideways.z * offset + emitter.outward.z * .2,
+      z: origin.z + emitter.sideways.z * offset + emitter.outward.z * (emitter.chimney ? (r() - .5) * emitter.width * .65 : .2),
       vx: emitter.outward.x * (.25 + r() * .38) + (r() - .5) * (flame ? .26 : .42),
-      vy: flame ? (ember ? 2.0 : 1.1) + strength * .25 + r() * .8 : .55 + r() * .45,
+      vy: flame ? (ember ? 2.0 : 1.1) + strength * .25 + r() * .8 : (emitter.chimney ? 1.05 : .55) + r() * .45,
       vz: emitter.outward.z * (.25 + r() * .38) + (r() - .5) * (flame ? .26 : .42),
       size, baseSize: size, rotation: (r() - .5) * .85, spin: (r() - .5) * 1.3,
       age: 0, life, ember,
@@ -184,11 +213,10 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       for (const emitter of emitters) {
         const percent = fireState.onFire.get(emitter.worldBuildingId) ?? 0;
         if (!percent || camera.position.distanceToSquared(emitter.center) > 110 * 110) continue;
-        const strength = windowFireStrength(percent, emitter.third);
+        const strength = emitter.chimney ? chimneyFireStrength(percent) : windowFireStrength(percent, emitter.third);
         if (strength < 0) continue;
-        const sizeFactor = Math.max(.5, Math.min(2.4, Math.sqrt(emitter.width * emitter.height) / 1.1));
-        const flameRate = [0, 3.4, 5.0, 7.2][strength] * sizeFactor;
-        const smokeRate = [1.8, 1.3, 2.0, 3.2][strength] * sizeFactor;
+        const flameRate = (emitter.chimney ? CHIMNEY_FLAME_RATE : WINDOW_FLAME_RATE)[strength] * emitter.mass;
+        const smokeRate = (emitter.chimney ? CHIMNEY_SMOKE_RATE : WINDOW_SMOKE_RATE)[strength] * emitter.mass;
         emitter.flameCarry += flameRate * dt;
         emitter.smokeCarry += smokeRate * dt;
         while (emitter.flameCarry >= 1 && spawned < 140) {
