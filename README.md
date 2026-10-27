@@ -19,6 +19,14 @@ On a touchscreen, driving controls appear automatically: move the **left thumbst
 
 Water boost starts full and drains at 18% per second while spraying. When idle it refills at **1% per second**, or **25% per second** within range of a fire hydrant. A blue ring and the tank display signal the faster hydrant refill. After running completely dry, release boost to restart once the tank has refilled to 5%.
 
+## Building sheet
+
+Open [`/buildingsheet/`](http://127.0.0.1:5174/buildingsheet/) locally, or `/rescuePack/buildingsheet/` in the production build. The URL without the final slash redirects to the same page. It is an inspection page separate from the driving scene. It lists all **76 source building models** (21 small/suburban, 35 large/commercial, and 20 industrial) with a fixed type ID such as `B1-01`. The commercial group includes 16 low-detail silhouettes, which have no separate window geometry. The ID identifies the asset type, not a location or occurrence in the city. The same type can appear at multiple map sites.
+
+The overview renders each model with red HTML/SVG window outlines. Selecting a type shows all four model-coordinate faces. Each window has an ID such as `B1-01-W02` and a model-local center `(X, Y, Z)`. The window index beneath the views lets you select and highlight an outline. Glazed panels in doors are included. The data lives in [`src/building-windows.json`](src/building-windows.json); the type catalog is [`src/building-catalog.js`](src/building-catalog.js). City instances also carry their `buildingTypeId` in `userData`.
+
+If a source GLB is replaced or edited, regenerate its geometry-based window map with `python3 scripts/map-building-windows.py` (requires NumPy), then review the red outlines in the sheet. Existing IDs are tied to the current source models and should be reviewed before replacing those assets.
+
 ## Build and deployment
 
 ```sh

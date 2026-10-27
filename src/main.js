@@ -4,6 +4,7 @@ import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
 import { AVENUE_X, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
+import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import { advanceVehicle } from './drive-world.js';
 import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
@@ -258,6 +259,7 @@ function building(site) {
   bounds.setFromObject(item);bounds.getSize(size);
   solid(x,z,size.x,size.z);
   item.userData.site=site;
+  item.userData.buildingTypeId=BUILDING_TYPES_BY_PATH.get(`${pack}/${name}`)?.id;
   return item;
 }
 function buildBlocks() {
