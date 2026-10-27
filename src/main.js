@@ -14,6 +14,10 @@ import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
 import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
+import { buildingImpactPoint, createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
+import { createFirefightingEffect } from './firefighting-effect.js';
+import { edgeMarkerLayout } from './fire-markers.js';
+import { interpolateVehiclePose } from './render-pose.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -27,14 +31,26 @@ renderer.toneMappingExposure = 1.35;
 
 const scene = new THREE.Scene();
 const fireState = createBuildingFireState(BUILDING_SITES);
+const fireProgress = createFirefightingProgress(fireState);
+const fireSitesById = new Map(BUILDING_SITES.filter(site => site.worldBuildingId).map(site => [site.worldBuildingId, site]));
+const fireTargets = new Map();
 const fireEffect = createBuildingFireEffect(THREE, scene, fireState);
+const hoseEffect = createFirefightingEffect(THREE, scene);
 // Scenario scripts can ignite a placed building by its world ID. For a quick
 // preview, open the game with ?fire=WB-001:75 (repeat `fire` for more sites).
-for (const entry of new URLSearchParams(location.search).getAll('fire')) {
-  const [id, percent] = entry.split(':');
-  if (BUILDING_SITES.some(site => site.worldBuildingId === id)) fireState.set(id, percent);
-}
+const debugFires = new URLSearchParams(location.search).getAll('fire');
 window.buildingFires = { onFire: fireState.onFire, set: fireState.set, sites: BUILDING_SITES };
+function startFires() {
+  fireProgress.clear();
+  fireEffect.clear();
+  if (debugFires.length) {
+    fireState.clear();
+    for (const entry of debugFires) {
+      const [id, percent] = entry.split(':');
+      if (fireSitesById.has(id)) fireState.set(id, percent);
+    }
+  } else igniteRandomBuildings(fireState, BUILDING_SITES);
+}
 scene.background = new THREE.Color('#b8e7fa');
 scene.fog = new THREE.Fog('#b8e7fa', 145, 325);
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 400);
@@ -271,6 +287,7 @@ function building(site) {
   item.position.y+=getSurfaceHeight(x,z)-bounds.min.y;
   bounds.setFromObject(item);bounds.getSize(size);
   solid(x,z,size.x,size.z);
+  if(site.worldBuildingId)fireTargets.set(site.worldBuildingId,bounds.clone());
   item.userData.site=site;
   item.userData.buildingTypeId=BUILDING_TYPES_BY_PATH.get(`${pack}/${name}`)?.id;
   item.userData.worldBuildingId=site.worldBuildingId;
@@ -324,6 +341,7 @@ function createTruck() {
 }
 
 const player = createVehicleState({x:35,z:38,heading:-Math.PI/2});
+let previousPhysicsPose = {...player}, renderPose = {...player}, hoseTarget = null;
 const waterBoost = createWaterBoostState();
 const refillRing = new THREE.Mesh(
   new THREE.RingGeometry(1.3, 1.55, 40),
@@ -413,7 +431,7 @@ function releaseCamera() {
   if(pointerId!==null&&canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
   canvas.style.cursor=playing?'grab':'default';
 }
-function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;waterBoost.active=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
+function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
 window.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
@@ -428,7 +446,7 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{resetInput();playing=true;vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#start-button').addEventListener('click',()=>{resetInput();startFires();playing=true;vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
 document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
@@ -443,19 +461,24 @@ function drive(dt) {
   physicsAccumulator+=dt;
   let motion=vehicleMotion(player);
   while(physicsAccumulator>=VEHICLE_STEP){
-    const boost=boostHeld&&input.throttle>0&&waterBoost.charge>0&&!waterBoost.needsRelease;
+    previousPhysicsPose={...player};
+    const nearbyFire=nearestBurningBuilding(player,BUILDING_SITES,fireState.onFire);
+    const boost=boostHeld&&!nearbyFire&&input.throttle>0&&waterBoost.charge>0&&!waterBoost.needsRelease;
     motion=advanceVehicle(player,{...input,boost},VEHICLE_STEP,solids);
-    stepWaterBoost(waterBoost,player,{held:boostHeld&&!motion.blocked,throttle:input.throttle},VEHICLE_STEP);
+    hoseTarget=nearestBurningBuilding(player,BUILDING_SITES,fireState.onFire);
+    stepWaterBoost(waterBoost,player,{held:boostHeld&&(!motion.blocked||Boolean(hoseTarget)),throttle:input.throttle,firefighting:Boolean(hoseTarget)},VEHICLE_STEP);
+    if(waterBoost.spraying&&hoseTarget)fireProgress.apply(hoseTarget.site.worldBuildingId,waterBoost.usedThisStep);
     if(motion.blocked)previousWheels=null;
     updateSkids(input.handbrake,motion.speed);
     physicsAccumulator-=VEHICLE_STEP;
   }
-  const groundHeight=Math.max(...[...wheelContacts(player),...wheelContacts(player,'front')].map(p=>getSurfaceHeight(p.x,p.z)));
-  firetruck.position.set(player.x,groundHeight,player.z);
-  firetruck.rotation.y=player.heading;
+  renderPose=interpolateVehiclePose(previousPhysicsPose,player,physicsAccumulator/VEHICLE_STEP);
+  const groundHeight=Math.max(...[...wheelContacts(renderPose),...wheelContacts(renderPose,'front')].map(p=>getSurfaceHeight(p.x,p.z)));
+  firetruck.position.set(renderPose.x,groundHeight,renderPose.z);
+  firetruck.rotation.y=renderPose.heading;
   for(const wheel of firetruck.userData.wheels){
-    wheel.rotation.x=player.wheelSpin;
-    if(wheel.name.includes('front'))wheel.rotation.y=-player.steeringAngle;
+    wheel.rotation.x=renderPose.wheelSpin;
+    if(wheel.name.includes('front'))wheel.rotation.y=-renderPose.steeringAngle;
   }
   firetruck.userData.blueLight.intensity=.7+.7*Math.sin(performance.now()*.013)**8;
   document.querySelector('#speed-value').textContent=String(Math.round(motion.speed*3.6)).padStart(2,'0');
@@ -463,20 +486,22 @@ function drive(dt) {
   const charge=Math.round(waterBoost.charge);
   const meter=document.querySelector('#water-meter');
   meter.setAttribute('aria-valuenow',String(charge));
-  meter.classList.toggle('near-hydrant',Boolean(waterBoost.nearHydrant)&&charge<100&&!waterBoost.active);
+  meter.classList.toggle('near-hydrant',Boolean(waterBoost.nearHydrant)&&charge<100&&!waterBoost.active&&!waterBoost.spraying);
   document.querySelector('#boost-fill').style.width=`${waterBoost.charge}%`;
   document.querySelector('#boost-percent').textContent=`${charge}%`;
-  document.querySelector('#boost-status').textContent=waterBoost.active?'WATER JET ACTIVE'
+  document.querySelector('#boost-status').textContent=waterBoost.spraying?'FIRE HOSE · −33%/s'
+    :waterBoost.active?'WATER BOOST ACTIVE'
     :waterBoost.nearHydrant&&charge<100?'HYDRANT NEARBY · +25%/s'
     :waterBoost.needsRelease&&boostHeld?'RELEASE BOOST TO RESTART'
-    :boostHeld&&input.throttle<=0?'DRIVE TO USE BOOST'
-    :charge===100?(document.body.classList.contains('has-touch-controls')?'READY · DRIVE + BOOST':'READY · HOLD SHIFT OR BOOST')
+    :hoseTarget&&charge>0?'HOLD BOOST TO SPRAY FIRE'
+    :boostHeld&&input.throttle<=0?'DRIVE OR APPROACH FIRE'
+    :charge===100?(document.body.classList.contains('has-touch-controls')?'READY · DRIVE OR SPRAY':'READY · HOLD SHIFT OR BOOST')
     :'RECHARGING · +1%/s';
-  boostButton.classList.toggle('active',waterBoost.active);
+  boostButton.classList.toggle('active',waterBoost.active||waterBoost.spraying);
   boostButton.classList.toggle('empty',charge===0);
   vehicleSound.update({speed:motion.speed,throttle:input.throttle,braking:motion.braking,handbrake:input.handbrake,boost:waterBoost.active});
   const hydrant=waterBoost.nearHydrant;
-  refillRing.visible=Boolean(hydrant)&&charge<100&&!waterBoost.active;
+  refillRing.visible=Boolean(hydrant)&&charge<100&&!waterBoost.active&&!waterBoost.spraying;
   if(refillRing.visible){
     refillRing.position.set(hydrant.x,getSurfaceHeight(hydrant.x,hydrant.z)+.045,hydrant.z);
     refillRing.scale.setScalar(1+.09*Math.sin(performance.now()*.006));
@@ -485,16 +510,64 @@ function drive(dt) {
   document.querySelector('#district-name').textContent=area;
 }
 const target=new THREE.Vector3(),desired=new THREE.Vector3();
+const hoseNozzle=new THREE.Vector3(),hoseImpact=new THREE.Vector3();
 let cameraHeading=player.heading;
 function updateCamera(dt) {
-  const yawDifference=Math.atan2(Math.sin(player.heading-cameraHeading),Math.cos(player.heading-cameraHeading));
+  const yawDifference=Math.atan2(Math.sin(renderPose.heading-cameraHeading),Math.cos(renderPose.heading-cameraHeading));
   cameraHeading+=yawDifference*(1-Math.exp(-2.7*dt));
   const angle=cameraHeading+orbit;
   const distance=zoom*Math.cos(pitch),height=zoom*Math.sin(pitch);
-  target.set(player.x,2.2,player.z);
-  desired.set(player.x-Math.sin(angle)*distance,height+2.2,player.z-Math.cos(angle)*distance);
+  target.set(renderPose.x,2.2,renderPose.z);
+  desired.set(renderPose.x-Math.sin(angle)*distance,height+2.2,renderPose.z-Math.cos(angle)*distance);
   camera.position.lerp(desired,1-Math.exp(-7*dt));
   camera.lookAt(target);
+  camera.updateMatrixWorld();
+}
+const fireMarkerLayer=document.querySelector('#fire-markers');
+const fireStatus=document.querySelector('#fire-status');
+const fireMarkers=new Map();
+const markerRight=new THREE.Vector3(),markerForward=new THREE.Vector3();
+let lastFireCount=-1;
+function updateFireMarkers() {
+  const activeIds=new Set(fireState.onFire.keys());
+  if(activeIds.size!==lastFireCount){
+    fireStatus.textContent=activeIds.size?`${activeIds.size} ${activeIds.size===1?'FIRE':'FIRES'} TO PUT OUT`:'ALL FIRES OUT!';
+    fireStatus.classList.toggle('clear',activeIds.size===0);
+    lastFireCount=activeIds.size;
+  }
+  for(const [id,marker] of fireMarkers)if(!activeIds.has(id)){marker.remove();fireMarkers.delete(id);}
+  markerRight.set(1,0,0).applyQuaternion(camera.quaternion);
+  markerForward.set(0,0,-1).applyQuaternion(camera.quaternion);
+  const placed=[];
+  for(const [id,percent] of fireState.onFire){
+    const site=fireSitesById.get(id);
+    if(!site)continue;
+    let marker=fireMarkers.get(id);
+    if(!marker){
+      marker=document.createElement('div');marker.className='fire-marker';
+      marker.innerHTML='<span class="arrow" aria-hidden="true">▲</span><span class="flame" aria-hidden="true">🔥</span><strong></strong>';
+      fireMarkerLayer.append(marker);fireMarkers.set(id,marker);
+    }
+    const dx=site.x-renderPose.x,dz=site.z-renderPose.z;
+    const distance=Math.hypot(dx,dz);
+    const layout=edgeMarkerLayout(dx*markerRight.x+dz*markerRight.z,-dx*markerForward.x-dz*markerForward.z,distance,innerWidth,innerHeight);
+    for(const prior of placed)if(Math.hypot(layout.x-prior.x,layout.y-prior.y)<105){
+      if(Math.abs(layout.x-innerWidth/2)>Math.abs(layout.y-innerHeight/2)){
+        const next=prior.y+112;
+        layout.y=next<innerHeight-60?next:Math.max(60,prior.y-112);
+      }else{
+        const next=prior.x+120;
+        layout.x=next<innerWidth-65?next:Math.max(65,prior.x-120);
+      }
+    }
+    placed.push(layout);
+    marker.style.left=`${layout.x}px`;marker.style.top=`${layout.y}px`;
+    marker.style.setProperty('--marker-scale',layout.scale.toFixed(3));
+    marker.style.setProperty('--arrow-angle',`${layout.angle}deg`);
+    marker.querySelector('strong').textContent=`${percent}%`;
+    marker.setAttribute('aria-label',`${site.name} fire, ${percent} percent, ${Math.round(distance)} metres away`);
+    marker.classList.toggle('spray-range',Boolean(hoseTarget?.site.worldBuildingId===id&&distance<HOSE_RANGE+site.width));
+  }
 }
 function makeLabels() {
   const wrap=document.querySelector('#world-labels');
@@ -520,7 +593,16 @@ function animate(now){
   const dt=Math.min(elapsedSeconds,.05);previous=now;
   drive(dt);updateCamera(dt);
   if(playing){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
-  if(playing)updateLabels();
+  if(playing){updateLabels();updateFireMarkers();}
+  const activeHose=playing&&waterBoost.spraying&&hoseTarget&&fireState.onFire.has(hoseTarget.site.worldBuildingId);
+  if(activeHose){
+    firetruck.updateWorldMatrix(true,false);
+    hoseNozzle.set(0,2.7,.35);
+    firetruck.localToWorld(hoseNozzle);
+    const point=buildingImpactPoint(renderPose,hoseTarget.site,fireTargets.get(hoseTarget.site.worldBuildingId));
+    hoseImpact.set(point.x,point.y,point.z);
+    hoseEffect.update(true,hoseNozzle,hoseImpact,dt,camera);
+  }else hoseEffect.update(false,null,null,dt,camera);
   if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);
   renderer.render(scene,camera);

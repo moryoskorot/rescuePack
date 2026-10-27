@@ -208,6 +208,13 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
 
   return {
     registerBuilding,
+    clear() {
+      particles.flame.length = 0;
+      particles.smoke.length = 0;
+      pointClouds.flame.geometry.setDrawRange(0, 0);
+      pointClouds.smoke.geometry.setDrawRange(0, 0);
+      for (const emitter of emitters) { emitter.flameCarry = 0; emitter.smokeCarry = 0; }
+    },
     update(dt, camera) {
       uniforms.uProjectionScale.value = innerHeight * Math.min(devicePixelRatio, 2) /
         (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));

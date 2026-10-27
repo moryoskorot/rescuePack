@@ -26,7 +26,7 @@
             PRESS TO START
             <span class="button-arrow">➜</span>
           </button>
-          <div class="menu-tip">DRIVE THE FIRETRUCK · EXPLORE THE TOWN · MAKE SOME TIRE MARKS</div>
+          <div class="menu-tip">FIND THE FIRES · HOLD SHIFT OR BOOST TO SPRAY · REFILL AT HYDRANTS</div>
         </div>
       </div>
 
@@ -36,15 +36,17 @@
           <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
           <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
         </header>
+        <div id="fire-status" class="fire-status" role="status" aria-live="polite">4 FIRES TO PUT OUT</div>
 
         <div id="world-labels" class="world-labels" aria-hidden="true"></div>
+        <div id="fire-markers" class="fire-markers" aria-label="Directions to burning buildings"></div>
 
         <div class="hud-bottom">
           <div class="guide">
             <span class="guide-heading">HOW TO DRIVE</span>
             <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="guide-or">or</span><span class="arrows">↑ ← ↓ →</span><span>Drive</span></div>
             <div><kbd class="space-key">SPACE</kbd><span>Handbrake & drift</span></div>
-            <div><kbd class="space-key">SHIFT</kbd><span>Hold for water boost</span></div>
+            <div><kbd class="space-key">SHIFT</kbd><span>Spray near fire · boost while driving</span></div>
             <div><span class="mouse-icon">◉</span><span>Drag to look around</span><span class="guide-separator">·</span><span>Scroll to zoom</span></div>
           </div>
           <div class="speed-card"><span class="speed-icon">⚡</span><strong id="speed-value">00</strong><span class="speed-unit">KM/H</span><div id="drift-indicator" class="drift-indicator">DRIFTING!</div></div>
@@ -54,7 +56,7 @@
               <div class="water-track"><div id="boost-fill" class="water-fill"></div></div>
               <span id="boost-status" class="boost-status">READY · HOLD SHIFT OR BOOST</span>
             </div>
-            <button id="boost-button" class="boost-button" type="button" aria-label="Hold for water boost" aria-pressed="false"><span aria-hidden="true">💦</span><strong>BOOST</strong><small>SHIFT</small></button>
+            <button id="boost-button" class="boost-button" type="button" aria-label="Hold to spray nearby fires or boost while driving" aria-pressed="false"><span aria-hidden="true">💦</span><strong>BOOST</strong><small>SHIFT</small></button>
           </div>
         </div>
 

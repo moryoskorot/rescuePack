@@ -66,6 +66,7 @@ export function createBuildingFireState(sites, random = Math.random) {
   return {
     onFire,
     neighbors,
+    clear() { onFire.clear(); elapsed = 0; },
     set(id, percent) {
       if (!validIds.has(id)) throw new Error(`Unknown world building ID: ${id}`);
       return setBuildingFire(onFire, id, percent);
