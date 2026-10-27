@@ -1,12 +1,12 @@
 // Shared city plan. All positions are in metres; the truck's local front is +Z.
-export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 113]);
+export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 125]);
 export const STREET_Z = Object.freeze([-62, -30, 5, 38, 70]);
 // A few local streets end at a through road, creating larger, less regular blocks.
 export const AVENUE_SEGMENTS = Object.freeze(AVENUE_X.map(x => Object.freeze({
   x, minZ: -82, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
 })));
 export const STREET_SEGMENTS = Object.freeze(STREET_Z.map(z => Object.freeze({
-  z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 122,
+  z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 134,
 })));
 export const ROAD_HALF_WIDTH = 4.6;
 export const SIDEWALK_OUTER = 6.25;
@@ -14,10 +14,10 @@ export const ROAD_Y = .12;
 export const PAVEMENT_Y = .19;
 export const GROUND_Y = -.08;
 export const DECK_Y = .29;
-export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 130, minZ: -91, maxZ: 85 });
+export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -91, maxZ: 85 });
 export const PIER_BOUNDS = Object.freeze({ minX: 6, maxX: 18, minZ: 79.5, maxZ: 104.5 });
 export const BOARDWALK_BOUNDS = Object.freeze({ minX: -115, maxX: 115, minZ: 76, maxZ: 82 });
-const ROAD_BOUNDS = { minX: -122, maxX: 122, minZ: -82, maxZ: 74 };
+const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -82, maxZ: 74 };
 export const DRIVEWAYS = Object.freeze([
   // The station apron meets the near curb and never covers the street itself.
   { name: 'fire-station', minX: 27, maxX: 43, minZ: 27.3, maxZ: 33.4 },
@@ -153,7 +153,7 @@ export function footprintOnLandOrPier(pose, dimensions) {
 
 export const SHORE_BARRIERS = Object.freeze([
   { x: (-130 + 6) / 2, z: 85, w: 136, d: .25 },
-  { x: (18 + 130) / 2, z: 85, w: 112, d: .25 },
+  { x: (18 + LAND_BOUNDS.maxX) / 2, z: 85, w: LAND_BOUNDS.maxX - 18, d: .25 },
   { x: 6, z: 94.75, w: .25, d: 19.5 },
   { x: 18, z: 94.75, w: .25, d: 19.5 },
   { x: 12, z: 104.5, w: 12, d: .25 },

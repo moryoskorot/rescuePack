@@ -264,7 +264,7 @@ function building(site) {
   const {pack,name,x,z,scale,width,depth,rotation=0}=site;
   const item=model(pack,name,x,z,scale,rotation);
   const bounds=new THREE.Box3().setFromObject(item),size=bounds.getSize(new THREE.Vector3());
-  item.scale.multiplyScalar(Math.min(1,width/size.x,depth/size.z));
+  if (pack !== 'suburban') item.scale.multiplyScalar(Math.min(1,width/size.x,depth/size.z));
   bounds.setFromObject(item);
   const center=bounds.getCenter(new THREE.Vector3());
   item.position.x+=x-center.x;item.position.z+=z-center.z;

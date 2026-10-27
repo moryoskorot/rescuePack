@@ -11,12 +11,39 @@ function site(pack, name, x, z, scale, width, depth, rotation = 0) {
 }
 
 const houseTypes = ['a','e','c','l','g','q','m','u','f','r','k','b'];
-let house = 0;
-for (const z of [-46,-12.5,21.5,54]) {
-  for (const dz of [-5,5]) site('suburban',`building-type-${houseTypes[house++ % houseTypes.length]}`,-98,z+dz,6.6,12,8);
+// The suburban pack shares one authored scale for its doors, windows, and
+// landscaping. Keep every house at this scale; provide larger lots instead of
+// shrinking a model to its assigned envelope.
+export const SUBURBAN_HOUSE_SCALE = 6.6;
+// X/Z bounds measured from the suburban GLBs. These include their shrubs,
+// porches and roof overhangs, so lot sizes track the actual source models.
+export const SUBURBAN_MODEL_FOOTPRINTS = Object.freeze({
+  a:[1.300,1.028], b:[1.828,1.140], c:[1.286,1.028], d:[1.756,1.028],
+  e:[1.300,1.028], f:[1.428,1.406], g:[1.450,1.178], h:[1.300,.916],
+  i:[1.286,1.028], j:[1.370,.916], k:[.921,1.020], l:[1.034,1.020],
+  m:[1.428,1.428], n:[1.784,1.378], o:[1.270,1.028], p:[1.240,.990],
+  q:[1.240,.886], r:[1.028,1.020], s:[1.406,1.086], t:[1.314,1.406],
+  u:[1.428,1.087],
+});
+function houseSite(type,x,z,rotation=0) {
+  const [sourceWidth,sourceDepth]=SUBURBAN_MODEL_FOOTPRINTS[type];
+  const quarterTurn=Math.abs(Math.sin(rotation))>.5;
+  const width=(quarterTurn?sourceDepth:sourceWidth)*SUBURBAN_HOUSE_SCALE+.1;
+  const depth=(quarterTurn?sourceWidth:sourceDepth)*SUBURBAN_HOUSE_SCALE+.1;
+  site('suburban',`building-type-${type}`,x,z,SUBURBAN_HOUSE_SCALE,width,depth,rotation);
 }
-for (const z of [-46,-12.5]) for (const x of [-72,-62]) {
-  for (const dz of [-5.1,5.1]) site('suburban',`building-type-${houseTypes[house++ % houseTypes.length]}`,x,z+dz,6.8,8,8,Math.PI);
+let house = 0;
+for (const [firstZ,secondZ] of [[-51,-41],[-17.5,-7.5],[16.5,26.5],[49.1,59]]) {
+  houseSite(houseTypes[house++ % houseTypes.length],-98,firstZ);
+  houseSite(houseTypes[house++ % houseTypes.length],-98,secondZ);
+}
+// The wide second house in the first block needs more room away from the curb.
+for (const [firstX,secondX,firstZ,secondZ] of [
+  [-72,-74,-50.9,-40.9],[-62,-64,-50.9,-40.9],
+  [-74,-74,-17.6,-7.4],[-64,-64,-17.6,-7.4],
+]) {
+  houseSite(houseTypes[house++ % houseTypes.length],firstX,firstZ,Math.PI);
+  houseSite(houseTypes[house++ % houseTypes.length],secondX,secondZ,Math.PI);
 }
 
 // Paired buildings share a street wall and similarly sized lots. The shorter
@@ -42,8 +69,8 @@ for (const [z,name] of [[-46,'a'],[-12.5,'c'],[21.5,'e'],[54,'f']]) {
 }
 site('industrial','building-b',99,-46,8.5,13.5,16);
 site('industrial','building-l',99,-12.5,8,13.5,17);
-for (const z of [21.5,54]) for (const x of [95,103]) for (const dz of [-5,5]) {
-  site('suburban',`building-type-${houseTypes[house++ % houseTypes.length]}`,x,z+dz,5.3,6.5,8);
+for (const z of [21.5,54]) for (const x of [99,111]) for (const dz of [-5,5]) {
+  houseSite(houseTypes[house++ % houseTypes.length],x,z+dz);
 }
 
 export const CIVIC_ENVELOPES = [

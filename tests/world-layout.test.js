@@ -68,7 +68,7 @@ test('full vehicle footprint stops at the shore and stays within the pier rails'
   assert.equal(footprintOnLandOrPier({ x: 12, z: 100, heading: Math.PI / 2 }), true);
   assert.equal(footprintOnLandOrPier({ x: 12, z: 103, heading: 0 }), false, 'nose crosses pier end');
   assert.equal(footprintOnLandOrPier({ x: 7, z: 95, heading: 0 }), false, 'left tires cross pier edge');
-  assert.equal(footprintOnLandOrPier({ x: 127.9, z: 20, heading: Math.PI / 2 }), false, 'nose crosses eastern boundary');
+  assert.equal(footprintOnLandOrPier({ x: LAND_BOUNDS.maxX - 2.1, z: 20, heading: Math.PI / 2 }), false, 'nose crosses eastern boundary');
   assert.equal(footprintOnLandOrPier({ x: 0, z: -89, heading: 0 }), false, 'rear crosses northern boundary');
 });
 
