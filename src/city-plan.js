@@ -1,7 +1,13 @@
+import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
+
 // Building envelopes leave the streets, sidewalks, and civic entrances clear.
 export const BUILDING_SITES = [];
+let nextWorldBuildingId = 1;
 function site(pack, name, x, z, scale, width, depth, rotation = 0) {
-  BUILDING_SITES.push({ pack, name, x, z, scale, width, depth, rotation });
+  // Chimneys and tanks occupy lots too, but they are props, not fireable buildings.
+  const worldBuildingId = BUILDING_TYPES_BY_PATH.has(`${pack}/${name}`)
+    ? `WB-${String(nextWorldBuildingId++).padStart(3, '0')}` : null;
+  BUILDING_SITES.push({ worldBuildingId, pack, name, x, z, scale, width, depth, rotation });
 }
 
 const houseTypes = ['a','e','c','l','g','q','m','u','f','r','k','b'];

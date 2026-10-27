@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { BUILDING_TYPES, BUILDING_TYPES_BY_ID } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
+import { windowThird } from './building-fire.js';
+import { createBuildingFirePreview } from './building-fire-preview.js';
 import './buildingsheet.css';
 
 document.title = 'Building Sheet — Rescue Pack';
@@ -34,6 +36,8 @@ sun.position.set(-3, 7, 6);
 scene.add(sun);
 const camera = new THREE.OrthographicCamera();
 let selected = BUILDING_TYPES_BY_ID.get(new URLSearchParams(location.search).get('type')) ?? BUILDING_TYPES[0];
+let firePercent = 0;
+let firePreview = null;
 
 async function getModel(type) {
   if (!cache.has(type.path)) {
@@ -43,7 +47,7 @@ async function getModel(type) {
   return cache.get(type.path);
 }
 
-function renderModel(object, direction, width, height) {
+function renderModel(object, direction, width, height, modelBounds = null) {
   const model = object.clone(true);
   scene.add(model);
   const box = new THREE.Box3().setFromObject(model);
@@ -70,18 +74,23 @@ function renderModel(object, direction, width, height) {
   renderer.render(scene, camera);
   const image = renderer.domElement.toDataURL('image/png');
   const windows = WINDOW_MAP[object.userData?.path] || [];
+  const fireAnchors = [];
   const overlay = windows.flatMap(window => {
     if (window.side !== direction.userData?.side) return [];
     const points = window.corners.map(p => new THREE.Vector3(...p).project(camera));
     const xs = points.map(p => (p.x + 1) * width / 2);
     const ys = points.map(p => (1 - p.y) * height / 2);
     const x = Math.min(...xs), y = Math.min(...ys), w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+    if (modelBounds) fireAnchors.push({
+      x: x + w / 2, y: y + h / 2, width: w, height: h,
+      third: windowThird(window.center[1], modelBounds.min.y, modelBounds.max.y),
+    });
     const number = window.id.split('-W')[1];
     const label = w > 24 && h > 17 ? `<text x="${x + 2}" y="${Math.max(13, y - 3)}">${number}</text>` : '';
     return `<g data-window-id="${window.id}"><title>${window.id}</title><rect x="${x}" y="${y}" width="${w}" height="${h}"/>${label}</g>`;
   }).join('');
   scene.remove(model);
-  return { image, overlay };
+  return { image, overlay, fireAnchors };
 }
 
 const views = [
@@ -132,6 +141,8 @@ const thumbnailObserver = new IntersectionObserver(entries => {
 
 async function select(type, scrollToDetail = false) {
   selected = type;
+  firePreview?.stop();
+  firePreview = null;
   const url = new URL(location.href);
   url.searchParams.set('type', type.id);
   history.replaceState(null, '', url);
@@ -143,15 +154,42 @@ async function select(type, scrollToDetail = false) {
     object.userData.path = type.path;
     const windows = WINDOW_MAP[type.path] ?? [];
     const count = windows.length;
+    if (!count) firePercent = 0;
+    const modelBounds = new THREE.Box3().setFromObject(object);
     const shots = views.map(([label, side, direction]) => {
-      const { image, overlay } = renderModel(object, direction, 600, 480);
-      return `<figure class="elevation"><div class="elevation-image"><img src="${image}" alt="${label} view of ${type.name}">
-        <svg viewBox="0 0 600 480" aria-label="Window outlines, ${label} view">${overlay}</svg></div><figcaption>${label} <span>${side}</span></figcaption></figure>`;
-    }).join('');
+      const { image, overlay, fireAnchors } = renderModel(object, direction, 600, 480, modelBounds);
+      return {
+        fireAnchors,
+        markup: `<figure class="elevation"><div class="elevation-image"><img src="${image}" alt="${label} view of ${type.name}">
+          <canvas class="fire-preview" width="600" height="480" aria-hidden="true"></canvas>
+          <svg viewBox="0 0 600 480" aria-label="Window outlines, ${label} view">${overlay}</svg></div><figcaption>${label} <span>${side}</span></figcaption></figure>`,
+      };
+    });
     const windowList = windows.map(window => `<button class="window-entry" data-window-id="${window.id}" type="button"><strong>${window.id}</strong><span>${window.side} · ${window.center.map(v => v.toFixed(2)).join(', ')}</span></button>`).join('');
     detail.innerHTML = `<div class="detail-heading"><div><span class="eyebrow">${type.group.toUpperCase()} · TYPE ${type.index}</span><h2>${type.name}</h2><code>${type.id}</code></div>
-      <p>${count} window${count === 1 ? '' : 's'} mapped</p></div><div class="elevation-grid">${shots}</div>
+      <p>${count} window${count === 1 ? '' : 's'} mapped</p></div>
+      <div class="fire-controls"><button id="fire-simulate" type="button" ${count ? '' : 'disabled'}>Simulate fire</button>
+        <label for="fire-percent">Fire level <input id="fire-percent" type="range" min="0" max="100" value="${firePercent}" ${count ? '' : 'disabled'}></label>
+        <output id="fire-percent-value" for="fire-percent">${firePercent}%</output></div>
+      <p class="fire-hint">${count ? 'Preview for this model type. Map fires use separate world building IDs.' : 'This low-detail model has no mapped windows, so there are no window fire emitters.'}</p>
+      <div class="elevation-grid">${shots.map(shot => shot.markup).join('')}</div>
       <section class="window-index"><h3>Window index <small>Model local X, Y, Z coordinates</small></h3><div class="window-entries">${windowList}</div></section>`;
+    firePreview = createBuildingFirePreview(shots.map((shot, index) => ({
+      canvas: detail.querySelectorAll('.fire-preview')[index], anchors: shot.fireAnchors,
+    })));
+    const fireButton = detail.querySelector('#fire-simulate');
+    const fireSlider = detail.querySelector('#fire-percent');
+    const fireValue = detail.querySelector('#fire-percent-value');
+    function setPreviewFire(value) {
+      firePercent = Number(value);
+      fireSlider.value = String(firePercent);
+      fireValue.value = `${firePercent}%`;
+      fireButton.textContent = firePercent ? 'Clear fire' : 'Simulate fire';
+      firePreview.setPercent(firePercent);
+    }
+    fireButton.addEventListener('click', () => setPreviewFire(firePercent ? 0 : 50));
+    fireSlider.addEventListener('input', () => setPreviewFire(fireSlider.value));
+    setPreviewFire(firePercent);
     function highlightWindow(id, scrollToView) {
       detail.querySelectorAll('.window-entry, .elevation svg g').forEach(item => item.classList.toggle('highlighted', item.dataset.windowId === id));
       const outline = [...detail.querySelectorAll('.elevation svg g')].find(item => item.dataset.windowId === id);

@@ -5,6 +5,9 @@ import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContac
 import { AVENUE_X, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
 import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
+import WINDOW_MAP from './building-windows.json';
+import { createBuildingFireState } from './building-fire.js';
+import { createBuildingFireEffect } from './building-fire-effect.js';
 import { advanceVehicle } from './drive-world.js';
 import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
@@ -22,6 +25,15 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
 
 const scene = new THREE.Scene();
+const fireState = createBuildingFireState(BUILDING_SITES);
+const fireEffect = createBuildingFireEffect(THREE, scene, fireState);
+// Scenario scripts can ignite a placed building by its world ID. For a quick
+// preview, open the game with ?fire=WB-001:75 (repeat `fire` for more sites).
+for (const entry of new URLSearchParams(location.search).getAll('fire')) {
+  const [id, percent] = entry.split(':');
+  if (BUILDING_SITES.some(site => site.worldBuildingId === id)) fireState.set(id, percent);
+}
+window.buildingFires = { onFire: fireState.onFire, set: fireState.set, sites: BUILDING_SITES };
 scene.background = new THREE.Color('#b8e7fa');
 scene.fog = new THREE.Fog('#b8e7fa', 145, 325);
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 400);
@@ -260,6 +272,9 @@ function building(site) {
   solid(x,z,size.x,size.z);
   item.userData.site=site;
   item.userData.buildingTypeId=BUILDING_TYPES_BY_PATH.get(`${pack}/${name}`)?.id;
+  item.userData.worldBuildingId=site.worldBuildingId;
+  const sourceBounds=new THREE.Box3().setFromObject(models.get(`${pack}/${name}`));
+  if(site.worldBuildingId)fireEffect.registerBuilding(site.worldBuildingId,item,WINDOW_MAP[`${pack}/${name}`]??[],sourceBounds.min.y,sourceBounds.max.y);
   return item;
 }
 function buildBlocks() {
@@ -500,8 +515,10 @@ window.addEventListener('resize',resize);
 let previous=performance.now();
 function animate(now){
   requestAnimationFrame(animate);
-  const dt=Math.min((now-previous)/1000,.05);previous=now;
+  const elapsedSeconds=Math.max(0,(now-previous)/1000);
+  const dt=Math.min(elapsedSeconds,.05);previous=now;
   drive(dt);updateCamera(dt);
+  if(playing){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
   if(playing)updateLabels();
   if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);

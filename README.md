@@ -27,6 +27,12 @@ The overview renders each model with red HTML/SVG window outlines. Selecting a t
 
 If a source GLB is replaced or edited, regenerate its geometry-based window map with `python3 scripts/map-building-windows.py` (requires NumPy), then review the red outlines in the sheet. Existing IDs are tied to the current source models and should be reviewed before replacing those assets.
 
+### Fire simulation
+
+The sheet's **Simulate fire** button and 0–100% slider preview flames and smoke on the selected source model. This preview does not change a map instance. In the game, each of the 46 placed buildings has a separate `WB-###` world ID in `BUILDING_SITES`; chimneys and tanks are props without fire IDs. `window.buildingFires.onFire` is a `Map` from world ID to integer fire percentage. Scenario code can call `window.buildingFires.set('WB-029', 75)`, and setting it to `0` removes that entry. For a quick game preview, open `/?fire=WB-029:75` locally (or `/rescuePack/?fire=WB-029:75` on Pages); the `fire` parameter can be repeated for multiple buildings.
+
+Each one-second tick gives every burning building a 30% chance to gain 1%. A building at 90% or above has a separate 10% chance per tick to add 5% to every adjacent building. Adjacency means the gap between their placement envelopes is at most 3.5 world units. Window effects follow the model's height thirds: 1–14% gives bottom-third smoke; 15–33% gives bottom-third small flames and middle-third smoke; 34–55% gives medium, small, and smoke from bottom to top; 56–79% gives strong, medium, and small flames; and 80–100% makes every window strong. Flame particles turn into smoke, and larger windows emit more particles.
+
 ## Build and deployment
 
 ```sh
