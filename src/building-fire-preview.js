@@ -8,16 +8,12 @@ const CHIMNEY_SMOKE_RATE = [4.4, 0, 3.2, 0];
 
 // The sheet keeps its crisp GLB stills and draws moving particles between
 // each model image and the red window-ID overlay.
-function flameSprite(hue) {
+function flameSprite(color) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 64;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(215,61,8,.83)';
+  ctx.fillStyle = color;
   ctx.fillRect(8, 8, 48, 48);
-  ctx.fillStyle = `rgb(255,${hue},7)`;
-  ctx.fillRect(13, 13, 38, 38);
-  ctx.fillStyle = 'rgba(255,221,62,.7)';
-  ctx.fillRect(23, 23, 19, 19);
   return canvas;
 }
 
@@ -44,7 +40,7 @@ function smokeSprite(variation) {
 
 export function createBuildingFirePreview(views) {
   let percent = 0, frameId = 0, previous = 0;
-  const flames = [flameSprite(91), flameSprite(130), flameSprite(172)];
+  const flames = [flameSprite('#ff8217'), flameSprite('#ffa31c'), flameSprite('#ffc13b')];
   const smokes = [smokeSprite(0), smokeSprite(1)];
   for (const view of views) {
     view.context = view.canvas.getContext('2d');
@@ -128,11 +124,13 @@ export function createBuildingFirePreview(views) {
     for (const kind of ['smoke', 'flame']) for (const particle of particles) {
       if (particle.kind !== kind) continue;
       const progress = particle.age / particle.life;
+      const opening = Math.min(1, progress / .18);
+      const grow = opening * opening * (3 - 2 * opening);
       const size = particle.baseSize * (kind === 'smoke' ? 1 + progress * 1.1
-        : 1 - progress * (particle.ember ? .48 : .6));
+        : (.3 + .7 * grow) * (1 - progress * (particle.ember ? .48 : .6)));
       const fade = 1 - progress;
       context.globalAlpha = kind === 'smoke' ? Math.min(1, particle.age * 2.2) * Math.min(1, fade * 1.7) * .8
-        : Math.min(1, fade * 2) * (particle.ember ? .82 : .98);
+        : grow * Math.min(1, fade * 2) * (particle.ember ? .82 : .98);
       context.save();
       context.translate(particle.x, particle.y);
       context.rotate(particle.rotation);

@@ -41,9 +41,7 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       vec2 turned = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
       float square = max(abs(turned.x), abs(turned.y));
       float block = 1.0 - step(0.39, square);
-      float hotCore = 1.0 - step(0.21, square);
-      vec3 color = mix(vColor.rgb, vec3(1.0, 0.83, 0.20), hotCore * 0.5);
-      gl_FragColor = vec4(color, vColor.a * block);
+      gl_FragColor = vec4(vColor.rgb, vColor.a * block);
     }
   `;
   const smokeShader = `
@@ -160,7 +158,7 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       vz: emitter.outward.z * (.25 + r() * .38) + (r() - .5) * (flame ? .26 : .42),
       size, baseSize: size, rotation: (r() - .5) * .85, spin: (r() - .5) * 1.3,
       age: 0, life, ember,
-      color: flame ? (r() < .35 ? [1, .60, .05] : [1, .31 + r() * .16, .015])
+      color: flame ? (r() < .3 ? [1, .72, .12] : r() < .58 ? [1, .52, .05] : [1, .36, .02])
         : (r() < .5 ? [.27, .29, .30] : [.39, .40, .40]),
     });
   }
@@ -185,14 +183,18 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       p.y += p.vy * dt;
       p.z += p.vz * dt;
       const progress = p.age / p.life;
-      p.size = p.baseSize * (kind === 'smoke' ? 1 + progress * 1.15 : 1 - progress * (p.ember ? .48 : .62));
+      const opening = Math.min(1, progress / .18);
+      const grow = opening * opening * (3 - 2 * opening);
+      p.grow = grow;
+      p.size = p.baseSize * (kind === 'smoke' ? 1 + progress * 1.15
+        : (.3 + .7 * grow) * (1 - progress * (p.ember ? .48 : .62)));
       p.rotation += p.spin * dt;
     }
     for (let i = 0; i < list.length; i++) {
       const p = list[i], j = i * 3, fade = 1 - p.age / p.life;
       positions[j] = p.x; positions[j + 1] = p.y; positions[j + 2] = p.z;
       sizes[i] = p.size;
-      alphas[i] = kind === 'flame' ? Math.min(1, fade * 2.2) * (p.ember ? .8 : .96)
+      alphas[i] = kind === 'flame' ? p.grow * Math.min(1, fade * 2.2) * (p.ember ? .8 : .96)
         : Math.min(1, p.age * 2.2) * Math.min(1, fade * 1.7) * .63;
       colors[j] = p.color[0];
       colors[j + 1] = kind === 'flame' ? p.color[1] * (.8 + fade * .28) : p.color[1];
