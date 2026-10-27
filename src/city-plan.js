@@ -21,7 +21,7 @@ for (const z of [-46,-12.5]) for (const x of [-72,-62]) {
 
 // Paired buildings share a street wall and similarly sized lots. The shorter
 // downtown models get enough width and height to read as multi-storey buildings.
-for (const [z,a,b] of [[-46,'skyscraper-e','skyscraper-b'],[-12.5,'skyscraper-a','skyscraper-c'],[21.5,'f','g'],[54,'a','b']]) {
+for (const [z,a,b] of [[-46,'skyscraper-e','skyscraper-b'],[-12.5,'skyscraper-d','skyscraper-e'],[21.5,'f','g'],[54,'a','b']]) {
   const scale = z < 0 ? 8.5 : 10.4;
   site('commercial',`building-${a}`,-40.2,z,scale,10.8,15.5);
   site('commercial',`building-${b}`,-28.8,z,scale,10.8,15.5,Math.PI);
@@ -29,8 +29,8 @@ for (const [z,a,b] of [[-46,'skyscraper-e','skyscraper-b'],[-12.5,'skyscraper-a'
 site('commercial','building-skyscraper-d',-6.5,-46,8.2,11.5,16);
 site('commercial','building-skyscraper-b',6.5,-46,8.6,11.5,16);
 for (const z of [-12.5,54]) {
-  site('commercial','building-skyscraper-a',29,z,8.5,11.2,15.5);
-  site('commercial','building-skyscraper-c',41,z,8.3,11.2,15.5);
+  site('commercial','building-skyscraper-b',29,z,8.5,11.2,15.5);
+  site('commercial','building-skyscraper-d',41,z,8.3,11.2,15.5);
 }
 site('commercial','building-a',-6.5,54,11.5,11.5,13);
 site('commercial','building-h',6.5,54,11.5,11.5,13);

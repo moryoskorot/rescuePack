@@ -94,7 +94,7 @@ const solids = SHORE_BARRIERS.map(bounds => ({ ...bounds }));
 function solid(x, z, w, d) { solids.push({ x, z, w, d }); }
 
 const ASSETS = {
-  commercial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-skyscraper-a','building-skyscraper-b','building-skyscraper-c','building-skyscraper-d','building-skyscraper-e'],
+  commercial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-skyscraper-b','building-skyscraper-d','building-skyscraper-e'],
   suburban: ['building-type-a','building-type-b','building-type-c','building-type-d','building-type-e','building-type-f','building-type-g','building-type-h','building-type-i','building-type-j','building-type-k','building-type-l','building-type-m','building-type-n','building-type-o','building-type-p','building-type-q','building-type-r','building-type-s','building-type-t','building-type-u','tree-large','tree-small','planter','fence-low'],
   industrial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-m','building-n','building-o','building-p','building-q','building-r','building-s','building-t','chimney-large','chimney-medium','shipping-container-a','shipping-container-b','shipping-container-c','detail-tank','water-tower'],
   roads: ['light-curved','light-square','traffic-light','dumpster','road-sign-stop','construction-cone','electricity-pole'],

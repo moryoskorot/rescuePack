@@ -10,6 +10,7 @@ test('world building IDs are stable and distinct from model type IDs', () => {
     buildings.map((_, index) => `WB-${String(index + 1).padStart(3, '0')}`));
   assert.equal(BUILDING_SITES.filter(site => !site.worldBuildingId).length, 8);
   assert.equal(adjacentBuildingIds(BUILDING_SITES).size, buildings.length);
+  assert.equal(buildings.some(site => ['building-skyscraper-a', 'building-skyscraper-c'].includes(site.name)), false);
 });
 
 test('fire strength follows the requested percentage and building thirds', () => {
