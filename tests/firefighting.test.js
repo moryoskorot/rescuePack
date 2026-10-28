@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { createBuildingFireState } from '../src/building-fire.js';
-import { buildingImpactPoint, createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding } from '../src/firefighting.js';
+import { buildingImpactPoint, createFirefightingProgress, HOSE_RANGE, igniteRandomBuildings, nearestBurningBuilding } from '../src/firefighting.js';
 import { createFirefightingEffect } from '../src/firefighting-effect.js';
+import { FIRETRUCK_NOZZLE_LOCAL, firetruckNozzleWorld } from '../src/firetruck-nozzle.js';
 import { createHoseProjectiles } from '../src/hose-projectiles.js';
 import { nearestWindowTarget, segmentWindowHit, worldWindowTargets } from '../src/window-targets.js';
 import { WATER_TUNING_DEFAULTS } from '../src/water-tuning-config.js';
@@ -38,6 +39,27 @@ test('hose reaches the nearest burning footprint and aims at its wall', () => {
   assert.equal(nearestBurningBuilding({x:60,z:50},sites,fire.onFire),null);
   const impact = buildingImpactPoint({x:20,z:1},target.site,{min:{x:6,y:0,z:-4},max:{x:14,y:8,z:4}});
   assert.deepEqual(impact,{x:14,y:2.56,z:1});
+});
+
+test('automatic hose starts within 22 metres of a burning building footprint', () => {
+  assert.equal(HOSE_RANGE,22);
+  const fire=new Map([['WB-002',50]]);
+  assert.equal(nearestBurningBuilding({x:9,z:0},sites,fire)?.site.worldBuildingId,'WB-002');
+  assert.equal(nearestBurningBuilding({x:8.99,z:0},sites,fire),null);
+});
+
+test('the water launch point stays just above the truck roof in game and preview transforms', () => {
+  const gameTruck=new THREE.Group();
+  gameTruck.position.set(4,0,3);gameTruck.rotation.y=Math.PI/2;
+  const gameModel=new THREE.Group();gameModel.scale.setScalar(1.75);gameTruck.add(gameModel);
+  const previewTruck=new THREE.Group();
+  previewTruck.position.copy(gameTruck.position);previewTruck.rotation.copy(gameTruck.rotation);
+  previewTruck.scale.setScalar(1.75);
+  const gamePoint=firetruckNozzleWorld(gameModel,new THREE.Vector3());
+  const previewPoint=firetruckNozzleWorld(previewTruck,new THREE.Vector3());
+  assert.ok(gamePoint.distanceTo(previewPoint)<1e-6);
+  assert.ok(FIRETRUCK_NOZZLE_LOCAL.y>1.7&&FIRETRUCK_NOZZLE_LOCAL.y<1.85);
+  assert.ok(Math.abs(FIRETRUCK_NOZZLE_LOCAL.x)<.75&&Math.abs(FIRETRUCK_NOZZLE_LOCAL.z)<1.5);
 });
 
 test('only a shot crossing a transformed window rectangle counts as a hit', () => {

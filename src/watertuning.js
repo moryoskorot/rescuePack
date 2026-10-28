@@ -6,7 +6,8 @@ import { INDUSTRIAL_CHIMNEYS } from './industrial-chimneys.js';
 import { createBuildingFireState } from './building-fire.js';
 import { createBuildingFireEffect } from './building-fire-effect.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
-import { createFirefightingProgress } from './firefighting.js';
+import { createFirefightingProgress, HOSE_RANGE, nearestBurningBuilding } from './firefighting.js';
+import { firetruckNozzleWorld } from './firetruck-nozzle.js';
 import { createHoseProjectiles } from './hose-projectiles.js';
 import { nearestWindowTarget, worldWindowTargets } from './window-targets.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
@@ -57,7 +58,7 @@ const fireProgress = createFirefightingProgress(fireState);
 const tank = createWaterBoostState();
 const hoseEffect = createFirefightingEffect(THREE,scene);
 const impacts = [];
-let hitCount=0, building=null, truck=null, windows=[], fireEffect=null, fireNodes=[], currentType=null, loadingSerial=0;
+let hitCount=0, building=null, truck=null, windows=[], fireEffect=null, fireNodes=[], currentType=null, loadingSerial=0, previewSite=null;
 const hose = createHoseProjectiles(THREE,(id,windowId,point,reduction)=>{
   if (fireState.onFire.has(id)) {
     fireProgress.apply(id,reduction);
@@ -83,7 +84,9 @@ function positionScene() {
   truck.rotation.y=Math.PI/2;
   building.updateWorldMatrix(true,true);
   windows=worldWindowTargets(THREE,building,WINDOW_MAP[currentType.path]??[]);
-  const resized=new THREE.Box3().setFromObject(building).getSize(new THREE.Vector3());
+  const bounds=new THREE.Box3().setFromObject(building);
+  const resized=bounds.getSize(new THREE.Vector3());
+  previewSite={worldBuildingId:'PREVIEW',x:(bounds.min.x+bounds.max.x)/2,z:(bounds.min.z+bounds.max.z)/2,width:resized.x,depth:resized.z};
   const span=Math.max(28,distance+resized.x+10);
   const height=Math.max(12,resized.y+5);
   const viewport=$('preview-canvas').getBoundingClientRect();
@@ -168,9 +171,10 @@ function animate(now) {
     const hydrants=$('hydrant').checked?[{x:truck.position.x,z:truck.position.z}]:[];
     stepWaterBoost(tank,truck.position,{},dt,hydrants,{normal:settings.waterRegen,hydrant:settings.hydrantRegen});
     truck.updateWorldMatrix(true,false);
-    nozzle.set(0,2.7,.35);truck.localToWorld(nozzle);
+    firetruckNozzleWorld(truck,nozzle);
     forward.set(0,0,1).transformDirection(truck.matrixWorld);
-    const target=fireState.onFire.has('PREVIEW')?{worldBuildingId:'PREVIEW',windows}:null;
+    const inRange=previewSite&&nearestBurningBuilding(truck.position,[previewSite],fireState.onFire);
+    const target=inRange?{worldBuildingId:'PREVIEW',windows}:null;
     const result=hose.update(dt,nozzle,forward,target,tank,settings);
     tank.spraying=result.spraying;
     hoseEffect.update(result.shots,dt,settings,camera,impacts,renderer.domElement.height);impacts.length=0;
@@ -188,6 +192,8 @@ function animate(now) {
     if (document.activeElement!==fireSlider) fireSlider.value=percent;
     $('fire-output').value=`${percent}%`;
     if (!percent) $('preview-status').textContent='FIRE OUT · raise slider to relight';
+    else if (!inRange) $('preview-status').textContent=`OUT OF RANGE · move within ${HOSE_RANGE} m`;
+    else if (/^(OUT OF RANGE|FIRE OUT)/.test($('preview-status').textContent)) $('preview-status').textContent=`${windows.length} mapped windows`;
   }
   renderer.render(scene,camera);
 }

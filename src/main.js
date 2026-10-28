@@ -16,6 +16,7 @@ import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
 import { createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
+import { firetruckNozzleWorld } from './firetruck-nozzle.js';
 import { createHoseProjectiles } from './hose-projectiles.js';
 import { worldWindowTargets } from './window-targets.js';
 import { loadWaterTuning } from './water-tuning-config.js';
@@ -341,6 +342,7 @@ let firetruck, waterEffect;
 function createTruck() {
   firetruck = new THREE.Group(); scene.add(firetruck);
   const truckModel = model('cars','firetruck',0,0,FIRETRUCK.scale,0,0,firetruck);
+  firetruck.userData.model=truckModel;
   firetruck.userData.wheels=[];
   truckModel.traverse(node=>{if(node.name.startsWith('wheel-'))firetruck.userData.wheels.push(node);});
   truckModel.traverse(node => { if(node.isMesh) node.castShadow = true; });
@@ -607,8 +609,7 @@ function animate(now){
   if(playing){updateLabels();updateFireMarkers();}
   if(playing){
     firetruck.updateWorldMatrix(true,false);
-    hoseNozzle.set(0,2.7,.35);
-    firetruck.localToWorld(hoseNozzle);
+    firetruckNozzleWorld(firetruck.userData.model,hoseNozzle);
     hoseForward.set(0,0,1).transformDirection(firetruck.matrixWorld);
     const worldBuildingId=hoseTarget?.site.worldBuildingId;
     const active=worldBuildingId&&fireState.onFire.has(worldBuildingId)&&!waterBoost.active;

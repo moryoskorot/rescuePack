@@ -1,4 +1,4 @@
-export const HOSE_RANGE = 15;
+export const HOSE_RANGE = 22;
 
 export function nearestBurningBuilding(position, sites, onFire, range = HOSE_RANGE) {
   let nearest = null;
