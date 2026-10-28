@@ -1,9 +1,9 @@
 // Shared city plan. All positions are in metres; the truck's local front is +Z.
 export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 125]);
-export const STREET_Z = Object.freeze([-62, -30, 5, 38, 70]);
+export const STREET_Z = Object.freeze([-236, -202, -168, -134, -100, -62, -30, 5, 38, 70]);
 // A few local streets end at a through road, creating larger, less regular blocks.
 export const AVENUE_SEGMENTS = Object.freeze(AVENUE_X.map(x => Object.freeze({
-  x, minZ: -82, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
+  x, minZ: -251, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
 })));
 export const STREET_SEGMENTS = Object.freeze(STREET_Z.map(z => Object.freeze({
   z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 134,
@@ -14,10 +14,12 @@ export const ROAD_Y = .12;
 export const PAVEMENT_Y = .19;
 export const GROUND_Y = -.08;
 export const DECK_Y = .29;
-export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -91, maxZ: 85 });
+// The northward extension doubles the playable land area without moving the
+// original town, its harbor, or any existing mission coordinates.
+export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -265, maxZ: 85 });
 export const PIER_BOUNDS = Object.freeze({ minX: 6, maxX: 18, minZ: 79.5, maxZ: 104.5 });
 export const BOARDWALK_BOUNDS = Object.freeze({ minX: -115, maxX: 115, minZ: 76, maxZ: 82 });
-const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -82, maxZ: 74 };
+const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -251, maxZ: 74 };
 export const DRIVEWAYS = Object.freeze([
   // The station apron meets the near curb and never covers the street itself.
   { name: 'fire-station', minX: 27, maxX: 43, minZ: 27.3, maxZ: 33.4 },

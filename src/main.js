@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
 import { AVENUE_X, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
-import { BUILDING_SITES } from './city-plan.js';
+import { BUILDING_SITES, CIVIC_ENVELOPES } from './city-plan.js';
 import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
 import { createBuildingFireState } from './building-fire.js';
@@ -72,8 +72,8 @@ function startFires() {
   } else fireState.clear();
 }
 scene.background = new THREE.Color('#a8cfe3');
-scene.fog = new THREE.Fog('#a8cfe3', 145, 325);
-const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 400);
+scene.fog = new THREE.Fog('#a8cfe3', 185, 420);
+const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 500);
 const hemi = new THREE.HemisphereLight('#ffffff', '#8fa38b', 1.8);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff0ce', 1.95);
@@ -133,7 +133,7 @@ const solids = SHORE_BARRIERS.map(bounds => ({ ...bounds }));
 function solid(x, z, w, d) { solids.push({ x, z, w, d }); }
 
 const ASSETS = {
-  commercial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-skyscraper-b','building-skyscraper-d','building-skyscraper-e'],
+  commercial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-m','building-n','building-skyscraper-a','building-skyscraper-b','building-skyscraper-d','building-skyscraper-e'],
   suburban: ['building-type-a','building-type-b','building-type-c','building-type-d','building-type-e','building-type-f','building-type-g','building-type-h','building-type-i','building-type-j','building-type-k','building-type-l','building-type-m','building-type-n','building-type-o','building-type-p','building-type-q','building-type-r','building-type-s','building-type-t','building-type-u','tree-large','tree-small','planter','fence-low'],
   industrial: ['building-a','building-b','building-c','building-d','building-e','building-f','building-g','building-h','building-i','building-j','building-k','building-l','building-m','building-n','building-o','building-p','building-q','building-r','building-s','building-t','chimney-large','chimney-medium','shipping-container-a','shipping-container-b','shipping-container-c','detail-tank','water-tower'],
   roads: ['light-curved','light-square','traffic-light','dumpster','road-sign-stop','construction-cone','electricity-pole'],
@@ -207,6 +207,19 @@ function facadeSign(parent, label, width, x, y, z, color = '#174b88') {
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(width, 2.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), toneMapped: false }));
   sign.position.set(x, y, z); parent.add(sign);
 }
+function registerCivicFire(name, object, facadeZ, windowY = 3.4) {
+  const site = BUILDING_SITES.find(entry => entry.pack === 'civic' && entry.name === name);
+  if (!site) return;
+  const windows = [-3.5, 0, 3.5].map((x, index) => {
+    const width = 2.2, height = 1.7;
+    return { id: `${name}-${index}`, side: '+Z', center: [x, windowY, facadeZ], width, height,
+      corners: [[x-width/2,windowY-height/2,facadeZ],[x+width/2,windowY-height/2,facadeZ],
+        [x+width/2,windowY+height/2,facadeZ],[x-width/2,windowY+height/2,facadeZ]] };
+  });
+  fireTargets.set(site.worldBuildingId, worldWindowTargets(THREE, object, windows));
+  fireEffect.registerBuilding(site.worldBuildingId, object, windows, 0, 9);
+  groundMarkers.registerFireSite(site.worldBuildingId, site.x, site.z, site.width, site.depth);
+}
 function townLibrary() {
   const x = -35, z = -77, g = group(x, z);
   box(g, 21, .5, 12, M.stone, 0, .25, 0);
@@ -216,6 +229,7 @@ function townLibrary() {
   box(g, 3.6, 4.6, .13, M.wood, 0, 2.45, 5.09);
   facadeSign(g, 'LIBRARY', 12, 0, 6.2, 5.17);
   solid(x, z, 21, 12); landmark('TOWN LIBRARY', x, z, 11, '#5dbad6');
+  registerCivicFire('town-library', g, 5.1);
 }
 function sportsCenter() {
   const x = 35, z = -77, g = group(x, z);
@@ -226,17 +240,18 @@ function sportsCenter() {
   box(g, 4, 5.2, .15, M.darkBlue, 0, 2.85, 5.62);
   facadeSign(g, 'SPORTS CENTER', 16, 0, 7, 5.71, '#c94b3d');
   solid(x, z, 23, 13); landmark('SPORTS CENTER', x, z, 12, '#ee8c47');
+  registerCivicFire('sports-center', g, 5.63);
 }
-function industrialFootbridge() {
-  const x = 85, z = -23, g = group(x, z);
+function industrialFootbridge(x = 85, z = -23, title = 'FOOTBRIDGE') {
+  const g = group(x, z);
   for (const side of [-1, 1]) {
-    box(g, .7, 6, .7, M.metal, side * 8.5, 3, 0);
-    box(g, 1.5, .5, 2, M.yellow, side * 8.5, .25, 0);
-    solid(x + side * 8.5, z, 1.5, 2);
+    box(g, .7, 6, .7, M.metal, side * 7.5, 3, 0);
+    box(g, 1.5, .5, 2, M.yellow, side * 7.5, .25, 0);
+    solid(x + side * 7.5, z, 1.5, 2);
   }
   box(g, 18, .45, 2.2, M.wood, 0, 6.3, 0);
   for (const side of [-1,1]) box(g, 18, .8, .15, M.blue, 0, 6.95, side * 1.05);
-  landmark('FOOTBRIDGE', x, z, 9, '#eab94a');
+  landmark(title, x, z, 9, '#eab94a');
 }
 function townHall() {
   const x = 0, z = -15, g = group(x, z);
@@ -340,6 +355,7 @@ function tree(x,z,s=5.5) {
   solid(x,z,.4,.4);
 }
 function building(site) {
+  if (site.pack === 'civic') return null;
   const {pack,name,x,z,scale,width,depth,rotation=0}=site;
   const item=model(pack,name,x,z,scale,rotation);
   const bounds=new THREE.Box3().setFromObject(item),size=bounds.getSize(new THREE.Vector3());
@@ -360,10 +376,87 @@ function building(site) {
     fireEffect.registerBuilding(site.worldBuildingId,item,windows,sourceBounds.min.y,sourceBounds.max.y,INDUSTRIAL_CHIMNEYS[`${pack}/${name}`]??[]);
     groundMarkers.registerFireSite(site.worldBuildingId,site.x,site.z,size.x,size.z);
   }
+  if (site.questName) {
+    const sign = group(site.x, site.z);
+    const shortName = site.questName.replace('Neighborhood ', '').replace(' Station', ' STATION');
+    facadeSign(sign, shortName.toUpperCase(), Math.min(14, Math.max(9, site.width - 2)), 0, 5.3, site.depth / 2 + .3,
+      site.pack === 'industrial' ? '#965837' : '#286b91');
+    landmark(site.questName.toUpperCase(), site.x, site.z, 13, '#75d2e1');
+  }
   return item;
+}
+function farmAndParks() {
+  const barn = group(-98,-219);
+  box(barn,14,.4,16,M.stone,0,.15,0);
+  box(barn,12.5,6.2,13.5,M.red,0,3.2,0);
+  for (const side of [-1,1]) {
+    const roof = box(barn,8.2,.55,14.5,M.darkRed,side*3.25,7.5,0);
+    roof.rotation.z = -side*.46;
+  }
+  box(barn,5.2,4.8,.18,M.wood,0,2.6,6.85);
+  for(const side of [-1,1]) {
+    const brace=box(barn,.25,6.5,.22,M.wall,0,2.6,6.98);
+    brace.rotation.z=side*.7;
+  }
+  facadeSign(barn,'SUNNY BARN',10,0,5.6,7.02,'#ad342f');
+  solid(-98,-219,14,16);landmark('SUNNY FARM',-98,-219,11,'#eeae4d');
+  registerCivicFire('barn',barn,6.96,3.2);
+
+  const home=group(-67,-219);
+  box(home,14,.45,15,M.stone,0,.2,0);
+  box(home,12.5,5.8,12.5,M.wall,0,3.2,0);
+  for(const side of [-1,1]) {
+    const roof=box(home,8,.5,13.5,M.yellow,side*3.25,7.3,0);
+    roof.rotation.z=-side*.44;
+    box(home,2.2,2.2,.12,M.glass,side*3.8,3.7,6.32,false);
+  }
+  box(home,2.6,4,.16,M.blue,0,2.35,6.37);
+  facadeSign(home,'FARMHOUSE',10,0,5.7,6.48,'#419775');
+  solid(-67,-219,14,15);landmark('FARMHOUSE',-67,-219,10,'#a9d26b');
+  registerCivicFire('farmhouse',home,6.34,3.6);
+
+  const pavilion=group(-98,-151);
+  disc(pavilion,7,M.stone,0,.015,0);
+  for(const x of [-5,5]) for(const z of [-5,5]) box(pavilion,.55,5,.55,M.wood,x,2.5,z);
+  const canopy=new THREE.Mesh(new THREE.ConeGeometry(9,3.5,4),M.yellow);
+  canopy.rotation.y=Math.PI/4;canopy.position.y=6.3;canopy.castShadow=true;pavilion.add(canopy);
+  box(pavilion,5,.25,2.2,M.wood,0,1,0);
+  for(const x of [-3.5,0,3.5]) {
+    const bush=new THREE.Mesh(new THREE.SphereGeometry(1.1,10,7),M.leaves);
+    bush.position.set(x,1.05,5.4);bush.castShadow=true;pavilion.add(bush);
+  }
+  solid(-98,-151,10,10);landmark('PICNIC PAVILION',-98,-151,9,'#eeb760');
+  registerCivicFire('picnic-pavilion',pavilion,5.4,1.25);
+
+  for(let row=0;row<5;row++) for(let col=0;col<4;col++) {
+    const x=-103+col*3.3,z=-191+row*3.2;
+    const plant=group(x,z);
+    const carrot=new THREE.Mesh(new THREE.ConeGeometry(.36,1.1,8),mat('#f58d35'));
+    carrot.rotation.z=Math.PI;carrot.position.y=.45;plant.add(carrot);
+    cylinder(plant,.36,.14,.65,M.leaves,0,1.13,0,5);
+  }
+  landmark('CARROT FIELDS',-98,-185,4,'#f9b660');
+  disc(scene,6.5,mat('#72bed5',.2),-67,-.035,-185,36);
+  cylinder(scene,6.6,6.6,.1,M.stone,-67,-.11,-185,36);
+  disc(scene,6.1,mat('#72bed5',.2),-67,-.04,-185,36);
+  landmark('FARM POND',-67,-185,4,'#70c8e0');
+
+  const playground=group(35,-151);
+  disc(playground,7,M.park,0,.01,0);
+  for(const x of [-3,3]) box(playground,.35,5,.35,M.blue,x,2.5,-2);
+  box(playground,7,.35,.35,M.blue,0,5.1,-2);
+  for(const x of [-1.8,1.8]) {box(playground,.06,3,.06,M.metal,x,3.4,-2);box(playground,1.7,.18,.8,M.yellow,x,1.85,-2);}
+  box(playground,2.2,2.2,2.2,M.red,3,1.1,3);
+  landmark('PLAYGROUND',35,-151,7,'#e68fc1');
+  const sports=group(-67,-151);
+  disc(sports,7.5,M.park,0,.015,0);
+  box(sports,11,.06,.1,M.wall,0,.07,0,false);
+  for(const x of [-5.7,5.7]) box(sports,.1,2,.1,M.wall,x,1,0);
+  landmark('SPORTS PARK',-67,-151,5,'#8bcc77');
 }
 function buildBlocks() {
   BUILDING_SITES.forEach(building);
+  farmAndParks();
   landmark('INDUSTRIAL YARDS',68,-12,16,'#d08f5c');
   landmark('THE YARDS',99,46,9,'#e5a36b');
   // Parked vehicles have their own space inside lots, never in through lanes.
@@ -377,6 +470,11 @@ function details() {
     if(x>54&&random()>.3)continue;
     if(Math.abs(x)<12&&z>9&&z<33)continue;
     tree(x,z,4.2+random()*1.4);
+  }
+  for(let i=0;i<220;i++) {
+    const x=-120+random()*250,z=-250+random()*137;
+    if(CIVIC_ENVELOPES.some(site=>Math.abs(x-site.x)<site.width/2+2&&Math.abs(z-site.z)<site.depth/2+2))continue;
+    tree(x,z,4+random()*1.8);
   }
   for(const {x,z} of HYDRANT_LOCATIONS)hydrant(x,z);
   // Lamppost bases occupy the sidewalk's outer edge and avoid driveways.
@@ -408,7 +506,10 @@ function createTruck() {
   firetruck.rotation.y=player.heading;
 }
 
-const player = createVehicleState({x:35,z:38,heading:-Math.PI/2});
+const spawnValues = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
+const debugSpawn = spawnValues?.length >= 2 && spawnValues.every(Number.isFinite)
+  ? {x:spawnValues[0],z:spawnValues[1],heading:spawnValues[2] ?? -Math.PI/2} : null;
+const player = createVehicleState(debugSpawn ?? {x:35,z:38,heading:-Math.PI/2});
 let previousPhysicsPose = {...player}, renderPose = {...player}, hoseTarget = null;
 const waterBoost = createWaterBoostState();
 const refillRing = new THREE.Mesh(
@@ -576,6 +677,8 @@ function refreshMissionMarkers() {
   if (activeMission.type === 'collect') {
     if (missionProgress.stage === 'returning') missionMarkers.set([{ point: activeMission.target, kind: 'return' }]);
     else missionMarkers.set(activeMission.pickups.flatMap((point, index) => missionProgress.collected.has(index) ? [] : [{ point, kind: activeMission.markerKind ?? 'collect' }]));
+  } else if (activeMission.type === 'race') {
+    missionMarkers.set([{ point: activeMission.route[missionProgress.checkpoint], kind: 'race' }]);
   } else missionMarkers.set([{ point: activeMission.target, kind: activeMission.type }]);
 }
 function updateMissionStatus() {
@@ -583,6 +686,7 @@ function updateMissionStatus() {
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
     ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Return to ${activeMission.returnLabel}`
     : `📦 ${missionProgress.collectedCount}/${activeMission.mechanics.item_count} ${activeMission.pickupLabel} · Follow the glowing ! markers`;
+  else if (activeMission.type === 'race') missionStatus.textContent = `🏁 ${missionProgress.checkpoint}/${activeMission.route.length} rings · Follow the next glowing marker`;
   else if (activeMission.type === 'fire') missionStatus.textContent = `🔥 ${activeMission.title} · Drive close to the marker to spray`;
   else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · Follow the marker`;
 }
@@ -701,13 +805,18 @@ function drive(dt) {
     refillRing.position.set(hydrant.x,getSurfaceHeight(hydrant.x,hydrant.z)+.045,hydrant.z);
     refillRing.scale.setScalar(1+.09*Math.sin(performance.now()*.006));
   }
-  const area=player.z>74?'HARBOR WALK':player.x<-51?'SUBURBS':player.x>52?'INDUSTRIAL YARDS':player.z<5?'DOWNTOWN':player.x>18?'FIRE STATION':'TOWN SQUARE';
+  const area=player.z>74?'HARBOR WALK':player.z<-195?(player.x<-51?'SUNNY FARM':player.x>52?'MAIL DISTRICT':'NORTH TOWN')
+    :player.z<-100?(player.x>52?'WORKSHOP DISTRICT':player.x<-51?'PARKS DISTRICT':'SCHOOL DISTRICT')
+      :player.x<-51?'SUBURBS':player.x>52?'INDUSTRIAL YARDS':player.z<5?'DOWNTOWN':player.x>18?'FIRE STATION':'TOWN SQUARE';
   document.querySelector('#district-name').textContent=area;
 }
 const target=new THREE.Vector3(),desired=new THREE.Vector3();
 const hoseNozzle=new THREE.Vector3(),hoseForward=new THREE.Vector3();
 let cameraHeading=player.heading;
 function updateCamera(dt) {
+  sun.position.set(renderPose.x-65,110,renderPose.z+55);
+  sun.target.position.set(renderPose.x,0,renderPose.z);
+  sun.target.updateMatrixWorld();
   const yawDifference=Math.atan2(Math.sin(renderPose.heading-cameraHeading),Math.cos(renderPose.heading-cameraHeading));
   cameraHeading+=yawDifference*(1-Math.exp(-2.7*dt));
   const angle=cameraHeading+orbit;
@@ -730,6 +839,7 @@ let lastFireCount=-1;
 function updateMissionWaypoint() {
   if (!activeMission || activeMission.type === 'fire') { missionWaypoint.classList.add('hidden'); return; }
   let point = activeMission.target;
+  if (activeMission.type === 'race') point = activeMission.route[missionProgress.checkpoint] ?? point;
   if (activeMission.type === 'collect' && missionProgress.stage === 'collecting') {
     point = activeMission.pickups.filter((_, index) => !missionProgress.collected.has(index))
       .sort((a, b) => Math.hypot(a.x-renderPose.x,a.z-renderPose.z)-Math.hypot(b.x-renderPose.x,b.z-renderPose.z))[0] ?? point;
@@ -840,7 +950,9 @@ camera.position.set(54,21,64);camera.lookAt(25,3,22);
 requestAnimationFrame(animate);
 
 preload().then(()=>{
-  buildBlocks();fireStation();townHall();museum();school();hospital();square();townLibrary();sportsCenter();industrialFootbridge();details();createTruck();makeLabels();
+  buildBlocks();fireStation();townHall();museum();school();hospital();square();townLibrary();sportsCenter();
+  industrialFootbridge();industrialFootbridge(85,-151,'INDUSTRIAL FOOTBRIDGE');industrialFootbridge(125,-151,'CANAL GATE');
+  details();createTruck();makeLabels();
   document.querySelector('#loading').classList.add('hidden');
   document.querySelector('#menu').classList.remove('hidden');
 }).catch(error=>{

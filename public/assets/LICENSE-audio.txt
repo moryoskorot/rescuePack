@@ -2,3 +2,8 @@ Tire skid sound: "Screeching Tires #1" by Dorian Clair, via BigSoundBank.
 Source: https://bigsoundbank.com/crissement-de-pneus-1-s2368.html
 License: Creative Commons CC0 1.0 (public domain dedication).
 Downloaded as MP3 and used without modification.
+
+Engine idle and fast loops: "racing car engine sound loops" by domasx2, via OpenGameArt.
+Source: https://opengameart.org/content/racing-car-engine-sound-loops
+License: Creative Commons CC0 1.0 (public domain dedication).
+Files loop_0.wav and loop_5.wav are included as engine-idle.wav and engine-fast.wav.

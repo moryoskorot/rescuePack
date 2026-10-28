@@ -9,6 +9,13 @@ import {
   buildWorldSurfaces,
 } from '../src/world-layout.js';
 
+test('the expanded city provides about twice the original playable land', () => {
+  const originalArea = (145 - -130) * (85 - -91);
+  const currentArea = (LAND_BOUNDS.maxX - LAND_BOUNDS.minX) * (LAND_BOUNDS.maxZ - LAND_BOUNDS.minZ);
+  assert.ok(currentArea >= originalArea * 1.95);
+  assert.ok(currentArea <= originalArea * 2.05);
+});
+
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {
   const rectangles = createRoadSurfaceRects();
   for (let i = 0; i < rectangles.length; i++) for (let j = i + 1; j < rectangles.length; j++) {
@@ -69,7 +76,7 @@ test('full vehicle footprint stops at the shore and stays within the pier rails'
   assert.equal(footprintOnLandOrPier({ x: 12, z: 103, heading: 0 }), false, 'nose crosses pier end');
   assert.equal(footprintOnLandOrPier({ x: 7, z: 95, heading: 0 }), false, 'left tires cross pier edge');
   assert.equal(footprintOnLandOrPier({ x: LAND_BOUNDS.maxX - 2.1, z: 20, heading: Math.PI / 2 }), false, 'nose crosses eastern boundary');
-  assert.equal(footprintOnLandOrPier({ x: 0, z: -89, heading: 0 }), false, 'rear crosses northern boundary');
+  assert.equal(footprintOnLandOrPier({ x: 0, z: LAND_BOUNDS.minZ + 2, heading: 0 }), false, 'rear crosses northern boundary');
 });
 
 test('diagonal entry cannot cut over water even when all four corners are on land or pier', () => {

@@ -1,35 +1,31 @@
-// The engine and water are generated, while the tires use a real skid sample.
-// Audio starts on the start-button gesture for browsers with autoplay limits.
+// Two recorded engine loops are blended as the truck accelerates. Playback
+// rate follows a smoothed virtual RPM; load briefly raises it before road
+// speed catches up, so pressing the pedal sounds responsive at low speed.
 export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake = false, boost = false}) {
   const pace = Math.min(Math.max(speed, 0) / 36, 1);
   const pedal = Math.min(Math.abs(throttle), 1);
   const brake = speed > 2.5 && (braking || handbrake) ? Math.min(speed / 14, 1) : 0;
+  const blend = Math.min(1, pace * .84 + pedal * .18);
   return {
-    enginePitch: 59 + pace * 104 + pedal * 38,
-    engineGain: .045 + pace * .085 + pedal * .037,
-    brakeGain: brake * .64,
-    boostGain: boost ? .21 : 0,
+    enginePitch: 72 + pace * 98 + pedal * 36,
+    engineGain: .10 + pace * .05 + pedal * .025,
+    idleGain: (.11 + pedal * .015) * Math.cos(blend * Math.PI / 2),
+    fastGain: (.11 + pedal * .025) * Math.sin(blend * Math.PI / 2),
+    playbackRate: .76 + pace * .62 + pedal * .16,
+    brakeGain: brake * .48,
+    boostGain: boost ? .14 : 0,
   };
 }
 
 export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext, skidUrl = 'assets/tire-skid.mp3') {
-  let context, master, engine, engineBody, engineGain, bodyGain;
-  let skidGain, skidBuffer, skidSource, boostGain, boostFilter;
-  let pauseTimer, audible = false;
+  let context, master, fallback, fallbackGain, skidGain, skidBuffer, skidSource;
+  let boostGain, boostFilter, engineFilter;
+  let idleLoop, fastLoop, pauseTimer, audible = false;
+  let lastInput = {};
+  const assetBase = skidUrl.slice(0, skidUrl.lastIndexOf('/') + 1);
 
   function ramp(param, value, seconds = .09) {
     param.setTargetAtTime(value, context.currentTime, seconds);
-  }
-
-  function makeOscillator(type, frequency, gain, destination) {
-    const oscillator = context.createOscillator();
-    const volume = context.createGain();
-    oscillator.type = type;
-    oscillator.frequency.value = frequency;
-    volume.gain.value = gain;
-    oscillator.connect(volume).connect(destination);
-    oscillator.start();
-    return {oscillator, volume};
   }
 
   function makeNoiseBuffer() {
@@ -43,19 +39,47 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     return buffer;
   }
 
-  function makeNoise(buffer, type, frequency, q, gain) {
+  function makeEngineLoop(buffer) {
     const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
     const volume = context.createGain();
     source.buffer = buffer;
     source.loop = true;
-    filter.type = type;
-    filter.frequency.value = frequency;
-    filter.Q.value = q;
-    volume.gain.value = gain;
-    source.connect(filter).connect(volume).connect(master);
+    source.loopStart = 0;
+    source.loopEnd = buffer.duration;
+    volume.gain.value = 0;
+    source.connect(volume).connect(engineFilter);
     source.start();
-    return {source, filter, volume};
+    return {source,volume};
+  }
+
+  async function loadEngine(url, kind) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Engine audio returned ${response.status}`);
+      const buffer = await context.decodeAudioData(await response.arrayBuffer());
+      const loop = makeEngineLoop(buffer);
+      if (kind === 'idle') idleLoop = loop;
+      else fastLoop = loop;
+      ramp(fallbackGain.gain, 0, .12);
+      applyEngine(soundLevels(lastInput));
+    } catch (error) {
+      console.warn(`Could not load ${kind} engine loop:`, error);
+    }
+  }
+
+  function applyEngine(levels) {
+    const ready = Boolean(idleLoop || fastLoop);
+    ramp(fallbackGain.gain, ready ? 0 : levels.engineGain * .5, .12);
+    ramp(fallback.frequency, levels.enginePitch, .13);
+    ramp(engineFilter.frequency, 470 + levels.playbackRate * 600, .18);
+    if (idleLoop) {
+      ramp(idleLoop.volume.gain, levels.idleGain, .13);
+      ramp(idleLoop.source.playbackRate, Math.min(1.4, levels.playbackRate), .17);
+    }
+    if (fastLoop) {
+      ramp(fastLoop.volume.gain, levels.fastGain, .13);
+      ramp(fastLoop.source.playbackRate, Math.max(.7,levels.playbackRate * .88), .17);
+    }
   }
 
   function build() {
@@ -64,20 +88,34 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     master.gain.value = 0;
     master.connect(context.destination);
 
-    const engineFilter = context.createBiquadFilter();
+    engineFilter = context.createBiquadFilter();
     engineFilter.type = 'lowpass';
-    engineFilter.frequency.value = 420;
-    engineFilter.Q.value = .8;
-    engineGain = context.createGain();
-    engineGain.gain.value = 0;
-    engineGain.connect(engineFilter).connect(master);
-    engine = makeOscillator('sawtooth', 59, 1, engineGain).oscillator;
-    bodyGain = context.createGain();
-    bodyGain.gain.value = 0;
-    bodyGain.connect(master);
-    engineBody = makeOscillator('sine', 29.5, 1, bodyGain).oscillator;
+    engineFilter.frequency.value = 900;
+    engineFilter.Q.value = .6;
+    engineFilter.connect(master);
+    fallbackGain = context.createGain();
+    fallbackGain.gain.value = 0;
+    fallbackGain.connect(engineFilter);
+    fallback = context.createOscillator();
+    fallback.type = 'triangle';
+    fallback.frequency.value = 72;
+    fallback.connect(fallbackGain);
+    fallback.start();
+    loadEngine(`${assetBase}engine-idle.wav`, 'idle');
+    loadEngine(`${assetBase}engine-fast.wav`, 'fast');
 
-    const noise = makeNoiseBuffer();
+    const noise = context.createBufferSource();
+    noise.buffer = makeNoiseBuffer();
+    noise.loop = true;
+    boostFilter = context.createBiquadFilter();
+    boostFilter.type = 'bandpass';
+    boostFilter.frequency.value = 900;
+    boostFilter.Q.value = .38;
+    boostGain = context.createGain();
+    boostGain.gain.value = 0;
+    noise.connect(boostFilter).connect(boostGain).connect(master);
+    noise.start();
+
     skidGain = context.createGain();
     skidGain.gain.value = 0;
     skidGain.connect(master);
@@ -87,9 +125,6 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     }).then(data => context.decodeAudioData(data)).then(buffer => {
       skidBuffer = buffer;
     }).catch(error => console.warn('Could not load tire-skid sound:', error));
-    const water = makeNoise(noise, 'bandpass', 900, .38, 0);
-    boostGain = water.volume;
-    boostFilter = water.filter;
   }
 
   return {
@@ -104,11 +139,9 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     },
     update(input) {
       if (!context || !audible) return;
+      lastInput = input;
       const levels = soundLevels(input);
-      ramp(engine.frequency, levels.enginePitch, .12);
-      ramp(engineBody.frequency, levels.enginePitch / 2, .12);
-      ramp(engineGain.gain, levels.engineGain, .1);
-      ramp(bodyGain.gain, levels.engineGain * .55, .1);
+      applyEngine(levels);
       if (levels.brakeGain > 0 && skidBuffer && !skidSource) {
         skidSource = context.createBufferSource();
         skidSource.buffer = skidBuffer;
@@ -127,15 +160,10 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     pause() {
       if (!context) return;
       audible = false;
-      if (skidSource) {
-        skidSource.stop();
-        skidSource = null;
-      }
+      if (skidSource) { skidSource.stop(); skidSource = null; }
       clearTimeout(pauseTimer);
       ramp(master.gain, 0, .035);
-      pauseTimer = setTimeout(() => {
-        if (!audible) context.suspend().catch(() => {});
-      }, 170);
+      pauseTimer = setTimeout(() => { if (!audible) context.suspend().catch(() => {}); }, 170);
     },
   };
 }

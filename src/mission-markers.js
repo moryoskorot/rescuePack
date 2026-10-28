@@ -33,6 +33,7 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
     fire: orbTexture(THREE, '!', ['#ffeaaa', '#ff8c47', '#dc3d4b']),
     fix: orbTexture(THREE, '!', ['#d6ffcf', '#69d6a5', '#158b91']),
     rescue: orbTexture(THREE, '!', ['#fce2ff', '#f49bd9', '#9953ce']),
+    race: orbTexture(THREE, '★', ['#fff4ba', '#ffbd50', '#ef779e']),
   };
   const entries = [];
   function clear() {
@@ -47,10 +48,10 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
   }
   function add(point, kind = 'collect') {
     const group = new THREE.Group();
-    const color = { collect: '#65d9ff', book: '#65d9ff', return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff' }[kind];
+    const color = { return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff', race: '#ffe284' }[kind] ?? '#65d9ff';
     const ground = getSurfaceHeight(point.x, point.z);
     group.position.set(point.x, ground + .06, point.z);
-    const pickup = kind === 'collect' || kind === 'book';
+    const pickup = !['return','fire','fix','rescue','race'].includes(kind);
     const radius = pickup ? 1.25 : 2.25;
     for (const [inner, outer, opacity, y] of [[radius - .18, radius + .42, .22, 0], [radius, radius + .2, .95, .018], [radius - .43, radius - .34, .75, .03]]) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 64), new THREE.MeshBasicMaterial({
@@ -60,13 +61,32 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
       ring.rotation.x = -Math.PI / 2; ring.position.y = y; ring.renderOrder = 5;
       group.add(ring);
     }
-    if (kind === 'book') {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(.9, .8, .7), new THREE.MeshStandardMaterial({ color: '#ffcf64', roughness: .55 }));
-      box.position.y = .42; box.castShadow = true; group.add(box);
-      const slot = new THREE.Mesh(new THREE.BoxGeometry(.54, .1, .03), new THREE.MeshBasicMaterial({ color: '#527fb7' }));
-      slot.position.set(0, .58, .365); group.add(slot);
+    if (pickup) {
+      const material = new THREE.MeshStandardMaterial({ color: kind === 'carrot' ? '#f38e36' :
+        kind === 'gear' || kind === 'tool' || kind === 'nozzle' ? '#b7d1db' :
+        kind === 'letter' || kind === 'card' ? '#f9f5dc' :
+        kind === 'pompom' ? '#f593cd' : '#ffc963', roughness: .55 });
+      let geometry = new THREE.BoxGeometry(.8,.65,.65);
+      if (kind === 'carrot') geometry = new THREE.ConeGeometry(.36,1,10);
+      if (kind === 'gear') geometry = new THREE.TorusGeometry(.39,.13,6,12);
+      if (kind === 'pompom' || kind === 'shape') geometry = new THREE.SphereGeometry(.46,12,8);
+      if (kind === 'letter' || kind === 'card') geometry = new THREE.BoxGeometry(.85,.08,.65);
+      if (kind === 'nozzle' || kind === 'tool') geometry = new THREE.CylinderGeometry(.18,.29,.88,10);
+      const item = new THREE.Mesh(geometry,material);
+      if (kind === 'carrot') item.rotation.z = Math.PI;
+      if (kind === 'gear') item.rotation.x = Math.PI/2;
+      if (kind === 'nozzle' || kind === 'tool') item.rotation.z = Math.PI/2;
+      item.position.y = kind === 'carrot' ? .65 : .43; item.castShadow = true; group.add(item);
+      if (kind === 'carrot') {
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(.33,.5,6),new THREE.MeshStandardMaterial({color:'#68b56b'}));
+        leaves.position.y=1.25;group.add(leaves);
+      }
+      if (kind === 'book') {
+        const slot = new THREE.Mesh(new THREE.BoxGeometry(.54,.1,.03),new THREE.MeshBasicMaterial({color:'#527fb7'}));
+        slot.position.set(0,.58,.35);group.add(slot);
+      }
     }
-    const orb = new THREE.Sprite(new THREE.SpriteMaterial({ map: textures[kind], transparent: true, depthWrite: false, toneMapped: false }));
+    const orb = new THREE.Sprite(new THREE.SpriteMaterial({ map: textures[kind] ?? textures.collect, transparent: true, depthWrite: false, toneMapped: false }));
     const size = pickup ? 3.1 : 4.6;
     orb.scale.set(size, size, 1); orb.position.y = pickup ? 2.15 : 3; orb.renderOrder = 6;
     group.add(orb);

@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE_MISSIONS, createMissionProgress, validateMissionPoints } from '../src/missions.js';
 
-test('fourteen mission prototypes use supported buildings or reachable interaction points', () => {
-  assert.equal(PLAYABLE_MISSIONS.length, 14);
-  assert.equal(new Set(PLAYABLE_MISSIONS.map(mission => mission.id)).size, 14);
+test('every authored mission uses its own destination or reachable interaction points', () => {
+  assert.equal(PLAYABLE_MISSIONS.length, 42);
+  assert.equal(new Set(PLAYABLE_MISSIONS.map(mission => mission.id)).size, 42);
   for (const mission of PLAYABLE_MISSIONS) assert.equal(validateMissionPoints(mission), true, mission.id);
 });
 
@@ -34,12 +34,24 @@ test('the gym and library have separate entrances', () => {
 
 test('arrival and firefighting missions have different completion triggers', () => {
   const fire = createMissionProgress(PLAYABLE_MISSIONS.find(entry => entry.id === 'pig_01'));
-  fire.update({ x: -98, z: -51 });
+  fire.update(PLAYABLE_MISSIONS.find(entry => entry.id === 'pig_01').target);
   assert.equal(fire.stage, 'going');
-  fire.update({ x: -98, z: -51 }, true);
+  fire.update(PLAYABLE_MISSIONS.find(entry => entry.id === 'pig_01').target, true);
   assert.equal(fire.stage, 'complete');
   const fixMission = PLAYABLE_MISSIONS.find(entry => entry.id === 'horse_02');
   const fix = createMissionProgress(fixMission);
   fix.update(fixMission.target);
   assert.equal(fix.stage, 'complete');
+});
+
+test('the optional ring run follows eight ordered road checkpoints', () => {
+  const mission = PLAYABLE_MISSIONS.find(entry => entry.id === 'panda_03');
+  const progress = createMissionProgress(mission);
+  progress.update(mission.route[1]);
+  assert.equal(progress.checkpoint, 0);
+  for (const [index,point] of mission.route.entries()) {
+    progress.update(point);
+    assert.equal(progress.checkpoint, index + 1);
+  }
+  assert.equal(progress.stage, 'complete');
 });

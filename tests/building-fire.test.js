@@ -8,12 +8,12 @@ import { AFTER_FIRE_SMOKE_SECONDS, createBuildingFireEffect } from '../src/build
 
 test('world building IDs are stable and distinct from model type IDs', () => {
   const buildings = BUILDING_SITES.filter(site => site.worldBuildingId);
-  assert.equal(buildings.length, 46);
+  assert.equal(buildings.length, 72);
   assert.deepEqual(buildings.map(site => site.worldBuildingId),
     buildings.map((_, index) => `WB-${String(index + 1).padStart(3, '0')}`));
   assert.equal(BUILDING_SITES.filter(site => !site.worldBuildingId).length, 8);
   assert.equal(adjacentBuildingIds(BUILDING_SITES).size, buildings.length);
-  assert.equal(buildings.some(site => ['building-skyscraper-a', 'building-skyscraper-c'].includes(site.name)), false);
+  assert.equal(buildings.some(site => site.name === 'building-skyscraper-c'), false);
 });
 
 test('fire strength follows the requested percentage and building thirds', () => {
