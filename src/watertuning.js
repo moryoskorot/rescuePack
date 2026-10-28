@@ -173,7 +173,7 @@ function animate(now) {
     const target=fireState.onFire.has('PREVIEW')?{worldBuildingId:'PREVIEW',windows}:null;
     const result=hose.update(dt,nozzle,forward,target,tank,settings);
     tank.spraying=result.spraying;
-    hoseEffect.update(result.shots,dt,settings,camera,impacts);impacts.length=0;
+    hoseEffect.update(result.shots,dt,settings,camera,impacts,renderer.domElement.height);impacts.length=0;
     fireEffect?.update(dt,camera);
     const nearest=target?nearestWindowTarget(nozzle,windows):null;
     targetOutline.visible=Boolean(nearest);

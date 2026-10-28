@@ -46,11 +46,11 @@ export function createFirefightingEffect(THREE, scene) {
     sizes[index] = size; alphas[index] = opacity;
   }
   return {
-    update(shots, dt, config, camera, impacts = []) {
+    update(shots, dt, config, camera, impacts = [], drawingHeight) {
       const duration = config.streamTrailDuration;
       lineMaterial.uniforms.color.value.set(config.waterColor);
       material.uniforms.color.value.set(config.waterColor);
-      if (camera) material.uniforms.projectionScale.value = (globalThis.innerHeight || 800) * Math.min(globalThis.devicePixelRatio || 1, 2)
+      if (camera) material.uniforms.projectionScale.value = (drawingHeight ?? (globalThis.innerHeight || 800) * Math.min(globalThis.devicePixelRatio || 1, 2))
         / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
       for (const shot of shots) {
         const previous = lastPositions.get(shot);

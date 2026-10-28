@@ -107,10 +107,12 @@ test('projectile ribbon and droplets fade after the shot finishes', () => {
   const truck=new THREE.Group();scene.add(truck);
   const hose = createFirefightingEffect(THREE,scene);
   const camera=new THREE.PerspectiveCamera(50,1,.1,100);camera.position.set(0,5,20);
+  camera.updateMatrixWorld();
+  const drawingHeight=480;
   const shot={position:new THREE.Vector3(0,2,0)};
-  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
+  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera,[],drawingHeight);
   shot.position.set(1,2,0);
-  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
+  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera,[],drawingHeight);
   const [ribbon,cloud]=scene.children.slice(1);
   assert.equal(ribbon.parent,scene);
   assert.equal(cloud.parent,scene);
@@ -118,8 +120,14 @@ test('projectile ribbon and droplets fade after the shot finishes', () => {
   const a=ribbon.geometry.attributes.position;
   assert.ok(Math.abs(Math.hypot(a.getX(0)-a.getX(1),a.getY(0)-a.getY(1),a.getZ(0)-a.getZ(1))
     -WATER_TUNING_DEFAULTS.projectileSize)<1e-5,'ribbon width matches the projectile size');
+  const firstEdge=new THREE.Vector3().fromBufferAttribute(a,0).project(camera);
+  const secondEdge=new THREE.Vector3().fromBufferAttribute(a,1).project(camera);
+  const ribbonPixels=firstEdge.distanceTo(secondEdge)*drawingHeight/2;
+  const shotDepth=-shot.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
+  const pointPixels=WATER_TUNING_DEFAULTS.projectileSize*cloud.material.uniforms.projectionScale.value/shotDepth;
+  assert.ok(Math.abs(ribbonPixels-pointPixels)<pointPixels*.05,'trail and projectile have the same on-screen diameter');
   assert.ok(cloud.geometry.drawRange.count>=1);
-  hose.update([],1,WATER_TUNING_DEFAULTS,camera);
+  hose.update([],1,WATER_TUNING_DEFAULTS,camera,[],drawingHeight);
   assert.equal(ribbon.geometry.drawRange.count,0);
 });
 

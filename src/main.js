@@ -615,7 +615,7 @@ function animate(now){
     const target=active?{worldBuildingId,windows:fireTargets.get(worldBuildingId)}:null;
     const result=hose.update(dt,hoseNozzle,hoseForward,target,waterBoost,waterTuning);
     waterBoost.spraying=result.spraying;
-    hoseEffect.update(result.shots,dt,waterTuning,camera,hoseImpacts);
+    hoseEffect.update(result.shots,dt,waterTuning,camera,hoseImpacts,renderer.domElement.height);
     hoseImpacts.length=0;
   }
   if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
