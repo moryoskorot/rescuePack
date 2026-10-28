@@ -74,6 +74,8 @@ for (const z of [21.5,54]) for (const x of [99,111]) for (const dz of [-5,5]) {
 }
 
 export const CIVIC_ENVELOPES = [
+  {name:'town library',x:-35,z:-77,width:21,depth:12},
+  {name:'sports center',x:35,z:-77,width:23,depth:13},
   {name:'town hall',x:0,z:-15,width:22,depth:17},
   {name:'museum',x:35,z:-47,width:21,depth:18},
   {name:'fire station',x:35,z:21,width:21,depth:22},

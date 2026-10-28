@@ -4,7 +4,7 @@ A small browser town to explore in a Kenney firetruck. Downtown and the town squ
 
 ## Mission design drafts
 
-The [42-mission library](docs/rescue-pack-missions.json) and [critical design review](docs/rescue-pack-critical-design-review.md) are content and implementation drafts. Four Bunny missions are playable prototypes in the current city: Pig's fire, Horse's fix, Sheep's collection, and Bunny's rescue. Their provisional destinations are labeled in the mission phone. The other missions and optional character switching remain drafts. [Recovered Bunny concept art](docs/concept-art/Bunny%20Firefighter%20Targets%20the%20Blaze.png) is kept with them.
+The [42-mission library](docs/rescue-pack-missions.json) and [critical design review](docs/rescue-pack-critical-design-review.md) are content and implementation drafts. Fourteen missions are playable Bunny prototypes across Fire, Fix, Rescue, and Collect. The city now has a separate Town Library, Sports Center, and industrial footbridge. Sheep's six books are grouped at three return boxes in different districts. The other 28 missions and optional character switching remain drafts. [Recovered Bunny concept art](docs/concept-art/Bunny%20Firefighter%20Targets%20the%20Blaze.png) is kept with them.
 
 ## Play
 

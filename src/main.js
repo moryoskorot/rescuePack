@@ -25,16 +25,6 @@ import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
 import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionMarkers } from './mission-markers.js';
-import pigWorried from '../visuals/processed/PIG_5_distressed.png';
-import pigHappy from '../visuals/processed/PIG_1_idle.png';
-import horseWorried from '../visuals/processed/HORSE_4_annoyed.png';
-import horseHappy from '../visuals/processed/HORSE_1_idle.png';
-import horseVault from '../visuals/processed/HORSE_2_vault.png';
-import sheepWorried from '../visuals/processed/SHEEP_4_annoyed.png';
-import sheepHappy from '../visuals/processed/SHEEP_1_idle.png';
-import sheepShelf from '../visuals/processed/SHEEP_3_shelve.png';
-import bunnyWorried from '../visuals/processed/BUNNY_5_distressed.png';
-import bunnyHappy from '../visuals/processed/BUNNY_1_idle.png';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -206,6 +196,47 @@ function fireStation() {
   box(g, .9, .5, .16, M.red, 8, 5.42, 6.43);
   solid(x, z - 1.5, 21, 17);
   landmark('FIRE STATION', x, z - 2, 15, '#e74e39');
+}
+function facadeSign(parent, label, width, x, y, z, color = '#174b88') {
+  const canvas = document.createElement('canvas'); canvas.width = 768; canvas.height = 160;
+  const context = canvas.getContext('2d');
+  context.fillStyle = color; context.fillRect(0, 0, 768, 160);
+  context.strokeStyle = '#ffffff'; context.lineWidth = 12; context.strokeRect(6, 6, 756, 148);
+  context.fillStyle = '#fff7d5'; context.font = 'bold 90px Arial'; context.textAlign = 'center'; context.textBaseline = 'middle';
+  context.fillText(label, 384, 83);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(width, 2.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), toneMapped: false }));
+  sign.position.set(x, y, z); parent.add(sign);
+}
+function townLibrary() {
+  const x = -35, z = -77, g = group(x, z);
+  box(g, 21, .5, 12, M.stone, 0, .25, 0);
+  box(g, 19, 7, 10, M.wall, 0, 3.8, 0);
+  box(g, 21, 1.2, 12, M.blue, 0, 7.8, 0);
+  for (const xx of [-7,-4.5,4.5,7]) box(g, 1.7, 3.3, .12, M.glass, xx, 3.7, 5.08, false);
+  box(g, 3.6, 4.6, .13, M.wood, 0, 2.45, 5.09);
+  facadeSign(g, 'LIBRARY', 12, 0, 6.2, 5.17);
+  solid(x, z, 21, 12); landmark('TOWN LIBRARY', x, z, 11, '#5dbad6');
+}
+function sportsCenter() {
+  const x = 35, z = -77, g = group(x, z);
+  box(g, 23, .5, 13, M.stone, 0, .25, 0);
+  box(g, 21, 8, 11, mat('#f7e3bb'), 0, 4.25, 0);
+  box(g, 23, 1.5, 13, M.red, 0, 8.8, 0);
+  for (const xx of [-8,-5,5,8]) box(g, 2.1, 3.6, .12, M.glass, xx, 4, 5.58, false);
+  box(g, 4, 5.2, .15, M.darkBlue, 0, 2.85, 5.62);
+  facadeSign(g, 'SPORTS CENTER', 16, 0, 7, 5.71, '#c94b3d');
+  solid(x, z, 23, 13); landmark('SPORTS CENTER', x, z, 12, '#ee8c47');
+}
+function industrialFootbridge() {
+  const x = 85, z = -23, g = group(x, z);
+  for (const side of [-1, 1]) {
+    box(g, .7, 6, .7, M.metal, side * 8.5, 3, 0);
+    box(g, 1.5, .5, 2, M.yellow, side * 8.5, .25, 0);
+    solid(x + side * 8.5, z, 1.5, 2);
+  }
+  box(g, 18, .45, 2.2, M.wood, 0, 6.3, 0);
+  for (const side of [-1,1]) box(g, 18, .8, .15, M.blue, 0, 6.95, side * 1.05);
+  landmark('FOOTBRIDGE', x, z, 9, '#eab94a');
 }
 function townHall() {
   const x = 0, z = -15, g = group(x, z);
@@ -469,25 +500,14 @@ function releaseCamera() {
   canvas.style.cursor=playing?'grab':'default';
 }
 function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
-const portraitUrls = {
-  'visuals/processed/PIG_5_distressed.png': pigWorried,
-  'visuals/processed/PIG_1_idle.png': pigHappy,
-  'visuals/processed/HORSE_4_annoyed.png': horseWorried,
-  'visuals/processed/HORSE_1_idle.png': horseHappy,
-  'visuals/processed/HORSE_2_vault.png': horseVault,
-  'visuals/processed/SHEEP_4_annoyed.png': sheepWorried,
-  'visuals/processed/SHEEP_1_idle.png': sheepHappy,
-  'visuals/processed/SHEEP_3_shelve.png': sheepShelf,
-  'visuals/processed/BUNNY_5_distressed.png': bunnyWorried,
-  'visuals/processed/BUNNY_1_idle.png': bunnyHappy,
-};
+const portraitUrls = import.meta.glob('../visuals/processed/*.png', { eager: true, query: '?url', import: 'default' });
 const missionPanel = document.querySelector('#mission-panel');
 const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
 const phoneButton = document.querySelector('#phone-button');
-let activeMission = null, missionProgress = null, selectedMission = null, panelOpen = false;
+let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
 let completedMissionIds = new Set();
-function missionPortrait(path) { return portraitUrls[path] ?? ''; }
+function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
 function makeDialogue(lines) {
   const wrap = document.createElement('div'); wrap.className = 'mission-dialogue';
   for (const line of lines) {
@@ -505,6 +525,19 @@ function missionButton(label, action, className = 'mission-action') {
   const button = document.createElement('button'); button.type = 'button'; button.className = className;
   button.textContent = label; button.addEventListener('click', action); return button;
 }
+function appendDialogueSequence(lines, onDone) {
+  const host = document.createElement('div');
+  missionContent.append(host);
+  let index = 0;
+  function showLine() {
+    host.replaceChildren(makeDialogue([lines[index]]), missionButton('OK ➜', () => {
+      index++;
+      if (index < lines.length) showLine();
+      else onDone();
+    }));
+  }
+  if (lines.length) showLine(); else onDone();
+}
 function openPanel() { if (!playing) return; panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel(); }
 function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; }
 function renderMissionPanel() {
@@ -514,8 +547,8 @@ function renderMissionPanel() {
     heading.textContent = selectedMission.title;
     const place = document.createElement('p'); place.className = 'mission-place'; place.textContent = selectedMission.label;
     const objective = document.createElement('p'); objective.className = 'mission-objective'; objective.textContent = selectedMission.objective;
-    missionContent.append(place, objective, makeDialogue(selectedMission.dialogue.start));
-    missionContent.append(missionButton('Accept mission ➜', () => startMission(selectedMission)));
+    missionContent.append(place, objective);
+    appendDialogueSequence(selectedMission.dialogue.start, () => startMission(selectedMission));
     missionContent.append(missionButton('Back to calls', () => { selectedMission = null; renderMissionPanel(); }, 'mission-secondary'));
   } else if (activeMission) {
     heading.textContent = activeMission.title;
@@ -527,7 +560,7 @@ function renderMissionPanel() {
     const list = document.createElement('div'); list.className = 'mission-list';
     for (const mission of PLAYABLE_MISSIONS) {
       const card = document.createElement('button'); card.type = 'button'; card.className = 'mission-card';
-      const image = document.createElement('img'); image.src = missionPortrait(mission.dialogue.start[0].sprite); image.alt = '';
+      const image = document.createElement('img'); image.src = missionPortrait(mission.dialogue.start[0].sprite); image.alt = ''; image.loading = 'lazy';
       const copy = document.createElement('span');
       const type = document.createElement('small'); type.textContent = `${mission.type.toUpperCase()}${completedMissionIds.has(mission.id) ? ' · ★ DONE' : ''}`;
       const title = document.createElement('strong'); title.textContent = mission.title;
@@ -542,14 +575,14 @@ function refreshMissionMarkers() {
   if (!activeMission) { missionMarkers.clear(); return; }
   if (activeMission.type === 'collect') {
     if (missionProgress.stage === 'returning') missionMarkers.set([{ point: activeMission.target, kind: 'return' }]);
-    else missionMarkers.set(activeMission.pickups.flatMap((point, index) => missionProgress.collected.has(index) ? [] : [{ point, kind: 'collect' }]));
+    else missionMarkers.set(activeMission.pickups.flatMap((point, index) => missionProgress.collected.has(index) ? [] : [{ point, kind: activeMission.markerKind ?? 'collect' }]));
   } else missionMarkers.set([{ point: activeMission.target, kind: activeMission.type }]);
 }
 function updateMissionStatus() {
   if (!activeMission) { missionStatus.textContent = '📱 Tap the phone for a mission'; return; }
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
-    ? `📚 All ${activeMission.pickups.length} books found! Return to the school library`
-    : `📚 ${missionProgress.collectedCount}/${activeMission.pickups.length} books · Follow the glowing ! markers`;
+    ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Return to ${activeMission.returnLabel}`
+    : `📦 ${missionProgress.collectedCount}/${activeMission.mechanics.item_count} ${activeMission.pickupLabel} · Follow the glowing ! markers`;
   else if (activeMission.type === 'fire') missionStatus.textContent = `🔥 ${activeMission.title} · Drive close to the marker to spray`;
   else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · Follow the marker`;
 }
@@ -557,10 +590,11 @@ function startMission(mission) {
   if (activeMission) finishMission(false, true);
   activeMission = mission;
   missionProgress = createMissionProgress(mission);
+  activeFireSiteId = null;
   fireState.clear(); fireProgress.clear(); fireEffect.clear();
   if (mission.type === 'fire') {
     const site = BUILDING_SITES.find(candidate => candidate.x === mission.fireSite.x && candidate.z === mission.fireSite.z && candidate.worldBuildingId);
-    if (site) fireState.set(site.worldBuildingId, 55);
+    if (site) { activeFireSiteId = site.worldBuildingId; fireState.set(site.worldBuildingId, 55); }
   }
   fireStatus.classList.toggle('hidden', mission.type !== 'fire');
   lastFireCount = -1;
@@ -570,7 +604,7 @@ function startMission(mission) {
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
-  activeMission = null; missionProgress = null; selectedMission = null;
+  activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
   if (success) completedMissionIds.add(mission.id);
@@ -578,14 +612,14 @@ function finishMission(success, silent = false) {
   if (silent) return;
   resetInput(); panelOpen = true; missionPanel.classList.remove('hidden');
   document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
-  missionContent.replaceChildren(makeDialogue(mission.dialogue[success ? 'success' : 'failure']));
-  missionContent.append(missionButton('More missions ➜', () => renderMissionPanel()));
+  missionContent.replaceChildren();
+  appendDialogueSequence(mission.dialogue[success ? 'success' : 'failure'], renderMissionPanel);
   missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
 }
 function advanceMission() {
   if (!activeMission || panelOpen) return;
   const previousStage = missionProgress.stage, previousCount = missionProgress.collectedCount;
-  const stage = missionProgress.update(renderPose, activeMission.type === 'fire' && fireState.onFire.size === 0);
+  const stage = missionProgress.update(renderPose, activeMission.type === 'fire' && activeFireSiteId && !fireState.onFire.has(activeFireSiteId));
   if (stage === 'complete') { finishMission(true); return; }
   if (stage !== previousStage || missionProgress.collectedCount !== previousCount) {
     updateMissionStatus(); refreshMissionMarkers();
@@ -704,6 +738,11 @@ function updateMissionWaypoint() {
   markerRight.set(1,0,0).applyQuaternion(camera.quaternion);
   markerForward.set(0,0,-1).applyQuaternion(camera.quaternion);
   const layout=edgeMarkerLayout(dx*markerRight.x+dz*markerRight.z,-dx*markerForward.x-dz*markerForward.z,distance,innerWidth,innerHeight);
+  layout.x = THREE.MathUtils.clamp(layout.x, 78, Math.max(78, innerWidth - 78));
+  const statusBounds = missionStatus.getBoundingClientRect();
+  if (layout.y < statusBounds.bottom + 40) {
+    layout.y = Math.min(innerHeight - 110, statusBounds.bottom + 48);
+  }
   missionWaypoint.classList.remove('hidden');
   missionWaypoint.classList.toggle('returning', missionProgress.stage === 'returning');
   missionWaypoint.style.left=`${layout.x}px`; missionWaypoint.style.top=`${layout.y}px`;
@@ -801,7 +840,7 @@ camera.position.set(54,21,64);camera.lookAt(25,3,22);
 requestAnimationFrame(animate);
 
 preload().then(()=>{
-  buildBlocks();fireStation();townHall();museum();school();hospital();square();details();createTruck();makeLabels();
+  buildBlocks();fireStation();townHall();museum();school();hospital();square();townLibrary();sportsCenter();industrialFootbridge();details();createTruck();makeLabels();
   document.querySelector('#loading').classList.add('hidden');
   document.querySelector('#menu').classList.remove('hidden');
 }).catch(error=>{

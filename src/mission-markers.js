@@ -28,6 +28,7 @@ function orbTexture(THREE, glyph, colors) {
 export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
   const textures = {
     collect: orbTexture(THREE, '!', ['#bfeaff', '#319cf4', '#6239b3']),
+    book: orbTexture(THREE, '!', ['#bfeaff', '#319cf4', '#6239b3']),
     return: orbTexture(THREE, '↩', ['#fff5b1', '#ffc444', '#ec7a37']),
     fire: orbTexture(THREE, '!', ['#ffeaaa', '#ff8c47', '#dc3d4b']),
     fix: orbTexture(THREE, '!', ['#d6ffcf', '#69d6a5', '#158b91']),
@@ -37,35 +38,47 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
   function clear() {
     for (const { group } of entries) {
       scene.remove(group);
-      group.traverse(object => { if (object.isMesh || object.isSprite) object.material.dispose(); });
+      group.traverse(object => {
+        if (object.isMesh || object.isSprite) object.material.dispose();
+        if (object.isMesh) object.geometry.dispose();
+      });
     }
     entries.length = 0;
   }
   function add(point, kind = 'collect') {
     const group = new THREE.Group();
-    const color = { collect: '#65d9ff', return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff' }[kind];
+    const color = { collect: '#65d9ff', book: '#65d9ff', return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff' }[kind];
     const ground = getSurfaceHeight(point.x, point.z);
     group.position.set(point.x, ground + .06, point.z);
-    for (const [inner, outer, opacity, y] of [[2.1, 3.1, .22, 0], [2.4, 2.68, .95, .018], [1.75, 1.88, .75, .03]]) {
+    const pickup = kind === 'collect' || kind === 'book';
+    const radius = pickup ? 1.25 : 2.25;
+    for (const [inner, outer, opacity, y] of [[radius - .18, radius + .42, .22, 0], [radius, radius + .2, .95, .018], [radius - .43, radius - .34, .75, .03]]) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 64), new THREE.MeshBasicMaterial({
         color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide,
-        toneMapped: false, blending: inner === 2.1 ? THREE.AdditiveBlending : THREE.NormalBlending,
+        toneMapped: false, blending: opacity === .22 ? THREE.AdditiveBlending : THREE.NormalBlending,
       }));
       ring.rotation.x = -Math.PI / 2; ring.position.y = y; ring.renderOrder = 5;
       group.add(ring);
     }
+    if (kind === 'book') {
+      const box = new THREE.Mesh(new THREE.BoxGeometry(.9, .8, .7), new THREE.MeshStandardMaterial({ color: '#ffcf64', roughness: .55 }));
+      box.position.y = .42; box.castShadow = true; group.add(box);
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(.54, .1, .03), new THREE.MeshBasicMaterial({ color: '#527fb7' }));
+      slot.position.set(0, .58, .365); group.add(slot);
+    }
     const orb = new THREE.Sprite(new THREE.SpriteMaterial({ map: textures[kind], transparent: true, depthWrite: false, toneMapped: false }));
-    orb.scale.set(5.5, 5.5, 1); orb.position.y = 3.1; orb.renderOrder = 6;
+    const size = pickup ? 3.1 : 4.6;
+    orb.scale.set(size, size, 1); orb.position.y = pickup ? 2.15 : 3; orb.renderOrder = 6;
     group.add(orb);
     scene.add(group);
-    entries.push({ group, orb });
+    entries.push({ group, orb, pickup });
   }
   return {
     clear,
     set(points) { clear(); points.forEach(({ point, kind }) => add(point, kind)); },
     update(elapsed) {
-      entries.forEach(({ group, orb }, index) => {
-        orb.position.y = 3.1 + .25 * Math.sin(elapsed * 2.6 + index);
+      entries.forEach(({ group, orb, pickup }, index) => {
+        orb.position.y = (pickup ? 2.15 : 3) + .17 * Math.sin(elapsed * 2.6 + index);
         const pulse = 1 + .05 * Math.sin(elapsed * 3.5 + index);
         group.children[1].scale.setScalar(pulse);
       });

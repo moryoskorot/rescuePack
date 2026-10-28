@@ -1,5 +1,9 @@
 # Rescue Pack mission library: critical design review
 
+## Current prototype update
+
+Fourteen library entries are now playable with Bunny. The Town Library and Sports Center have separate buildings and entrances, and Sheep's six books are collected from three return boxes in the Suburbs, Downtown, and Industrial Yards. Some other mission settings are still mapped to labeled prototype sites in the existing city. The remaining 28 library entries and optional character switching are still drafts. The original collection scatter distances below are content-draft guidance; Sheep's authored three-district route intentionally exceeds that draft radius.
+
 This review accompanies [the 42-mission library](rescue-pack-missions.json). The mission text is a **content draft**, not a claim that every destination, object, pickup, and character is already present in the game. The original mission JSON was recovered from Downloads. The earlier review Markdown was not available, so this document has been regenerated from the request and the current game project.
 
 ## Playable-character rule
