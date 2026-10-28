@@ -2,7 +2,7 @@ export const WATER_TUNING_DEFAULTS = Object.freeze({
   projectilesPerSecond: 4,
   extinguishPerProjectile: 2,
   waterPerProjectile: 2.5,
-  lobAngle: 22,
+  lobAngle: 65,
   lobSpeed: 23,
   waterRegen: 1,
   hydrantRegen: 25,
@@ -35,12 +35,17 @@ export function clampWaterTuning(settings) {
 }
 
 export function loadWaterTuning() {
-  try { return clampWaterTuning({ ...WATER_TUNING_DEFAULTS, ...JSON.parse(localStorage.getItem('rescuePack.waterTuning') || '{}') }); }
+  try {
+    const saved = JSON.parse(localStorage.getItem('rescuePack.waterTuning') || '{}');
+    // Apply the requested arc once to existing tuning saved before this change.
+    if ((saved.schemaVersion ?? 1) < 3) saved.lobAngle = 65;
+    return clampWaterTuning({ ...WATER_TUNING_DEFAULTS, ...saved });
+  }
   catch { return { ...WATER_TUNING_DEFAULTS }; }
 }
 
 export function saveWaterTuning(settings) {
   const clean = clampWaterTuning(settings);
-  localStorage.setItem('rescuePack.waterTuning', JSON.stringify(clean));
+  localStorage.setItem('rescuePack.waterTuning', JSON.stringify({ ...clean, schemaVersion: 3 }));
   return clean;
 }

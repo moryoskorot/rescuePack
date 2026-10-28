@@ -1,18 +1,22 @@
 import { windowFireStrength, windowThird } from './building-fire.js';
 import { chimneyFireStrength } from './industrial-chimneys.js';
 
-const WINDOW_FLAME_RATE = [0, 3.4, 5.0, 7.2];
-const WINDOW_SMOKE_RATE = [1.8, 1.3, 2.0, 3.2];
+const WINDOW_FLAME_RATE = [0, 4.8, 6.4, 8.4];
+const WINDOW_SMOKE_RATE = [2.4, 1.8, 2.6, 3.6];
 const CHIMNEY_FLAME_RATE = [0, 0, 5.0, 0];
 const CHIMNEY_SMOKE_RATE = [3.2, 0, 2.5, 0];
+export const AFTER_FIRE_SMOKE_SECONDS = 3.5;
 
 // A pair of dynamic point clouds keeps the visual cost bounded even when many
 // windows burn. Particle positions are calculated from each placed GLB's own
 // local window map; the same source model can burn at several world sites.
 export function createBuildingFireEffect(THREE, scene, fireState) {
   const emitters = [];
+  const previousFireIds = new Set();
+  const smokeAfterFire = new Map();
   const particles = { flame: [], smoke: [] };
-  const capacities = { flame: 750, smoke: 900 };
+  const capacities = { flame: 1700, smoke: 2500 };
+  let emitterCursor = 0;
   const pointClouds = {};
   const pointData = {};
   const uniforms = { uProjectionScale: { value: 800 } };
@@ -111,6 +115,7 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
         flameLane: 0,
         flameCarry: Math.random(),
         smokeCarry: Math.random(),
+        lastStrength: -1,
       });
     }
     for (const chimney of chimneys) {
@@ -124,14 +129,14 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
         width,
         height: chimney.diameter * object.scale.y,
         mass: Math.max(1, Math.min(2.3, width * 1.3)),
-        flameLane: 0, flameCarry: Math.random(), smokeCarry: Math.random(),
+        flameLane: 0, flameCarry: Math.random(), smokeCarry: Math.random(), lastStrength: -1,
       });
     }
   }
 
   function spawn(kind, emitter, strength) {
     const list = particles[kind];
-    if (list.length >= capacities[kind]) return;
+    if (list.length >= capacities[kind]) return false;
     const r = Math.random;
     const lanes = Math.max(1, Math.min(9, Math.ceil(emitter.width / .75)));
     const lane = kind === 'flame' ? emitter.flameLane++ % lanes : 0;
@@ -145,22 +150,25 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
     const flame = kind === 'flame';
     const ember = flame && r() < .14;
     const life = flame ? [.0, .4, .72, 1.05][strength] + r() * [.0, .25, .43, .65][strength]
-      : 1.35 + r() * (strength === 3 ? 1.6 : 1.0);
-    const size = (flame ? (.25 + strength * .17) * (ember ? .34 : 1) : .8 + strength * .18)
+      : 3.6 + r() * (strength === 3 ? 2.2 : 1.7);
+    const size = (flame ? (.32 + strength * .23) * (ember ? .34 : 1) : .8 + strength * .18)
       * sizeFactor * (.7 + r() * .65);
     const origin = emitter.center;
+    const outwardOffset = emitter.chimney ? (r() - .5) * emitter.width * .65
+      : .25 + Math.min(.4, emitter.width * .2);
     list.push({
-      x: origin.x + emitter.sideways.x * offset + emitter.outward.x * (emitter.chimney ? (r() - .5) * emitter.width * .65 : .2),
+      x: origin.x + emitter.sideways.x * offset + emitter.outward.x * outwardOffset,
       y: origin.y + up,
-      z: origin.z + emitter.sideways.z * offset + emitter.outward.z * (emitter.chimney ? (r() - .5) * emitter.width * .65 : .2),
+      z: origin.z + emitter.sideways.z * offset + emitter.outward.z * outwardOffset,
       vx: emitter.outward.x * (.25 + r() * .38) + (r() - .5) * (flame ? .26 : .42),
-      vy: flame ? (ember ? 2.0 : 1.1) + strength * .25 + r() * .8 : (emitter.chimney ? 1.05 : .55) + r() * .45,
+      vy: flame ? (ember ? 2.0 : 1.1) + strength * .25 + r() * .8 : (emitter.chimney ? 1.65 : 1.15) + r() * .8,
       vz: emitter.outward.z * (.25 + r() * .38) + (r() - .5) * (flame ? .26 : .42),
       size, baseSize: size, rotation: (r() - .5) * .85, spin: (r() - .5) * 1.3,
       age: 0, life, ember,
       color: flame ? (r() < .3 ? [1, .72, .12] : r() < .58 ? [1, .52, .05] : [1, .36, .02])
         : (r() < .5 ? [.27, .29, .30] : [.39, .40, .40]),
     });
+    return true;
   }
 
   function updateCloud(kind, dt) {
@@ -171,8 +179,8 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
       if (p.age >= p.life) {
         if (kind === 'flame' && !p.ember && Math.random() < .55 && particles.smoke.length < capacities.smoke) {
           particles.smoke.push({
-            ...p, age: 0, life: 1.3 + Math.random() * 1.2,
-            vy: p.vy * .42, size: p.baseSize * 1.7, baseSize: p.baseSize * 1.7,
+            ...p, age: 0, life: 3.2 + Math.random() * 1.6,
+            vy: Math.max(1.1, p.vy * .65), size: p.baseSize * 1.7, baseSize: p.baseSize * 1.7,
             color: [.33, .34, .34],
           });
         }
@@ -211,28 +219,53 @@ export function createBuildingFireEffect(THREE, scene, fireState) {
     clear() {
       particles.flame.length = 0;
       particles.smoke.length = 0;
+      previousFireIds.clear();
+      smokeAfterFire.clear();
       pointClouds.flame.geometry.setDrawRange(0, 0);
       pointClouds.smoke.geometry.setDrawRange(0, 0);
-      for (const emitter of emitters) { emitter.flameCarry = 0; emitter.smokeCarry = 0; }
+      for (const emitter of emitters) { emitter.flameCarry = 0; emitter.smokeCarry = 0; emitter.lastStrength = -1; }
     },
     update(dt, camera) {
-      uniforms.uProjectionScale.value = innerHeight * Math.min(devicePixelRatio, 2) /
+      uniforms.uProjectionScale.value = (globalThis.innerHeight || 800) * Math.min(globalThis.devicePixelRatio || 1, 2) /
         (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+      for (const id of previousFireIds) if (!fireState.onFire.has(id)) {
+        smokeAfterFire.set(id, AFTER_FIRE_SMOKE_SECONDS);
+        previousFireIds.delete(id);
+      }
+      for (const id of fireState.onFire.keys()) {
+        previousFireIds.add(id);
+        smokeAfterFire.delete(id);
+      }
+      for (const [id, remaining] of smokeAfterFire) {
+        const next = remaining - dt;
+        if (next <= 0) smokeAfterFire.delete(id);
+        else smokeAfterFire.set(id, next);
+      }
       let spawned = 0;
-      for (const emitter of emitters) {
+      // Rotating the starting point prevents the shared particle limit from
+      // starving the facades registered later in the city.
+      emitterCursor = emitters.length ? (emitterCursor + Math.max(1, Math.floor(emitters.length / 5))) % emitters.length : 0;
+      for (let index = 0; index < emitters.length; index++) {
+        const emitter = emitters[(emitterCursor + index) % emitters.length];
         const percent = fireState.onFire.get(emitter.worldBuildingId) ?? 0;
-        if (!percent || camera.position.distanceToSquared(emitter.center) > 110 * 110) continue;
-        const strength = emitter.chimney ? chimneyFireStrength(percent) : windowFireStrength(percent, emitter.third);
-        if (strength < 0) continue;
-        const flameRate = (emitter.chimney ? CHIMNEY_FLAME_RATE : WINDOW_FLAME_RATE)[strength] * emitter.mass;
-        const smokeRate = (emitter.chimney ? CHIMNEY_SMOKE_RATE : WINDOW_SMOKE_RATE)[strength] * emitter.mass;
+        const strength = percent ? emitter.chimney ? chimneyFireStrength(percent) : windowFireStrength(percent, emitter.third) : -1;
+        if (strength >= 0) emitter.lastStrength = strength;
+        const afterglow = smokeAfterFire.get(emitter.worldBuildingId) ?? 0;
+        const smoking = !percent && afterglow > 0 && emitter.lastStrength >= 0;
+        if (strength < 0 && !smoking) continue;
+        const smokeFade = smoking ? .35 + .65 * afterglow / AFTER_FIRE_SMOKE_SECONDS : 1;
+        const flameRate = smoking ? 0 : (emitter.chimney ? CHIMNEY_FLAME_RATE : WINDOW_FLAME_RATE)[strength] * emitter.mass;
+        const smokeRate = (emitter.chimney ? CHIMNEY_SMOKE_RATE : WINDOW_SMOKE_RATE)[smoking ? 0 : strength] * emitter.mass * smokeFade;
         emitter.flameCarry += flameRate * dt;
         emitter.smokeCarry += smokeRate * dt;
-        while (emitter.flameCarry >= 1 && spawned < 140) {
-          spawn('flame', emitter, strength); emitter.flameCarry--; spawned++;
+        if (smoking) emitter.flameCarry = 0;
+        while (!smoking && emitter.flameCarry >= 1 && spawned < 180) {
+          if (!spawn('flame', emitter, strength)) break;
+          emitter.flameCarry--; spawned++;
         }
-        while (emitter.smokeCarry >= 1 && spawned < 140) {
-          spawn('smoke', emitter, strength); emitter.smokeCarry--; spawned++;
+        while (emitter.smokeCarry >= 1 && spawned < 180) {
+          if (!spawn('smoke', emitter, smoking ? 0 : strength)) break;
+          emitter.smokeCarry--; spawned++;
         }
         emitter.flameCarry = Math.min(emitter.flameCarry, 2);
         emitter.smokeCarry = Math.min(emitter.smokeCarry, 2);

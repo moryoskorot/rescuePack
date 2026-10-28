@@ -85,16 +85,39 @@ test('aim approaches a window over about a second rather than snapping to it', (
   assert.ok(later.distanceTo(target.windows[0].center)<.5);
 });
 
+test('launched water stays in world space when the truck moves', () => {
+  const tank=createWaterBoostState();
+  const hose=createHoseProjectiles(THREE,()=>{});
+  const object=new THREE.Group();object.position.x=12;
+  const windows=worldWindowTargets(THREE,object,[{id:'W1',side:'-X',corners:[[0,2,-2],[0,2,2],[0,5,2],[0,5,-2]]}]);
+  const nozzle=new THREE.Vector3(0,3,0),forward=new THREE.Vector3(1,0,0);
+  const target={worldBuildingId:'WB-001',windows};
+  hose.update(.25,nozzle,forward,target,tank,WATER_TUNING_DEFAULTS);
+  const first=hose.state.shots[0];
+  const start=first.start.clone(),end=first.end.clone();
+  nozzle.x=3;
+  hose.update(.05,nozzle,forward,target,tank,WATER_TUNING_DEFAULTS);
+  assert.deepEqual(first.start,start);
+  assert.deepEqual(first.end,end);
+  assert.notEqual(first.position.x,first.start.x);
+});
+
 test('projectile ribbon and droplets fade after the shot finishes', () => {
   const scene = new THREE.Scene();
+  const truck=new THREE.Group();scene.add(truck);
   const hose = createFirefightingEffect(THREE,scene);
   const camera=new THREE.PerspectiveCamera(50,1,.1,100);camera.position.set(0,5,20);
   const shot={position:new THREE.Vector3(0,2,0)};
   hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
   shot.position.set(1,2,0);
   hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
-  const [ribbon,cloud]=scene.children;
+  const [ribbon,cloud]=scene.children.slice(1);
+  assert.equal(ribbon.parent,scene);
+  assert.equal(cloud.parent,scene);
   assert.equal(ribbon.geometry.drawRange.count,6);
+  const a=ribbon.geometry.attributes.position;
+  assert.ok(Math.abs(Math.hypot(a.getX(0)-a.getX(1),a.getY(0)-a.getY(1),a.getZ(0)-a.getZ(1))
+    -WATER_TUNING_DEFAULTS.projectileSize)<1e-5,'ribbon width matches the projectile size');
   assert.ok(cloud.geometry.drawRange.count>=1);
   hose.update([],1,WATER_TUNING_DEFAULTS,camera);
   assert.equal(ribbon.geometry.drawRange.count,0);

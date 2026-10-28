@@ -1,4 +1,5 @@
-// Projectiles leave stationary, fading strands. Small droplets fall away under gravity.
+// Projectiles leave stationary, fading strands. Both meshes live at the world
+// scene root, while small droplets fall away under gravity.
 export function createFirefightingEffect(THREE, scene) {
   const MAX_LINES = 900, MAX_POINTS = 700;
   const linePositions = new Float32Array(MAX_LINES * 18);
@@ -68,7 +69,7 @@ export function createFirefightingEffect(THREE, scene) {
       let lineCount = 0;
       for (const trace of traces) {
         const i = lineCount * 18, j = lineCount * 6;
-        const sideways=trace.b.clone().sub(trace.a).cross(camera.position.clone().sub(trace.a)).normalize().multiplyScalar(config.projectileSize*.22);
+        const sideways=trace.b.clone().sub(trace.a).cross(camera.position.clone().sub(trace.a)).normalize().multiplyScalar(config.projectileSize*.5);
         const a1=trace.a.clone().add(sideways),a2=trace.a.clone().sub(sideways);
         const b1=trace.b.clone().add(sideways),b2=trace.b.clone().sub(sideways);
         linePositions.set([a1.x,a1.y,a1.z,a2.x,a2.y,a2.z,b1.x,b1.y,b1.z,
