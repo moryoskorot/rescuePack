@@ -53,9 +53,9 @@ export function createFirefightingEffect(THREE, scene) {
       if (camera) material.uniforms.projectionScale.value = (drawingHeight ?? (globalThis.innerHeight || 800) * Math.min(globalThis.devicePixelRatio || 1, 2))
         / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
       for (const shot of shots) {
-        const previous = lastPositions.get(shot);
+        const previous = lastPositions.get(shot) ?? shot.start;
         if (previous && duration > 0 && previous.distanceToSquared(shot.position) > .001) {
-          traces.push({ a: previous, b: shot.position.clone(), age: 0 });
+          traces.push({ a: previous.clone(), b: shot.position.clone(), age: 0, shot });
           const count = (sampleCounts.get(shot) ?? 0) + 1;
           sampleCounts.set(shot, count);
           if (config.trailAmount && !config.lastParticleOnly && count % Math.max(1, Math.round(40 / config.trailAmount)) === 0) {
@@ -65,7 +65,11 @@ export function createFirefightingEffect(THREE, scene) {
         lastPositions.set(shot, shot.position.clone());
       }
       for (const impact of impacts) for (let i = 0; i < Math.min(18, config.trailAmount + 4); i++) spawnDrop(impact, config);
-      traces = traces.filter(trace => (trace.age += dt) < duration).slice(-MAX_LINES);
+      const activeShots = new Set(shots);
+      traces = traces.filter(trace => {
+        trace.age = activeShots.has(trace.shot) ? 0 : trace.age + dt;
+        return trace.age < duration;
+      }).slice(-MAX_LINES);
       let lineCount = 0;
       for (const trace of traces) {
         const i = lineCount * 18, j = lineCount * 6;

@@ -153,6 +153,28 @@ test('projectile ribbon and droplets fade after the shot finishes', () => {
   assert.equal(ribbon.geometry.drawRange.count,0);
 });
 
+test('the visible stream remains connected to the launch point throughout a shot', () => {
+  const scene=new THREE.Scene();
+  const hose=createFirefightingEffect(THREE,scene);
+  const camera=new THREE.PerspectiveCamera(50,1,.1,100);camera.position.set(0,5,20);
+  const shot={start:new THREE.Vector3(0,3,0),position:new THREE.Vector3(.2,3.2,0)};
+  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera,[],480);
+  const ribbon=scene.children[0];
+  assert.equal(ribbon.geometry.drawRange.count,6,'first segment begins at the nozzle');
+  for (let i=0;i<8;i++) {
+    shot.position.x+=.2;
+    shot.position.y+=.1;
+    hose.update([shot],.1,WATER_TUNING_DEFAULTS,camera,[],480);
+  }
+  assert.ok(ribbon.geometry.drawRange.count>6,'the full flight remains visible past the trail fade time');
+  const positions=ribbon.geometry.attributes.position;
+  const sourceCenter=new THREE.Vector3().fromBufferAttribute(positions,0)
+    .add(new THREE.Vector3().fromBufferAttribute(positions,1)).multiplyScalar(.5);
+  assert.ok(sourceCenter.distanceTo(shot.start)<1e-5,'the stream still touches its world-space launch point');
+  hose.update([],.6,WATER_TUNING_DEFAULTS,camera,[],480);
+  assert.equal(ribbon.geometry.drawRange.count,0,'the stream fades after the projectile ends');
+});
+
 test('fire markers grow nearby and stay on the viewport edge', () => {
   const far=edgeMarkerLayout(1,-1,160,800,600);
   const near=edgeMarkerLayout(1,-1,0,800,600);
