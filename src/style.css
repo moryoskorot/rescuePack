@@ -65,6 +65,8 @@
   .has-touch-controls .speed-card{min-width:90px}
 }
 
+.tuning-link{color:#fff;font-family:Nunito,Arial,sans-serif;font-size:13px;font-weight:900;text-decoration:none;text-shadow:0 2px 5px #0a245d}
+.tuning-link:hover{text-decoration:underline}
 /* Water is both the boost fuel and the visual theme for its controls. */
 .boost-panel{display:flex;align-items:end;gap:12px}
 .water-meter{width:218px;min-height:91px;padding:9px 12px 8px;display:flex;flex-direction:column;justify-content:center;gap:6px;background:#103b77e8}

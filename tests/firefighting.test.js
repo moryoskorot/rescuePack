@@ -4,6 +4,9 @@ import * as THREE from 'three';
 import { createBuildingFireState } from '../src/building-fire.js';
 import { buildingImpactPoint, createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding } from '../src/firefighting.js';
 import { createFirefightingEffect } from '../src/firefighting-effect.js';
+import { createHoseProjectiles } from '../src/hose-projectiles.js';
+import { nearestWindowTarget, segmentWindowHit, worldWindowTargets } from '../src/window-targets.js';
+import { WATER_TUNING_DEFAULTS } from '../src/water-tuning-config.js';
 import { edgeMarkerLayout } from '../src/fire-markers.js';
 import { interpolateVehiclePose } from '../src/render-pose.js';
 import { createWaterBoostState, stepWaterBoost } from '../src/water-boost.js';
@@ -37,40 +40,64 @@ test('hose reaches the nearest burning footprint and aims at its wall', () => {
   assert.deepEqual(impact,{x:14,y:2.56,z:1});
 });
 
-test('33 water per second removes 28 fire points and zero removes the fire', () => {
+test('only a shot crossing a transformed window rectangle counts as a hit', () => {
+  const object = new THREE.Group();
+  object.position.set(10,0,0); object.scale.setScalar(2);
+  const mapped = [{id:'B1-01-W01',side:'-X',corners:[[0,1,-.5],[0,1,.5],[0,2,.5],[0,2,-.5]]}];
+  const windows=worldWindowTargets(THREE,object,mapped);
+  assert.equal(windows[0].center.x,10);
+  assert.equal(windows[0].normal.x,-1);
+  assert.equal(nearestWindowTarget(new THREE.Vector3(0,3,0),windows).id,'B1-01-W01');
+  assert.equal(segmentWindowHit(new THREE.Vector3(0,3,0),new THREE.Vector3(20,3,0),windows).window.id,'B1-01-W01');
+  assert.equal(segmentWindowHit(new THREE.Vector3(0,6,0),new THREE.Vector3(20,6,0),windows),null);
+  assert.equal(segmentWindowHit(new THREE.Vector3(0,3,3),new THREE.Vector3(20,3,3),windows),null);
+});
+
+test('four projectiles spend 10 water in one second and remove 2 fire points each only after impact', () => {
   const fire = createBuildingFireState(sites);
   const progress = createFirefightingProgress(fire);
   const tank = createWaterBoostState();
   fire.set('WB-001', 56);
-  stepWaterBoost(tank,{x:0,z:0},{held:true,firefighting:true},1,[]);
-  assert.equal(tank.charge,67);
-  assert.equal(tank.spraying,true);
-  assert.equal(tank.active,false);
-  progress.apply('WB-001',tank.usedThisStep);
-  assert.equal(fire.onFire.get('WB-001'),28);
-  stepWaterBoost(tank,{x:0,z:0},{held:true,firefighting:true},1,[]);
-  progress.apply('WB-001',tank.usedThisStep);
-  assert.equal(fire.onFire.has('WB-001'),false);
-  assert.equal(tank.charge,34);
-  tank.charge=10;
-  stepWaterBoost(tank,{x:0,z:0},{held:true,firefighting:true},1,[]);
-  assert.equal(tank.usedThisStep,10);
-  assert.equal(tank.charge,0);
-  assert.equal(tank.needsRelease,true);
+  const object=new THREE.Group();object.position.set(10,0,0);
+  const windows=worldWindowTargets(THREE,object,[{id:'W1',corners:[[0,2,-1],[0,2,1],[0,4,1],[0,4,-1]]}]);
+  let fired=0,hits=0;
+  const hose=createHoseProjectiles(THREE,(id,windowId,point,reduction)=>{hits++;progress.apply(id,reduction);},()=>{fired++;});
+  const nozzle=new THREE.Vector3(0,3,0),forward=new THREE.Vector3(1,0,0);
+  const target={worldBuildingId:'WB-001',windows};
+  for(let i=0;i<120;i++)hose.update(1/120,nozzle,forward,target,tank,WATER_TUNING_DEFAULTS);
+  assert.equal(fired,4);
+  assert.equal(tank.charge,90);
+  assert.ok(hits<4,'the most recent shot is still flying');
+  for(let i=0;i<70;i++)hose.update(1/120,nozzle,forward,null,tank,WATER_TUNING_DEFAULTS);
+  assert.equal(hits,4);
+  assert.equal(fire.onFire.get('WB-001'),48);
 });
 
-test('hose strand grows toward the target and retracts after release', () => {
+test('aim approaches a window over about a second rather than snapping to it', () => {
+  const tank=createWaterBoostState();tank.charge=0;
+  const hose=createHoseProjectiles(THREE,()=>{});
+  const nozzle=new THREE.Vector3(),forward=new THREE.Vector3(1,0,0);
+  const target={worldBuildingId:'WB-001',windows:[{id:'W1',center:new THREE.Vector3(10,3,10),normal:new THREE.Vector3(0,0,1)}]};
+  const first=hose.update(.1,nozzle,forward,target,tank,WATER_TUNING_DEFAULTS).aim.clone();
+  assert.ok(first.distanceTo(target.windows[0].center)>5);
+  let later;
+  for(let i=0;i<84;i++)later=hose.update(1/60,nozzle,forward,target,tank,WATER_TUNING_DEFAULTS).aim.clone();
+  assert.ok(later.distanceTo(target.windows[0].center)<.5);
+});
+
+test('projectile ribbon and droplets fade after the shot finishes', () => {
   const scene = new THREE.Scene();
   const hose = createFirefightingEffect(THREE,scene);
-  const start = new THREE.Vector3(0,2,0),end = new THREE.Vector3(10,3,0);
-  hose.update(true,start,end,.5);
-  const [core,spray]=scene.children;
-  assert.ok(core.geometry.drawRange.count > 100);
-  assert.ok(spray.geometry.drawRange.count > 100);
-  assert.ok(Math.abs(core.geometry.attributes.position.getX(core.geometry.drawRange.count-1)-10)<.1);
-  hose.update(false,null,null,.5);
-  assert.equal(core.geometry.drawRange.count,0);
-  assert.equal(spray.geometry.drawRange.count,0);
+  const camera=new THREE.PerspectiveCamera(50,1,.1,100);camera.position.set(0,5,20);
+  const shot={position:new THREE.Vector3(0,2,0)};
+  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
+  shot.position.set(1,2,0);
+  hose.update([shot],.05,WATER_TUNING_DEFAULTS,camera);
+  const [ribbon,cloud]=scene.children;
+  assert.equal(ribbon.geometry.drawRange.count,6);
+  assert.ok(cloud.geometry.drawRange.count>=1);
+  hose.update([],1,WATER_TUNING_DEFAULTS,camera);
+  assert.equal(ribbon.geometry.drawRange.count,0);
 });
 
 test('fire markers grow nearby and stay on the viewport edge', () => {

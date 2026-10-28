@@ -14,8 +14,11 @@ import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
 import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
-import { buildingImpactPoint, createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
+import { createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
+import { createHoseProjectiles } from './hose-projectiles.js';
+import { worldWindowTargets } from './window-targets.js';
+import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 
@@ -36,6 +39,11 @@ const fireSitesById = new Map(BUILDING_SITES.filter(site => site.worldBuildingId
 const fireTargets = new Map();
 const fireEffect = createBuildingFireEffect(THREE, scene, fireState);
 const hoseEffect = createFirefightingEffect(THREE, scene);
+const waterTuning = loadWaterTuning();
+const hoseImpacts = [];
+const hose = createHoseProjectiles(THREE,(id,windowId,point,reduction)=>{
+  if(fireState.onFire.has(id)){fireProgress.apply(id,reduction);hoseImpacts.push(point.clone());}
+});
 // Scenario scripts can ignite a placed building by its world ID. For a quick
 // preview, open the game with ?fire=WB-001:75 (repeat `fire` for more sites).
 const debugFires = new URLSearchParams(location.search).getAll('fire');
@@ -43,6 +51,7 @@ window.buildingFires = { onFire: fireState.onFire, set: fireState.set, sites: BU
 function startFires() {
   fireProgress.clear();
   fireEffect.clear();
+  hose.reset();hoseEffect.reset();
   if (debugFires.length) {
     fireState.clear();
     for (const entry of debugFires) {
@@ -287,12 +296,15 @@ function building(site) {
   item.position.y+=getSurfaceHeight(x,z)-bounds.min.y;
   bounds.setFromObject(item);bounds.getSize(size);
   solid(x,z,size.x,size.z);
-  if(site.worldBuildingId)fireTargets.set(site.worldBuildingId,bounds.clone());
   item.userData.site=site;
   item.userData.buildingTypeId=BUILDING_TYPES_BY_PATH.get(`${pack}/${name}`)?.id;
   item.userData.worldBuildingId=site.worldBuildingId;
   const sourceBounds=new THREE.Box3().setFromObject(models.get(`${pack}/${name}`));
-  if(site.worldBuildingId)fireEffect.registerBuilding(site.worldBuildingId,item,WINDOW_MAP[`${pack}/${name}`]??[],sourceBounds.min.y,sourceBounds.max.y,INDUSTRIAL_CHIMNEYS[`${pack}/${name}`]??[]);
+  if(site.worldBuildingId){
+    const windows=WINDOW_MAP[`${pack}/${name}`]??[];
+    fireTargets.set(site.worldBuildingId,worldWindowTargets(THREE,item,windows));
+    fireEffect.registerBuilding(site.worldBuildingId,item,windows,sourceBounds.min.y,sourceBounds.max.y,INDUSTRIAL_CHIMNEYS[`${pack}/${name}`]??[]);
+  }
   return item;
 }
 function buildBlocks() {
@@ -431,7 +443,7 @@ function releaseCamera() {
   if(pointerId!==null&&canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
   canvas.style.cursor=playing?'grab':'default';
 }
-function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
+function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
 window.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
@@ -466,8 +478,7 @@ function drive(dt) {
     const boost=boostHeld&&!nearbyFire&&input.throttle>0&&waterBoost.charge>0&&!waterBoost.needsRelease;
     motion=advanceVehicle(player,{...input,boost},VEHICLE_STEP,solids);
     hoseTarget=nearestBurningBuilding(player,BUILDING_SITES,fireState.onFire);
-    stepWaterBoost(waterBoost,player,{held:boostHeld&&(!motion.blocked||Boolean(hoseTarget)),throttle:input.throttle,firefighting:Boolean(hoseTarget)},VEHICLE_STEP);
-    if(waterBoost.spraying&&hoseTarget)fireProgress.apply(hoseTarget.site.worldBuildingId,waterBoost.usedThisStep);
+    stepWaterBoost(waterBoost,player,{held:boostHeld&&!nearbyFire&&!motion.blocked,throttle:input.throttle},VEHICLE_STEP,undefined,{normal:waterTuning.waterRegen,hydrant:waterTuning.hydrantRegen});
     if(motion.blocked)previousWheels=null;
     updateSkids(input.handbrake,motion.speed);
     physicsAccumulator-=VEHICLE_STEP;
@@ -489,14 +500,14 @@ function drive(dt) {
   meter.classList.toggle('near-hydrant',Boolean(waterBoost.nearHydrant)&&charge<100&&!waterBoost.active&&!waterBoost.spraying);
   document.querySelector('#boost-fill').style.width=`${waterBoost.charge}%`;
   document.querySelector('#boost-percent').textContent=`${charge}%`;
-  document.querySelector('#boost-status').textContent=waterBoost.spraying?'FIRE HOSE · −33%/s'
+  document.querySelector('#boost-status').textContent=waterBoost.spraying?`AUTO HOSE · −${Math.round(waterTuning.projectilesPerSecond*waterTuning.waterPerProjectile)}%/s`
     :waterBoost.active?'WATER BOOST ACTIVE'
-    :waterBoost.nearHydrant&&charge<100?'HYDRANT NEARBY · +25%/s'
+    :waterBoost.nearHydrant&&charge<100?`HYDRANT NEARBY · +${waterTuning.hydrantRegen}%/s`
     :waterBoost.needsRelease&&boostHeld?'RELEASE BOOST TO RESTART'
-    :hoseTarget&&charge>0?'HOLD BOOST TO SPRAY FIRE'
-    :boostHeld&&input.throttle<=0?'DRIVE OR APPROACH FIRE'
-    :charge===100?(document.body.classList.contains('has-touch-controls')?'READY · DRIVE OR SPRAY':'READY · HOLD SHIFT OR BOOST')
-    :'RECHARGING · +1%/s';
+    :hoseTarget&&charge>0?'AUTO SPRAY IN RANGE'
+    :boostHeld&&input.throttle<=0?'DRIVE TO BOOST'
+    :charge===100?'READY · APPROACH FIRE TO SPRAY'
+    :`RECHARGING · +${waterTuning.waterRegen}%/s`;
   boostButton.classList.toggle('active',waterBoost.active||waterBoost.spraying);
   boostButton.classList.toggle('empty',charge===0);
   vehicleSound.update({speed:motion.speed,throttle:input.throttle,braking:motion.braking,handbrake:input.handbrake,boost:waterBoost.active});
@@ -510,7 +521,7 @@ function drive(dt) {
   document.querySelector('#district-name').textContent=area;
 }
 const target=new THREE.Vector3(),desired=new THREE.Vector3();
-const hoseNozzle=new THREE.Vector3(),hoseImpact=new THREE.Vector3();
+const hoseNozzle=new THREE.Vector3(),hoseForward=new THREE.Vector3();
 let cameraHeading=player.heading;
 function updateCamera(dt) {
   const yawDifference=Math.atan2(Math.sin(renderPose.heading-cameraHeading),Math.cos(renderPose.heading-cameraHeading));
@@ -594,15 +605,19 @@ function animate(now){
   drive(dt);updateCamera(dt);
   if(playing){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
   if(playing){updateLabels();updateFireMarkers();}
-  const activeHose=playing&&waterBoost.spraying&&hoseTarget&&fireState.onFire.has(hoseTarget.site.worldBuildingId);
-  if(activeHose){
+  if(playing){
     firetruck.updateWorldMatrix(true,false);
     hoseNozzle.set(0,2.7,.35);
     firetruck.localToWorld(hoseNozzle);
-    const point=buildingImpactPoint(renderPose,hoseTarget.site,fireTargets.get(hoseTarget.site.worldBuildingId));
-    hoseImpact.set(point.x,point.y,point.z);
-    hoseEffect.update(true,hoseNozzle,hoseImpact,dt,camera);
-  }else hoseEffect.update(false,null,null,dt,camera);
+    hoseForward.set(0,0,1).transformDirection(firetruck.matrixWorld);
+    const worldBuildingId=hoseTarget?.site.worldBuildingId;
+    const active=worldBuildingId&&fireState.onFire.has(worldBuildingId)&&!waterBoost.active;
+    const target=active?{worldBuildingId,windows:fireTargets.get(worldBuildingId)}:null;
+    const result=hose.update(dt,hoseNozzle,hoseForward,target,waterBoost,waterTuning);
+    waterBoost.spraying=result.spraying;
+    hoseEffect.update(result.shots,dt,waterTuning,camera,hoseImpacts);
+    hoseImpacts.length=0;
+  }
   if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);
   renderer.render(scene,camera);

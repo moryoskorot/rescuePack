@@ -21,6 +21,14 @@ test('water refills at exactly 1% per second away from hydrants and 25% near the
   assert.equal(tank.charge, 100);
 });
 
+test('a hydrant refills during automatic spraying while ordinary refill waits for the hose', () => {
+  const tank=createWaterBoostState();tank.charge=20;tank.spraying=true;
+  stepWaterBoost(tank,farAway,{},1,[]);
+  assert.equal(tank.charge,20);
+  stepWaterBoost(tank,fireStationHydrant,{},1);
+  assert.equal(tank.charge,45);
+});
+
 test('the recharge radius reaches the adjacent road but ends outside its boundary', () => {
   assert.equal(nearbyHydrant({x:fireStationHydrant.x-HYDRANT_REFILL_RADIUS,z:fireStationHydrant.z}), fireStationHydrant);
   assert.equal(nearbyHydrant({x:fireStationHydrant.x-HYDRANT_REFILL_RADIUS-.1,z:fireStationHydrant.z}), null);

@@ -1,5 +1,4 @@
 export const HOSE_RANGE = 15;
-export const FIRE_REDUCTION_PER_WATER = 28 / 33;
 
 export function nearestBurningBuilding(position, sites, onFire, range = HOSE_RANGE) {
   let nearest = null;
@@ -41,10 +40,10 @@ export function createFirefightingProgress(fireState) {
   const fractions = new Map();
   return {
     clear() { fractions.clear(); },
-    apply(worldBuildingId, waterUsed) {
+    apply(worldBuildingId, reductionPoints) {
       const burning = fireState.onFire.get(worldBuildingId) ?? 0;
-      if (!burning || waterUsed <= 0) return burning;
-      const reduction = (fractions.get(worldBuildingId) ?? 0) + waterUsed * FIRE_REDUCTION_PER_WATER;
+      if (!burning || reductionPoints <= 0) return burning;
+      const reduction = (fractions.get(worldBuildingId) ?? 0) + reductionPoints;
       const whole = Math.floor(reduction + 1e-9);
       if (whole) fireState.set(worldBuildingId, burning - whole);
       if (fireState.onFire.has(worldBuildingId)) fractions.set(worldBuildingId, reduction - whole);
