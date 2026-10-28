@@ -1,0 +1,3495 @@
+{
+  "schema_version": "0.4.0-draft",
+  "game": "Rescue Pack",
+  "audience_age": 5,
+  "notes": [
+    "All mission distances/timers are placeholders to tune using measured routes.",
+    "destination_id strings are provisional; replace with scene/POI IDs.",
+    "Fire spots and fix interactions may use arrive-to-resolve prototype mode.",
+    "All dialogue should be voiced or icon-assisted for pre-readers.",
+    "Collection items must be physically reachable; do not spawn on roofs or buildings.",
+    "character_id identifies the mission requester; playable_character_ids identifies who the player controls.",
+    "Bunny is the default playable hero on every mission and the only playable hero on Fire missions.",
+    "Additional playable heroes are optional per mission and must not gate mission completion.",
+    "Untimed collection missions use failure dialogue only for cancellation or an unrecoverable placement; they never expire by time.",
+    "The optional ring mini-race is a practice activity, not a prerequisite for the 41 core missions.",
+    "Dialogue sprite paths are repository-root relative and refer to transparent images in visuals/processed/.",
+    "Requester sprite is selected per line; Player uses sprite_by_playable_character_id for the selected hero. Dispatcher has no sprite."
+  ],
+  "mission_types": [
+    "fire",
+    "fix",
+    "rescue",
+    "collect",
+    "race"
+  ],
+  "characters": [
+    {
+      "id": "bunny",
+      "name": "Bunny",
+      "role": "Firefighter",
+      "personality": "Brave, enthusiastic, sometimes rushes ahead"
+    },
+    {
+      "id": "hawk",
+      "name": "Hawk",
+      "role": "Doctor",
+      "personality": "Observant, gentle, reassuring, slightly hurried"
+    },
+    {
+      "id": "beaver",
+      "name": "Beaver",
+      "role": "Engineer",
+      "personality": "Practical, inventive, proud of sturdy solutions"
+    },
+    {
+      "id": "pig",
+      "name": "Pig",
+      "role": "Farmer",
+      "personality": "Warm, cheerful, easily flustered, loves vegetables"
+    },
+    {
+      "id": "sheep",
+      "name": "Sheep",
+      "role": "Librarian",
+      "personality": "Quiet, organized, kind, loves a good story"
+    },
+    {
+      "id": "horse",
+      "name": "Horse",
+      "role": "Gymnast",
+      "personality": "Energetic, determined, theatrical, encouraging"
+    },
+    {
+      "id": "panda",
+      "name": "Panda",
+      "role": "Fire Chief",
+      "personality": "Calm, encouraging, confident, safety-first"
+    },
+    {
+      "id": "pigeon",
+      "name": "Pigeon",
+      "role": "Mail Carrier",
+      "personality": "Friendly, chatty, optimistic, sometimes forgetful"
+    },
+    {
+      "id": "koala",
+      "name": "Koala",
+      "role": "School Janitor",
+      "personality": "Patient, tidy, resourceful, quietly funny"
+    },
+    {
+      "id": "fox",
+      "name": "Fox",
+      "role": "Preschool Teacher",
+      "personality": "Patient, imaginative, playful, nurturing"
+    },
+    {
+      "id": "bear",
+      "name": "Bear",
+      "role": "School Teacher",
+      "personality": "Steady, thoughtful, supportive, loves learning"
+    },
+    {
+      "id": "crow",
+      "name": "Crow",
+      "role": "Detective",
+      "personality": "Curious, dramatic, clever, fond of mysteries"
+    },
+    {
+      "id": "kangaroo",
+      "name": "Kangaroo",
+      "role": "Construction Worker",
+      "personality": "Bouncy, upbeat, hands-on, loves helping"
+    },
+    {
+      "id": "cheetah",
+      "name": "Granny Cheetah",
+      "role": "Retired Neighbor",
+      "personality": "Witty, independent, adventurous, warm"
+    }
+  ],
+  "missions": [
+    {
+      "id": "bunny_01",
+      "character_id": "bunny",
+      "title": "The Picnic Sparks",
+      "type": "fire",
+      "destination_id": "riverside_picnic_park",
+      "destination_label": "Riverside Picnic Park",
+      "objective": "Put out 3 small fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bunny",
+            "text": "Oh no! The picnic grill made the bushes smoky!",
+            "sprite": "visuals/processed/BUNNY_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "Phew! The picnic is safe. Marshmallows later!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "The panda chief put out the last spark. Picnic saved!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "bunny_02",
+      "character_id": "bunny",
+      "title": "A Puppy by the Pond",
+      "type": "rescue",
+      "destination_id": "pond_path",
+      "destination_label": "Pond Path",
+      "objective": "Reach the puppy and guide it to the path",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bunny",
+            "text": "I hear a puppy whining by the pond!",
+            "sprite": "visuals/processed/BUNNY_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "You found the puppy! What a brave little helper!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "The hawk doctor and park ranger guided the puppy home.",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "hawk",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "bunny_03",
+      "character_id": "bunny",
+      "title": "Missing Hose Nozzles",
+      "type": "collect",
+      "destination_id": "fire_station_yard",
+      "destination_label": "Fire Station Yard",
+      "objective": "Collect 5 nozzles and return to the station",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bunny",
+            "text": "I dropped our colorful practice nozzles. Oops!",
+            "sprite": "visuals/processed/BUNNY_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bunny",
+            "text": "All five! Now we can practice together!",
+            "sprite": "visuals/processed/BUNNY_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Panda gathered the remaining nozzles. We can practice together later!"
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 5,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "hawk_01",
+      "character_id": "hawk",
+      "title": "Clinic Kitchen Smoke",
+      "type": "fire",
+      "destination_id": "neighborhood_clinic",
+      "destination_label": "Neighborhood Clinic",
+      "objective": "Extinguish 2 small kitchen fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Hawk",
+            "text": "A toaster is smoking in the clinic kitchen!",
+            "sprite": "visuals/processed/HAWK_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "Everyone can have a safe snack now. Thank you!",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "The panda chief arrived and made the kitchen safe.",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 2,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "hawk_02",
+      "character_id": "hawk",
+      "title": "Teddy Needs a Checkup",
+      "type": "rescue",
+      "destination_id": "playground",
+      "destination_label": "Playground",
+      "objective": "Reach the teddy and bring it to the checkup point",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Hawk",
+            "text": "A little bear lost their teddy near the playground. Can you help?",
+            "sprite": "visuals/processed/HAWK_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "A clean bill of cuddles!",
+            "sprite": "visuals/processed/HAWK_3_care.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "hawk": "visuals/processed/HAWK_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "The pigeon found the teddy and brought it in.",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "pigeon",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "hawk"
+      ]
+    },
+    {
+      "id": "hawk_03",
+      "character_id": "hawk",
+      "title": "Medical Supply Run",
+      "type": "collect",
+      "destination_id": "clinic_and_market_streets",
+      "destination_label": "Clinic and Market Streets",
+      "objective": "Collect 6 sealed supply packs and return to clinic",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Hawk",
+            "text": "My bandages and medicine bags are ready for pickup.",
+            "sprite": "visuals/processed/HAWK_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Hawk",
+            "text": "Everything is sorted. Excellent teamwork!",
+            "sprite": "visuals/processed/HAWK_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "hawk": "visuals/processed/HAWK_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Pigeon delivered the remaining supply packs safely to the clinic."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "hawk": "visuals/processed/HAWK_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "pigeon",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 6,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "hawk"
+      ]
+    },
+    {
+      "id": "beaver_01",
+      "character_id": "beaver",
+      "title": "Workshop Sparks",
+      "type": "fire",
+      "destination_id": "canal_workshop",
+      "destination_label": "Canal Workshop",
+      "objective": "Extinguish 3 workshop fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Beaver",
+            "text": "My workshop light sparked and a box caught fire!",
+            "sprite": "visuals/processed/BEAVER_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAVER_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Nice work! I will fix that light safely.",
+            "sprite": "visuals/processed/BEAVER_3_build.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "The panda chief put out the fire and Beaver repaired the light.",
+            "sprite": "visuals/processed/BEAVER_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "beaver_02",
+      "character_id": "beaver",
+      "title": "The Stuck Canal Gate",
+      "type": "fix",
+      "destination_id": "canal_bridge",
+      "destination_label": "Canal Bridge",
+      "objective": "Reach the canal gate and trigger the repair",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Beaver",
+            "text": "The canal gate is jammed. Boats cannot pass!",
+            "sprite": "visuals/processed/BEAVER_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAVER_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Click, clunk, perfect! The boats can go!",
+            "sprite": "visuals/processed/BEAVER_3_build.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "beaver": "visuals/processed/BEAVER_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Kangaroo brought the right tools and opened the gate.",
+            "sprite": "visuals/processed/BEAVER_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "kangaroo",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "beaver"
+      ]
+    },
+    {
+      "id": "beaver_03",
+      "character_id": "beaver",
+      "title": "Lost Gears",
+      "type": "collect",
+      "destination_id": "workshop_district",
+      "destination_label": "Workshop District",
+      "objective": "Collect 7 gears and return to workshop",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Beaver",
+            "text": "My little gears rolled all over the workshop path!",
+            "sprite": "visuals/processed/BEAVER_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAVER_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Beaver",
+            "text": "Seven gears! That is one happy machine.",
+            "sprite": "visuals/processed/BEAVER_3_build.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "beaver": "visuals/processed/BEAVER_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Kangaroo found the last gears and brought them back to the workshop."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "beaver": "visuals/processed/BEAVER_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "kangaroo",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 7,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "beaver"
+      ]
+    },
+    {
+      "id": "pig_01",
+      "character_id": "pig",
+      "title": "The Shed Is Smoking!",
+      "type": "fire",
+      "destination_id": "sunny_farm",
+      "destination_label": "Sunny Farm",
+      "objective": "Extinguish 4 shed fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pig",
+            "text": "My shed is on fire! My carrots are next door!",
+            "sprite": "visuals/processed/PIG_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Oink-tastic! The carrots are safe!",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Panda and Bunny put out the flames. The carrots are safe.",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 4,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "pig_02",
+      "character_id": "pig",
+      "title": "Ducklings at the Fence",
+      "type": "rescue",
+      "destination_id": "farm_pond",
+      "destination_label": "Farm Pond",
+      "objective": "Reach the farm fence and open the safe path",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pig",
+            "text": "The ducklings wandered behind the farm fence!",
+            "sprite": "visuals/processed/PIG_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Quack-quack! Everyone is back together.",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Beaver opened a second gate and reunited the ducklings.",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "pig_03",
+      "character_id": "pig",
+      "title": "Runaway Carrots",
+      "type": "collect",
+      "destination_id": "farm_fields",
+      "destination_label": "Farm Fields",
+      "objective": "Collect 8 carrots and return to the farm stand",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pig",
+            "text": "The cart tipped and my carrots bounced everywhere!",
+            "sprite": "visuals/processed/PIG_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pig",
+            "text": "A full basket! Have a carrot sticker!",
+            "sprite": "visuals/processed/PIG_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Beaver helped gather the last carrots before anyone stepped on them."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 8,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "sheep_01",
+      "character_id": "sheep",
+      "title": "Smoke in the Library",
+      "type": "fire",
+      "destination_id": "town_library",
+      "destination_label": "Town Library",
+      "objective": "Extinguish 3 library fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Sheep",
+            "text": "Oh dear! A little fire started near the reading room!",
+            "sprite": "visuals/processed/SHEEP_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Shhh... and hooray! Our stories are safe.",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Panda protected the books and put out the fire.",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "sheep_02",
+      "character_id": "sheep",
+      "title": "The Library Door",
+      "type": "fix",
+      "destination_id": "town_library",
+      "destination_label": "Town Library",
+      "objective": "Reach the library and free the door",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Sheep",
+            "text": "The front door is stuck and story time starts soon!",
+            "sprite": "visuals/processed/SHEEP_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Right on time for chapter one!",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Beaver fixed the hinge just before story time.",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "sheep_03",
+      "character_id": "sheep",
+      "title": "Overdue Favorites",
+      "type": "collect",
+      "destination_id": "library_neighborhood",
+      "destination_label": "Library Neighborhood",
+      "objective": "Collect 6 books and return to the library",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Sheep",
+            "text": "Some favorite books are waiting at return boxes around town.",
+            "sprite": "visuals/processed/SHEEP_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/SHEEP_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Sheep",
+            "text": "All back on the shelf. What a lovely ending!",
+            "sprite": "visuals/processed/SHEEP_3_shelve.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Panda returned the remaining favorites to the library shelf."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 6,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "horse_01",
+      "character_id": "horse",
+      "title": "Gym Storage Smoke",
+      "type": "fire",
+      "destination_id": "sports_center",
+      "destination_label": "Sports Center",
+      "objective": "Extinguish 3 gym fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Horse",
+            "text": "The gym storage room is smoky! Our ribbons are inside!",
+            "sprite": "visuals/processed/HORSE_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HORSE_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "You saved the show! Victory pose!",
+            "sprite": "visuals/processed/HORSE_3_balance.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Panda handled the fire and the ribbons were rescued.",
+            "sprite": "visuals/processed/HORSE_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "horse_02",
+      "character_id": "horse",
+      "title": "The Jammed Gym Doors",
+      "type": "fix",
+      "destination_id": "sports_center",
+      "destination_label": "Sports Center",
+      "objective": "Reach the gym doors and open them",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Horse",
+            "text": "The gym doors are jammed! I worked so hard for the contest!",
+            "sprite": "visuals/processed/HORSE_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HORSE_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Ta-da! I made it! Watch my big finish!",
+            "sprite": "visuals/processed/HORSE_2_vault.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "beaver": "visuals/processed/BEAVER_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Kangaroo opened the side entrance. The contest went on!",
+            "sprite": "visuals/processed/HORSE_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "kangaroo",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "beaver"
+      ]
+    },
+    {
+      "id": "horse_03",
+      "character_id": "horse",
+      "title": "Pom-Pom Parade",
+      "type": "collect",
+      "destination_id": "sports_park",
+      "destination_label": "Sports Park",
+      "objective": "Collect 8 pom-poms and return to the gym",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Horse",
+            "text": "The wind scattered my colorful pom-poms!",
+            "sprite": "visuals/processed/HORSE_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/HORSE_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Horse",
+            "text": "Perfect! Now for a celebration dance!",
+            "sprite": "visuals/processed/HORSE_3_balance.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Panda found the remaining pom-poms, and the parade can still begin!"
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 8,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "panda_01",
+      "character_id": "panda",
+      "title": "Station Alarm",
+      "type": "fire",
+      "destination_id": "fire_station_annex",
+      "destination_label": "Fire Station Annex",
+      "objective": "Extinguish 4 fire spots in the annex",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Panda",
+            "text": "Team, a training-room fire needs attention!",
+            "sprite": "visuals/processed/PANDA_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Excellent work, team. Safety first!",
+            "sprite": "visuals/processed/PANDA_2_point.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Bunny and the crew finished the job together.",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "bunny",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 4,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "panda_02",
+      "character_id": "panda",
+      "title": "A Rooftop Wave",
+      "type": "rescue",
+      "destination_id": "town_hall",
+      "destination_label": "Town Hall",
+      "objective": "Reach town hall roof access and guide them down",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Panda",
+            "text": "Someone climbed onto the roof and cannot find the stairs!",
+            "sprite": "visuals/processed/PANDA_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Safe on the ground. Great rescue!",
+            "sprite": "visuals/processed/PANDA_2_point.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Hawk and Kangaroo guided them down safely.",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "kangaroo",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "panda_03",
+      "character_id": "panda",
+      "title": "Chief’s Ring Run",
+      "type": "race",
+      "destination_id": "town_center_loop",
+      "destination_label": "Town Center Loop",
+      "objective": "Pass through 8 ordered rings",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Panda",
+            "text": "Ready for a practice route? Follow every golden ring!",
+            "sprite": "visuals/processed/PANDA_2_point.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "Smooth driving! You earned your team star!",
+            "sprite": "visuals/processed/PANDA_2_point.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Practice run finished!"
+          },
+          {
+            "speaker": "Panda",
+            "text": "No worries. We will practice the route together!",
+            "sprite": "visuals/processed/PANDA_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "practice_only",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "checkpoint_count": 8,
+        "checkpoint_order": "sequential",
+        "route": "safe_road_loop",
+        "retry_allowed": true,
+        "target_marker": "ring",
+        "race_kind": "ring_mini_race",
+        "required_for_story_progress": false
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ],
+      "optional": true
+    },
+    {
+      "id": "pigeon_01",
+      "character_id": "pigeon",
+      "title": "Mail Depot Smoke",
+      "type": "fire",
+      "destination_id": "post_office_depot",
+      "destination_label": "Post Office Depot",
+      "objective": "Extinguish 3 depot fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pigeon",
+            "text": "Squawk! There is smoke near the parcel shelf!",
+            "sprite": "visuals/processed/PIGEON_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIGEON_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Special delivery: one safe post office!",
+            "sprite": "visuals/processed/PIGEON_2_deliver.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Panda kept the depot safe and finished the job.",
+            "sprite": "visuals/processed/PIGEON_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "pigeon_02",
+      "character_id": "pigeon",
+      "title": "Parcel on the Balcony",
+      "type": "rescue",
+      "destination_id": "apartment_courtyard",
+      "destination_label": "Apartment Courtyard",
+      "objective": "Reach the building and recover the parcel safely",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pigeon",
+            "text": "A parcel is stuck on a balcony and the owner is waiting!",
+            "sprite": "visuals/processed/PIGEON_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIGEON_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Delivered! That deserves a stamp!",
+            "sprite": "visuals/processed/PIGEON_2_deliver.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Beaver fetched a safe lifting platform for the parcel.",
+            "sprite": "visuals/processed/PIGEON_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "pigeon_03",
+      "character_id": "pigeon",
+      "title": "Scattered Letters",
+      "type": "collect",
+      "destination_id": "market_and_post_office",
+      "destination_label": "Market and Post Office",
+      "objective": "Collect 7 letters and return to the post office",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Pigeon",
+            "text": "Whoosh! The wind took my letters for a ride!",
+            "sprite": "visuals/processed/PIGEON_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/PIGEON_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Pigeon",
+            "text": "Every letter is back! You are first class!",
+            "sprite": "visuals/processed/PIGEON_2_deliver.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Panda collected the last letters and delivered them to the post office."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 7,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "koala_01",
+      "character_id": "koala",
+      "title": "Cafeteria Smoke",
+      "type": "fire",
+      "destination_id": "primary_school_cafeteria",
+      "destination_label": "Primary School Cafeteria",
+      "objective": "Extinguish 2 cafeteria fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Koala",
+            "text": "The cafeteria toaster made a smoky mess!",
+            "sprite": "visuals/processed/KOALA_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "All clear! And the floor is still clean!",
+            "sprite": "visuals/processed/KOALA_3_push_cart.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Panda cleared the smoke and checked the kitchen.",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 2,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "koala_02",
+      "character_id": "koala",
+      "title": "The Leaky School Sink",
+      "type": "fix",
+      "destination_id": "primary_school",
+      "destination_label": "Primary School",
+      "objective": "Reach the sink and trigger a repair",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Koala",
+            "text": "Drip, drip! The school sink will not stop!",
+            "sprite": "visuals/processed/KOALA_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Dry floor, happy paws!",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Beaver fixed the pipe while Koala mopped up.",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "koala_03",
+      "character_id": "koala",
+      "title": "Lost Cleaning Tools",
+      "type": "collect",
+      "destination_id": "school_grounds",
+      "destination_label": "School Grounds",
+      "objective": "Collect 6 tools and return to the janitor closet",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Koala",
+            "text": "My brushes and cloths rolled off the cleaning cart!",
+            "sprite": "visuals/processed/KOALA_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KOALA_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Koala",
+            "text": "Sparkly teamwork! Thank you!",
+            "sprite": "visuals/processed/KOALA_2_carry.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Bear brought the missing tools back to Koala at school."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "bear",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 6,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "fox_01",
+      "character_id": "fox",
+      "title": "Preschool Garden Smoke",
+      "type": "fire",
+      "destination_id": "preschool_garden",
+      "destination_label": "Preschool Garden",
+      "objective": "Extinguish 3 garden fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Fox",
+            "text": "Our little garden shed is smoking! Please help!",
+            "sprite": "visuals/processed/FOX_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Hooray! The flowers can grow safely!",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Panda made the garden safe for playtime.",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "fox_02",
+      "character_id": "fox",
+      "title": "The Lost Class Puppet",
+      "type": "rescue",
+      "destination_id": "preschool_playground",
+      "destination_label": "Preschool Playground",
+      "objective": "Reach the playground and retrieve the puppet",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Fox",
+            "text": "Our puppet is stuck on the playground roof!",
+            "sprite": "visuals/processed/FOX_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Puppet says: you are a superstar!",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Pigeon spotted it and Beaver brought it down.",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "fox_03",
+      "character_id": "fox",
+      "title": "Art Time Treasure Hunt",
+      "type": "collect",
+      "destination_id": "preschool_neighborhood",
+      "destination_label": "Preschool Neighborhood",
+      "objective": "Collect 7 art packs and return to preschool",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Fox",
+            "text": "Our crayons and craft shapes are waiting at pickup spots!",
+            "sprite": "visuals/processed/FOX_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/FOX_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Fox",
+            "text": "Look! A rainbow of creativity!",
+            "sprite": "visuals/processed/FOX_3_organize.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Bear found the remaining art supplies for the preschool class."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "bear",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 7,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "bear_01",
+      "character_id": "bear",
+      "title": "Science Corner Smoke",
+      "type": "fire",
+      "destination_id": "elementary_school",
+      "destination_label": "Elementary School",
+      "objective": "Extinguish 3 science-corner fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bear",
+            "text": "A science display overheated. There is a little fire!",
+            "sprite": "visuals/processed/BEAR_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAR_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Class, today we learned about teamwork!",
+            "sprite": "visuals/processed/BEAR_3_teach.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Panda handled the fire and the class moved to safety.",
+            "sprite": "visuals/processed/BEAR_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "bear_02",
+      "character_id": "bear",
+      "title": "The Broken School Bell",
+      "type": "fix",
+      "destination_id": "elementary_school",
+      "destination_label": "Elementary School",
+      "objective": "Reach the bell controls and trigger a repair",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bear",
+            "text": "Our bell is broken and nobody knows when recess starts!",
+            "sprite": "visuals/processed/BEAR_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAR_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Ding-ding! Recess is back on schedule!",
+            "sprite": "visuals/processed/BEAR_3_teach.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Beaver repaired the bell before the next lesson.",
+            "sprite": "visuals/processed/BEAR_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "bear_03",
+      "character_id": "bear",
+      "title": "Missing Classroom Shapes",
+      "type": "collect",
+      "destination_id": "school_neighborhood",
+      "destination_label": "School Neighborhood",
+      "objective": "Collect 6 shapes and return to school",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Bear",
+            "text": "Our learning shapes blew out of the classroom box!",
+            "sprite": "visuals/processed/BEAR_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/BEAR_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Bear",
+            "text": "Triangle, circle, star: all here!",
+            "sprite": "visuals/processed/BEAR_3_teach.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Koala gathered the last classroom shapes before the next lesson."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "koala",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 6,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "crow_01",
+      "character_id": "crow",
+      "title": "Mystery Smoke",
+      "type": "fire",
+      "destination_id": "old_clocktower",
+      "destination_label": "Old Clocktower",
+      "objective": "Extinguish 3 clocktower fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Crow",
+            "text": "A mysterious puff of smoke is coming from the clocktower!",
+            "sprite": "visuals/processed/CROW_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CROW_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Case closed: a spark, not a dragon!",
+            "sprite": "visuals/processed/CROW_2_inspect.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Panda solved the fire part of the mystery.",
+            "sprite": "visuals/processed/CROW_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "crow_02",
+      "character_id": "crow",
+      "title": "The Rooftop Clue",
+      "type": "rescue",
+      "destination_id": "museum_rooftop",
+      "destination_label": "Museum Rooftop",
+      "objective": "Reach the museum roof access and open the door",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Crow",
+            "text": "I followed a clue upstairs. Now the door is locked!",
+            "sprite": "visuals/processed/CROW_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CROW_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Aha! The biggest clue was asking for help!",
+            "sprite": "visuals/processed/CROW_2_inspect.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png",
+              "hawk": "visuals/processed/HAWK_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Kangaroo opened the maintenance entrance.",
+            "sprite": "visuals/processed/CROW_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "kangaroo",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "rescue"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny",
+        "hawk"
+      ]
+    },
+    {
+      "id": "crow_03",
+      "character_id": "crow",
+      "title": "The Missing Footprints",
+      "type": "collect",
+      "destination_id": "town_square",
+      "destination_label": "Town Square",
+      "objective": "Collect 7 clue cards and return to detective office",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Crow",
+            "text": "Someone dropped my numbered clue cards all over town!",
+            "sprite": "visuals/processed/CROW_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CROW_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Crow",
+            "text": "Every clue accounted for. Brilliant detective work!",
+            "sprite": "visuals/processed/CROW_2_inspect.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Pigeon found the final clues and left them safely with Crow."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "pigeon",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 7,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "kangaroo_01",
+      "character_id": "kangaroo",
+      "title": "Construction Site Sparks",
+      "type": "fire",
+      "destination_id": "industrial_building_site",
+      "destination_label": "Industrial Building Site",
+      "objective": "Extinguish 3 construction-site fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Kangaroo",
+            "text": "Sparks! A crate is burning at our worksite!",
+            "sprite": "visuals/processed/KANGAROO_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Woohoo! Safe site, happy crew!",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Panda cleared the site and put out the fire.",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 3,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "kangaroo_02",
+      "character_id": "kangaroo",
+      "title": "The Wobbly Walkway",
+      "type": "fix",
+      "destination_id": "industrial_footbridge",
+      "destination_label": "Industrial Footbridge",
+      "objective": "Reach the footbridge and trigger the repair",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Kangaroo",
+            "text": "The walkway is loose! We need it fixed before anyone crosses!",
+            "sprite": "visuals/processed/KANGAROO_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Solid as a rock! Hop across!",
+            "sprite": "visuals/processed/KANGAROO_2_drill.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Beaver and the crew secured the walkway safely.",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "kangaroo_03",
+      "character_id": "kangaroo",
+      "title": "Scattered Screws",
+      "type": "collect",
+      "destination_id": "industrial_construction_zone",
+      "destination_label": "Industrial Construction Zone",
+      "objective": "Collect 8 screw boxes and return to site",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Kangaroo",
+            "text": "My screw box fell off the beam! Please find them before anyone steps on them!",
+            "sprite": "visuals/processed/KANGAROO_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Kangaroo",
+            "text": "All gathered! Safety boots say thanks!",
+            "sprite": "visuals/processed/KANGAROO_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Beaver and the crew picked up the remaining screws safely."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 8,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "cheetah_01",
+      "character_id": "cheetah",
+      "title": "Granny’s Kitchen Smoke",
+      "type": "fire",
+      "destination_id": "granny_cheetah_apartment",
+      "destination_label": "Granny Cheetah Apartment",
+      "objective": "Extinguish 2 kitchen fire spots",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Granny Cheetah",
+            "text": "My oven made a smoky surprise. Not my best recipe!",
+            "sprite": "visuals/processed/CHEETAH_5_distressed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Ha! Next time, I will order cake. Thank you!",
+            "sprite": "visuals/processed/CHEETAH_2_wave.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Panda cleared the kitchen and Granny enjoyed tea.",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "panda",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 180,
+        "fire_spots": 2,
+        "interaction": "drive_to_site_then_extinguish",
+        "prototype_fallback": "arrive_to_resolve",
+        "target_marker": "fire"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "cheetah_02",
+      "character_id": "cheetah",
+      "title": "The Broken Elevator",
+      "type": "fix",
+      "destination_id": "granny_cheetah_apartment",
+      "destination_label": "Granny Cheetah Apartment",
+      "objective": "Reach the apartment lobby and restore elevator service",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Granny Cheetah",
+            "text": "I want to visit my friends tomorrow, but the elevator broke!",
+            "sprite": "visuals/processed/CHEETAH_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Follow the marker. Help is on the way!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Wonderful! I can go visiting in style!",
+            "sprite": "visuals/processed/CHEETAH_2_wave.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Time is up. Backup is helping now!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Beaver repaired it and Granny made her visit.",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Everyone is safe. We can try another mission!"
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "helper_character_id": "beaver",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": 150,
+        "interaction": "arrival_only",
+        "target_marker": "wrench"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    },
+    {
+      "id": "cheetah_03",
+      "character_id": "cheetah",
+      "title": "Grandma’s Photo Memories",
+      "type": "collect",
+      "destination_id": "park_and_apartment_blocks",
+      "destination_label": "Park and Apartment Blocks",
+      "objective": "Collect 6 photo postcards and return to Granny",
+      "dialogue": {
+        "start": [
+          {
+            "speaker": "Granny Cheetah",
+            "text": "My photo postcards got scattered by the wind!",
+            "sprite": "visuals/processed/CHEETAH_4_annoyed.png"
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Find the glowing items, then follow the return marker!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Thank you, Rescue Pack!",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          }
+        ],
+        "success": [
+          {
+            "speaker": "Dispatcher",
+            "text": "Mission complete!"
+          },
+          {
+            "speaker": "Granny Cheetah",
+            "text": "Oh, these memories! Let me tell you a story.",
+            "sprite": "visuals/processed/CHEETAH_1_idle.png"
+          },
+          {
+            "speaker": "Player",
+            "text": "Happy to help!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ],
+        "failure": [
+          {
+            "speaker": "Dispatcher",
+            "text": "We will pause this search and keep everyone safe."
+          },
+          {
+            "speaker": "Dispatcher",
+            "text": "Pigeon returned the remaining photo postcards to Granny Cheetah."
+          },
+          {
+            "speaker": "Player",
+            "text": "I can try again another day!",
+            "sprite_by_playable_character_id": {
+              "bunny": "visuals/processed/BUNNY_1_idle.png"
+            }
+          }
+        ]
+      },
+      "failure_resolution": {
+        "outcome": "safe_backup_resolution",
+        "trigger": "player_cancels_or_items_unreachable",
+        "helper_character_id": "pigeon",
+        "no_injury_or_damage": true
+      },
+      "status": "draft",
+      "mechanics": {
+        "timer_seconds": null,
+        "item_count": 6,
+        "scatter": {
+          "center": "destination",
+          "radius_m": 90,
+          "minimum_item_separation_m": 12,
+          "max_path_distance_from_center_m": 140,
+          "placement": "reachable_ground_navmesh_only",
+          "minimum_radius_m": 10
+        },
+        "return_to_destination": true,
+        "target_marker": "collect"
+      },
+      "default_playable_character_id": "bunny",
+      "playable_character_ids": [
+        "bunny"
+      ]
+    }
+  ],
+  "defaults": {
+    "timer_behavior": "starts_after_player_accepts_and_control_returns",
+    "timer_expiry": "safe_backup_resolution",
+    "timer_display": "gentle_visual_progress_not_red_countdown",
+    "navigation": "large_waypoint_and_ground_arrows",
+    "collect_completion": "auto-highlight_return_destination",
+    "reward": "one_star_and_positive_animation",
+    "playable_character_id": "bunny",
+    "collect_failure_trigger": "player_cancels_or_items_unreachable"
+  },
+  "playable_character_policy": {
+    "default_playable_character_id": "bunny",
+    "all_core_types_playable_by_bunny": [
+      "fire",
+      "fix",
+      "rescue",
+      "collect"
+    ],
+    "fire_playable_character_ids": [
+      "bunny"
+    ],
+    "additional_playable_characters_are_optional": true,
+    "future_character_rule": "Add a character to the characters registry and selected missions playable_character_ids; do not require that character for story progress."
+  }
+}

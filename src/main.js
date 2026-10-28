@@ -14,7 +14,7 @@ import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
 import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
-import { createFirefightingProgress, igniteRandomBuildings, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
+import { createFirefightingProgress, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
 import { firetruckNozzleWorld } from './firetruck-nozzle.js';
 import { createHoseProjectiles } from './hose-projectiles.js';
@@ -22,6 +22,19 @@ import { worldWindowTargets } from './window-targets.js';
 import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
+import { createGroundMarkers } from './ground-markers.js';
+import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
+import { createMissionMarkers } from './mission-markers.js';
+import pigWorried from '../visuals/processed/PIG_5_distressed.png';
+import pigHappy from '../visuals/processed/PIG_1_idle.png';
+import horseWorried from '../visuals/processed/HORSE_4_annoyed.png';
+import horseHappy from '../visuals/processed/HORSE_1_idle.png';
+import horseVault from '../visuals/processed/HORSE_2_vault.png';
+import sheepWorried from '../visuals/processed/SHEEP_4_annoyed.png';
+import sheepHappy from '../visuals/processed/SHEEP_1_idle.png';
+import sheepShelf from '../visuals/processed/SHEEP_3_shelve.png';
+import bunnyWorried from '../visuals/processed/BUNNY_5_distressed.png';
+import bunnyHappy from '../visuals/processed/BUNNY_1_idle.png';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -31,19 +44,25 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.16;
 
 const scene = new THREE.Scene();
 const fireState = createBuildingFireState(BUILDING_SITES);
 const fireProgress = createFirefightingProgress(fireState);
 const fireSitesById = new Map(BUILDING_SITES.filter(site => site.worldBuildingId).map(site => [site.worldBuildingId, site]));
 const fireTargets = new Map();
+let groundMarkers, missionMarkers;
 const fireEffect = createBuildingFireEffect(THREE, scene, fireState);
 const hoseEffect = createFirefightingEffect(THREE, scene);
 const waterTuning = loadWaterTuning();
 const hoseImpacts = [];
 const hose = createHoseProjectiles(THREE,(id,windowId,point,reduction)=>{
-  if(fireState.onFire.has(id)){fireProgress.apply(id,reduction);hoseImpacts.push(point.clone());}
+  if(fireState.onFire.has(id)){
+    fireProgress.apply(id,reduction);
+    hoseImpacts.push(point.clone());
+    const window=fireTargets.get(id)?.find(target=>target.id===windowId);
+    if(window)groundMarkers?.addWallImpact(point,window.normal);
+  }
 });
 // Scenario scripts can ignite a placed building by its world ID. For a quick
 // preview, open the game with ?fire=WB-001:75 (repeat `fire` for more sites).
@@ -52,6 +71,7 @@ window.buildingFires = { onFire: fireState.onFire, set: fireState.set, sites: BU
 function startFires() {
   fireProgress.clear();
   fireEffect.clear();
+  groundMarkers?.clearImpacts();
   hose.reset();hoseEffect.reset();
   if (debugFires.length) {
     fireState.clear();
@@ -59,14 +79,14 @@ function startFires() {
       const [id, percent] = entry.split(':');
       if (fireSitesById.has(id)) fireState.set(id, percent);
     }
-  } else igniteRandomBuildings(fireState, BUILDING_SITES);
+  } else fireState.clear();
 }
-scene.background = new THREE.Color('#b8e7fa');
-scene.fog = new THREE.Fog('#b8e7fa', 145, 325);
+scene.background = new THREE.Color('#a8cfe3');
+scene.fog = new THREE.Fog('#a8cfe3', 145, 325);
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 400);
-const hemi = new THREE.HemisphereLight('#ffffff', '#a6b784', 2.1);
+const hemi = new THREE.HemisphereLight('#ffffff', '#8fa38b', 1.8);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight('#fff0ce', 2.3);
+const sun = new THREE.DirectionalLight('#fff0ce', 1.95);
 sun.position.set(-65, 110, 55);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -89,6 +109,8 @@ const M = {
 };
 const worldSurfaces = buildWorldSurfaces(THREE, M);
 scene.add(worldSurfaces);
+groundMarkers = createGroundMarkers(THREE, scene, getSurfaceHeight);
+missionMarkers = createMissionMarkers(THREE, scene, getSurfaceHeight);
 const waterMaterial = worldSurfaces.userData.waterMaterial;
 const avenueX = AVENUE_X;
 
@@ -305,6 +327,7 @@ function building(site) {
     const windows=WINDOW_MAP[`${pack}/${name}`]??[];
     fireTargets.set(site.worldBuildingId,worldWindowTargets(THREE,item,windows));
     fireEffect.registerBuilding(site.worldBuildingId,item,windows,sourceBounds.min.y,sourceBounds.max.y,INDUSTRIAL_CHIMNEYS[`${pack}/${name}`]??[]);
+    groundMarkers.registerFireSite(site.worldBuildingId,site.x,site.z,size.x,size.z);
   }
   return item;
 }
@@ -349,7 +372,7 @@ function createTruck() {
   const blueLight = new THREE.PointLight('#88d9ff', 0, 8);
   blueLight.position.set(0, 2.9, -.15); firetruck.add(blueLight);
   firetruck.userData.blueLight = blueLight;
-  waterEffect = createWaterEffect(THREE, scene, firetruck, getSurfaceHeight, surfaceAt);
+  waterEffect = createWaterEffect(THREE, scene, firetruck, getSurfaceHeight, surfaceAt, point => groundMarkers.addGroundImpact(point));
   firetruck.position.set(player.x,ROAD_Y,player.z);
   firetruck.rotation.y=player.heading;
 }
@@ -446,7 +469,132 @@ function releaseCamera() {
   canvas.style.cursor=playing?'grab':'default';
 }
 function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
+const portraitUrls = {
+  'visuals/processed/PIG_5_distressed.png': pigWorried,
+  'visuals/processed/PIG_1_idle.png': pigHappy,
+  'visuals/processed/HORSE_4_annoyed.png': horseWorried,
+  'visuals/processed/HORSE_1_idle.png': horseHappy,
+  'visuals/processed/HORSE_2_vault.png': horseVault,
+  'visuals/processed/SHEEP_4_annoyed.png': sheepWorried,
+  'visuals/processed/SHEEP_1_idle.png': sheepHappy,
+  'visuals/processed/SHEEP_3_shelve.png': sheepShelf,
+  'visuals/processed/BUNNY_5_distressed.png': bunnyWorried,
+  'visuals/processed/BUNNY_1_idle.png': bunnyHappy,
+};
+const missionPanel = document.querySelector('#mission-panel');
+const missionContent = document.querySelector('#mission-content');
+const missionStatus = document.querySelector('#mission-status');
+const phoneButton = document.querySelector('#phone-button');
+let activeMission = null, missionProgress = null, selectedMission = null, panelOpen = false;
+let completedMissionIds = new Set();
+function missionPortrait(path) { return portraitUrls[path] ?? ''; }
+function makeDialogue(lines) {
+  const wrap = document.createElement('div'); wrap.className = 'mission-dialogue';
+  for (const line of lines) {
+    const row = document.createElement('div'); row.className = 'mission-line';
+    const portrait = missionPortrait(line.sprite ?? line.sprite_by_playable_character_id?.bunny);
+    if (portrait) { const img = document.createElement('img'); img.src = portrait; img.alt = ''; row.append(img); }
+    const text = document.createElement('div');
+    const speaker = document.createElement('strong'); speaker.textContent = line.speaker === 'Player' ? 'Bunny' : line.speaker;
+    const copy = document.createElement('p'); copy.textContent = line.text;
+    text.append(speaker, copy); row.append(text); wrap.append(row);
+  }
+  return wrap;
+}
+function missionButton(label, action, className = 'mission-action') {
+  const button = document.createElement('button'); button.type = 'button'; button.className = className;
+  button.textContent = label; button.addEventListener('click', action); return button;
+}
+function openPanel() { if (!playing) return; panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel(); }
+function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; }
+function renderMissionPanel() {
+  missionContent.replaceChildren();
+  const heading = document.querySelector('#mission-panel-title');
+  if (selectedMission) {
+    heading.textContent = selectedMission.title;
+    const place = document.createElement('p'); place.className = 'mission-place'; place.textContent = selectedMission.label;
+    const objective = document.createElement('p'); objective.className = 'mission-objective'; objective.textContent = selectedMission.objective;
+    missionContent.append(place, objective, makeDialogue(selectedMission.dialogue.start));
+    missionContent.append(missionButton('Accept mission ➜', () => startMission(selectedMission)));
+    missionContent.append(missionButton('Back to calls', () => { selectedMission = null; renderMissionPanel(); }, 'mission-secondary'));
+  } else if (activeMission) {
+    heading.textContent = activeMission.title;
+    const detail = document.createElement('p'); detail.className = 'mission-objective'; detail.textContent = missionStatus.textContent;
+    missionContent.append(detail, missionButton('Keep helping ➜', closePanel));
+    missionContent.append(missionButton('Pause this mission', () => finishMission(false), 'mission-secondary'));
+  } else {
+    heading.textContent = 'Choose a mission';
+    const list = document.createElement('div'); list.className = 'mission-list';
+    for (const mission of PLAYABLE_MISSIONS) {
+      const card = document.createElement('button'); card.type = 'button'; card.className = 'mission-card';
+      const image = document.createElement('img'); image.src = missionPortrait(mission.dialogue.start[0].sprite); image.alt = '';
+      const copy = document.createElement('span');
+      const type = document.createElement('small'); type.textContent = `${mission.type.toUpperCase()}${completedMissionIds.has(mission.id) ? ' · ★ DONE' : ''}`;
+      const title = document.createElement('strong'); title.textContent = mission.title;
+      const place = document.createElement('em'); place.textContent = mission.label;
+      copy.append(type, title, place); card.append(image, copy);
+      card.addEventListener('click', () => { selectedMission = mission; renderMissionPanel(); }); list.append(card);
+    }
+    missionContent.append(list);
+  }
+}
+function refreshMissionMarkers() {
+  if (!activeMission) { missionMarkers.clear(); return; }
+  if (activeMission.type === 'collect') {
+    if (missionProgress.stage === 'returning') missionMarkers.set([{ point: activeMission.target, kind: 'return' }]);
+    else missionMarkers.set(activeMission.pickups.flatMap((point, index) => missionProgress.collected.has(index) ? [] : [{ point, kind: 'collect' }]));
+  } else missionMarkers.set([{ point: activeMission.target, kind: activeMission.type }]);
+}
+function updateMissionStatus() {
+  if (!activeMission) { missionStatus.textContent = '📱 Tap the phone for a mission'; return; }
+  if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
+    ? `📚 All ${activeMission.pickups.length} books found! Return to the school library`
+    : `📚 ${missionProgress.collectedCount}/${activeMission.pickups.length} books · Follow the glowing ! markers`;
+  else if (activeMission.type === 'fire') missionStatus.textContent = `🔥 ${activeMission.title} · Drive close to the marker to spray`;
+  else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · Follow the marker`;
+}
+function startMission(mission) {
+  if (activeMission) finishMission(false, true);
+  activeMission = mission;
+  missionProgress = createMissionProgress(mission);
+  fireState.clear(); fireProgress.clear(); fireEffect.clear();
+  if (mission.type === 'fire') {
+    const site = BUILDING_SITES.find(candidate => candidate.x === mission.fireSite.x && candidate.z === mission.fireSite.z && candidate.worldBuildingId);
+    if (site) fireState.set(site.worldBuildingId, 55);
+  }
+  fireStatus.classList.toggle('hidden', mission.type !== 'fire');
+  lastFireCount = -1;
+  phoneButton.classList.add('on-mission');
+  updateMissionStatus(); refreshMissionMarkers(); closePanel();
+}
+function finishMission(success, silent = false) {
+  const mission = activeMission;
+  if (!mission) return;
+  activeMission = null; missionProgress = null; selectedMission = null;
+  fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
+  fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
+  if (success) completedMissionIds.add(mission.id);
+  updateMissionStatus();
+  if (silent) return;
+  resetInput(); panelOpen = true; missionPanel.classList.remove('hidden');
+  document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
+  missionContent.replaceChildren(makeDialogue(mission.dialogue[success ? 'success' : 'failure']));
+  missionContent.append(missionButton('More missions ➜', () => renderMissionPanel()));
+  missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
+}
+function advanceMission() {
+  if (!activeMission || panelOpen) return;
+  const previousStage = missionProgress.stage, previousCount = missionProgress.collectedCount;
+  const stage = missionProgress.update(renderPose, activeMission.type === 'fire' && fireState.onFire.size === 0);
+  if (stage === 'complete') { finishMission(true); return; }
+  if (stage !== previousStage || missionProgress.collectedCount !== previousCount) {
+    updateMissionStatus(); refreshMissionMarkers();
+  }
+}
+phoneButton.addEventListener('click', openPanel);
+document.querySelector('#mission-close').addEventListener('click', closePanel);
 window.addEventListener('keydown',e=>{
+  if (panelOpen) { if (e.code === 'Escape') closePanel(); return; }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
   keys.add(e.code);
@@ -460,11 +608,11 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{resetInput();startFires();playing=true;vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
-document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
+document.querySelector('#start-button').addEventListener('click',()=>{resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
-  if(!playing||!firetruck){physicsAccumulator=0;return;}
+  if(!playing||!firetruck||panelOpen){physicsAccumulator=0;return;}
   const input={
     throttle:(Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')))||touchControls.input.throttle,
     steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
@@ -540,7 +688,31 @@ const fireMarkerLayer=document.querySelector('#fire-markers');
 const fireStatus=document.querySelector('#fire-status');
 const fireMarkers=new Map();
 const markerRight=new THREE.Vector3(),markerForward=new THREE.Vector3();
+const missionWaypoint=document.createElement('div');
+missionWaypoint.className='mission-waypoint hidden';
+missionWaypoint.innerHTML='<span class="arrow" aria-hidden="true">▲</span><span class="waypoint-symbol" aria-hidden="true">!</span><strong></strong>';
+fireMarkerLayer.append(missionWaypoint);
 let lastFireCount=-1;
+function updateMissionWaypoint() {
+  if (!activeMission || activeMission.type === 'fire') { missionWaypoint.classList.add('hidden'); return; }
+  let point = activeMission.target;
+  if (activeMission.type === 'collect' && missionProgress.stage === 'collecting') {
+    point = activeMission.pickups.filter((_, index) => !missionProgress.collected.has(index))
+      .sort((a, b) => Math.hypot(a.x-renderPose.x,a.z-renderPose.z)-Math.hypot(b.x-renderPose.x,b.z-renderPose.z))[0] ?? point;
+  }
+  const dx=point.x-renderPose.x,dz=point.z-renderPose.z,distance=Math.hypot(dx,dz);
+  markerRight.set(1,0,0).applyQuaternion(camera.quaternion);
+  markerForward.set(0,0,-1).applyQuaternion(camera.quaternion);
+  const layout=edgeMarkerLayout(dx*markerRight.x+dz*markerRight.z,-dx*markerForward.x-dz*markerForward.z,distance,innerWidth,innerHeight);
+  missionWaypoint.classList.remove('hidden');
+  missionWaypoint.classList.toggle('returning', missionProgress.stage === 'returning');
+  missionWaypoint.style.left=`${layout.x}px`; missionWaypoint.style.top=`${layout.y}px`;
+  missionWaypoint.style.setProperty('--marker-scale',layout.scale.toFixed(3));
+  missionWaypoint.style.setProperty('--arrow-angle',`${layout.angle}deg`);
+  missionWaypoint.querySelector('.waypoint-symbol').textContent=missionProgress.stage==='returning'?'↩':'!';
+  missionWaypoint.querySelector('strong').textContent=`${Math.round(distance)}m`;
+  missionWaypoint.setAttribute('aria-label',`${activeMission.title}, ${Math.round(distance)} metres away`);
+}
 function updateFireMarkers() {
   const activeIds=new Set(fireState.onFire.keys());
   if(activeIds.size!==lastFireCount){
@@ -606,7 +778,7 @@ function animate(now){
   const dt=Math.min(elapsedSeconds,.05);previous=now;
   drive(dt);updateCamera(dt);
   if(playing){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
-  if(playing){updateLabels();updateFireMarkers();}
+  if(playing){advanceMission();updateLabels();updateFireMarkers();updateMissionWaypoint();}
   if(playing){
     firetruck.updateWorldMatrix(true,false);
     firetruckNozzleWorld(firetruck.userData.model,hoseNozzle);
@@ -620,6 +792,8 @@ function animate(now){
     hoseImpacts.length=0;
   }
   if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
+  groundMarkers.update(dt,playing?renderPose:null,fireState.onFire,now/1000);
+  missionMarkers.update(now/1000);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);
   renderer.render(scene,camera);
 }

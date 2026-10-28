@@ -16,11 +16,11 @@ function cartoonCircleTexture(THREE) {
   return new THREE.CanvasTexture(canvas);
 }
 
-export function createWaterEffect(THREE, scene, truck, getSurfaceHeight, surfaceAt) {
+export function createWaterEffect(THREE, scene, truck, getSurfaceHeight, surfaceAt, onGroundHit = () => {}) {
   const texture = cartoonCircleTexture(THREE);
   const maxDrops = 260, maxSplashes = 190;
   const drops = [], splashes = [];
-  let growth = 0, emission = 0, emitted = 0, seed = 177;
+  let growth = 0, emission = 0, emitted = 0, seed = 177, impactCooldown = 0;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
@@ -83,6 +83,10 @@ export function createWaterEffect(THREE, scene, truck, getSurfaceHeight, surface
 
   function addSplash(drop, floor) {
     if (surfaceAt(drop.x, drop.z) === 'water') return;
+    if (impactCooldown <= 0) {
+      onGroundHit(drop);
+      impactCooldown = .16;
+    }
     const magnitude = Math.hypot(drop.vx, drop.vz) || 1;
     splashes.push({
       x: drop.x, y: floor + .025, z: drop.z,
@@ -137,6 +141,7 @@ export function createWaterEffect(THREE, scene, truck, getSurfaceHeight, surface
 
   return {
     update(active, _elapsed, dt) {
+      impactCooldown = Math.max(0, impactCooldown - dt);
       growth = advanceJetGrowth(growth, active, dt);
       const reach = growth * growth * (3 - 2 * growth);
       if (active && reach > .015) {

@@ -2,6 +2,10 @@
 
 A small browser town to explore in a Kenney firetruck. Downtown and the town square sit in the center, with suburbs to the west, factories and tightly packed yards to the east, and a harbor walk along the south edge.
 
+## Mission design drafts
+
+The [42-mission library](docs/rescue-pack-missions.json) and [critical design review](docs/rescue-pack-critical-design-review.md) are content and implementation drafts. Four Bunny missions are playable prototypes in the current city: Pig's fire, Horse's fix, Sheep's collection, and Bunny's rescue. Their provisional destinations are labeled in the mission phone. The other missions and optional character switching remain drafts. [Recovered Bunny concept art](docs/concept-art/Bunny%20Firefighter%20Targets%20the%20Blaze.png) is kept with them.
+
 ## Play
 
 The published game is hosted at [moryoskorot.github.io/rescuePack](https://moryoskorot.github.io/rescuePack/).

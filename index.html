@@ -26,7 +26,7 @@
             PRESS TO START
             <span class="button-arrow">➜</span>
           </button>
-          <div class="menu-tip">FIND THE FIRES · SPRAY STARTS AUTOMATICALLY IN RANGE · REFILL AT HYDRANTS</div>
+          <div class="menu-tip">EXPLORE THE CITY · TAP THE PHONE FOR A MISSION</div>
           <a class="tuning-link" href="./watertuning/">Tune water hose ↗</a>
         </div>
       </div>
@@ -35,12 +35,23 @@
         <header class="hud-top">
           <div class="brand"><span class="brand-icon">🚒</span><div><strong>RESCUE PACK</strong><small>CITY DRIVE</small></div></div>
           <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
+          <button id="phone-button" class="phone-button" type="button" title="Choose a mission" aria-label="Open mission phone"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b></button>
           <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
         </header>
-        <div id="fire-status" class="fire-status" role="status" aria-live="polite">4 FIRES TO PUT OUT</div>
+        <div id="fire-status" class="fire-status hidden" role="status" aria-live="polite"></div>
+        <div id="mission-status" class="mission-status" role="status" aria-live="polite">📱 Tap the phone for a mission</div>
 
         <div id="world-labels" class="world-labels" aria-hidden="true"></div>
         <div id="fire-markers" class="fire-markers" aria-label="Directions to burning buildings"></div>
+
+        <section id="mission-panel" class="mission-panel hidden" role="dialog" aria-modal="true" aria-labelledby="mission-panel-title">
+          <div class="mission-sheet">
+            <button id="mission-close" class="mission-close" type="button" aria-label="Close mission phone">×</button>
+            <div class="mission-eyebrow">RESCUE PACK CALLS</div>
+            <h2 id="mission-panel-title">Choose a mission</h2>
+            <div id="mission-content"></div>
+          </div>
+        </section>
 
         <div class="hud-bottom">
           <div class="guide">
