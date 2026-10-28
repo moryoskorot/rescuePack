@@ -33,9 +33,9 @@
 
       <div id="hud" class="hud hidden">
         <header class="hud-top">
-          <div class="brand"><span class="brand-icon">🚒</span><div><strong>RESCUE PACK</strong><small>CITY DRIVE</small></div></div>
+          <div class="brand"><span class="brand-icon">🚒</span><div><strong>RESCUE PACK</strong><small id="star-counter" class="star-counter" aria-label="Stars: 0 out of 42 missions">★ 0/42 MISSIONS</small></div></div>
           <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
-          <button id="phone-button" class="phone-button" type="button" title="Choose a mission" aria-label="Open mission phone"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b></button>
+          <button id="phone-button" class="phone-button" type="button" title="Get a random mission" aria-label="Get a random mission"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b></button>
           <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
         </header>
         <div id="fire-status" class="fire-status hidden" role="status" aria-live="polite"></div>
@@ -48,7 +48,7 @@
           <div class="mission-sheet">
             <button id="mission-close" class="mission-close" type="button" aria-label="Close mission phone">×</button>
             <div class="mission-eyebrow">RESCUE PACK CALLS</div>
-            <h2 id="mission-panel-title">Choose a mission</h2>
+            <h2 id="mission-panel-title">New mission</h2>
             <div id="mission-content"></div>
           </div>
         </section>

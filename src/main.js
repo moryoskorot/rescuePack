@@ -24,6 +24,7 @@ import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
 import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
+import { createMissionDeck } from './mission-deck.js';
 import { createMissionMarkers } from './mission-markers.js';
 
 const canvas = document.querySelector('#world');
@@ -606,8 +607,20 @@ const missionPanel = document.querySelector('#mission-panel');
 const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
 const phoneButton = document.querySelector('#phone-button');
+const starCounter = document.querySelector('#star-counter');
+const missionDeck = createMissionDeck(PLAYABLE_MISSIONS);
 let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
-let completedMissionIds = new Set();
+function updateStars() {
+  starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
+  starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
+  phoneButton.classList.toggle('all-complete', missionDeck.isComplete);
+  phoneButton.querySelector('b').textContent = missionDeck.isComplete ? '★' : '!';
+  const phoneLabel = missionDeck.isComplete ? 'All missions complete' : activeMission ? 'View current mission'
+    : missionDeck.current ? 'View mission call' : 'Get a random mission';
+  phoneButton.setAttribute('aria-label', phoneLabel);
+  phoneButton.title = phoneLabel;
+}
+updateStars();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
 function makeDialogue(lines) {
   const wrap = document.createElement('div'); wrap.className = 'mission-dialogue';
@@ -639,8 +652,12 @@ function appendDialogueSequence(lines, onDone) {
   }
   if (lines.length) showLine(); else onDone();
 }
-function openPanel() { if (!playing) return; panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel(); }
-function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; }
+function openPanel() {
+  if (!playing) return;
+  if (!activeMission) { selectedMission = missionDeck.next(); updateStars(); }
+  panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel();
+}
+function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
 function renderMissionPanel() {
   missionContent.replaceChildren();
   const heading = document.querySelector('#mission-panel-title');
@@ -650,26 +667,21 @@ function renderMissionPanel() {
     const objective = document.createElement('p'); objective.className = 'mission-objective'; objective.textContent = selectedMission.objective;
     missionContent.append(place, objective);
     appendDialogueSequence(selectedMission.dialogue.start, () => startMission(selectedMission));
-    missionContent.append(missionButton('Back to calls', () => { selectedMission = null; renderMissionPanel(); }, 'mission-secondary'));
+    missionContent.append(missionButton('Back to city', closePanel, 'mission-secondary'));
   } else if (activeMission) {
     heading.textContent = activeMission.title;
     const detail = document.createElement('p'); detail.className = 'mission-objective'; detail.textContent = missionStatus.textContent;
     missionContent.append(detail, missionButton('Keep helping ➜', closePanel));
-    missionContent.append(missionButton('Pause this mission', () => finishMission(false), 'mission-secondary'));
+  } else if (missionDeck.isComplete) {
+    heading.textContent = 'Every mission complete! ★';
+    const message = document.createElement('p'); message.className = 'mission-objective';
+    message.textContent = `You earned all ${missionDeck.total} stars. The whole city is smiling!`;
+    missionContent.append(message, missionButton('Back to the city', closePanel));
   } else {
-    heading.textContent = 'Choose a mission';
-    const list = document.createElement('div'); list.className = 'mission-list';
-    for (const mission of PLAYABLE_MISSIONS) {
-      const card = document.createElement('button'); card.type = 'button'; card.className = 'mission-card';
-      const image = document.createElement('img'); image.src = missionPortrait(mission.dialogue.start[0].sprite); image.alt = ''; image.loading = 'lazy';
-      const copy = document.createElement('span');
-      const type = document.createElement('small'); type.textContent = `${mission.type.toUpperCase()}${completedMissionIds.has(mission.id) ? ' · ★ DONE' : ''}`;
-      const title = document.createElement('strong'); title.textContent = mission.title;
-      const place = document.createElement('em'); place.textContent = mission.label;
-      copy.append(type, title, place); card.append(image, copy);
-      card.addEventListener('click', () => { selectedMission = mission; renderMissionPanel(); }); list.append(card);
-    }
-    missionContent.append(list);
+    heading.textContent = 'New mission';
+    const message = document.createElement('p'); message.className = 'mission-objective';
+    message.textContent = 'Tap the phone to receive your next call.';
+    missionContent.append(message, missionButton('Back to the city', closePanel));
   }
 }
 function refreshMissionMarkers() {
@@ -682,7 +694,11 @@ function refreshMissionMarkers() {
   } else missionMarkers.set([{ point: activeMission.target, kind: activeMission.type }]);
 }
 function updateMissionStatus() {
-  if (!activeMission) { missionStatus.textContent = '📱 Tap the phone for a mission'; return; }
+  if (!activeMission) {
+    missionStatus.textContent = missionDeck.isComplete ? `★ All ${missionDeck.total} missions complete!`
+      : missionDeck.current ? '📱 Your mission call is waiting on the phone' : '📱 Tap the phone for a new mission';
+    return;
+  }
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
     ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Return to ${activeMission.returnLabel}`
     : `📦 ${missionProgress.collectedCount}/${activeMission.mechanics.item_count} ${activeMission.pickupLabel} · Follow the glowing ! markers`;
@@ -703,6 +719,7 @@ function startMission(mission) {
   fireStatus.classList.toggle('hidden', mission.type !== 'fire');
   lastFireCount = -1;
   phoneButton.classList.add('on-mission');
+  updateStars();
   updateMissionStatus(); refreshMissionMarkers(); closePanel();
 }
 function finishMission(success, silent = false) {
@@ -711,13 +728,19 @@ function finishMission(success, silent = false) {
   activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
-  if (success) completedMissionIds.add(mission.id);
+  if (success) missionDeck.complete(mission.id);
+  updateStars();
   updateMissionStatus();
   if (silent) return;
   resetInput(); panelOpen = true; missionPanel.classList.remove('hidden');
   document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
   missionContent.replaceChildren();
-  appendDialogueSequence(mission.dialogue[success ? 'success' : 'failure'], renderMissionPanel);
+  appendDialogueSequence(mission.dialogue[success ? 'success' : 'failure'], () => {
+    missionContent.replaceChildren();
+    const message = document.createElement('p'); message.className = 'mission-objective';
+    message.textContent = success ? `★ ${missionDeck.completedCount}/${missionDeck.total} missions complete` : 'This call is saved on your phone.';
+    missionContent.append(message, missionButton('Back to the city', closePanel));
+  });
   missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
 }
 function advanceMission() {
