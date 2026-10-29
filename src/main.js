@@ -609,12 +609,13 @@ const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
 const phoneButton = document.querySelector('#phone-button');
 const starCounter = document.querySelector('#star-counter');
-const missionDeck = createMissionDeck(PLAYABLE_MISSIONS);
+const playingCharacterId = 'bunny';
+const missionDeck = createMissionDeck(PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId));
 let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
-function updateStars() {
-  starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
 let dialogueAdvanceTimer = null;
 function clearDialogueAdvance() { clearTimeout(dialogueAdvanceTimer); dialogueAdvanceTimer = null; }
+function updateStars() {
+  starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
   starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
   phoneButton.classList.toggle('all-complete', missionDeck.isComplete);
   phoneButton.querySelector('b').textContent = missionDeck.isComplete ? '★' : '!';
@@ -657,9 +658,9 @@ function missionButton(label, action, className = 'mission-action') {
 function appendDialogueSequence(mission, phase, onDone) {
   const host = document.createElement('div');
   missionContent.append(host);
+  const lines = dialogueBeats(mission, phase);
   let index = 0;
   function showLine() {
-  const lines = dialogueBeats(mission, phase);
     host.replaceChildren(makeDialogue(mission, lines[index], () => {
       const reply = lines[index].reply;
       host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, null, true, phase));
@@ -797,7 +798,7 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#start-button').addEventListener('click',()=>{missionDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
 document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
