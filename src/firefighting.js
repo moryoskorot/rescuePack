@@ -38,11 +38,14 @@ export function igniteRandomBuildings(fireState, sites, random = Math.random, co
 
 export function createFirefightingProgress(fireState) {
   const fractions = new Map();
+  const hitIds = new Set();
   return {
-    clear() { fractions.clear(); },
+    clear() { fractions.clear(); hitIds.clear(); },
+    hasHit(worldBuildingId) { return hitIds.has(worldBuildingId); },
     apply(worldBuildingId, reductionPoints) {
       const burning = fireState.onFire.get(worldBuildingId) ?? 0;
       if (!burning || reductionPoints <= 0) return burning;
+      hitIds.add(worldBuildingId);
       const reduction = (fractions.get(worldBuildingId) ?? 0) + reductionPoints;
       const whole = Math.floor(reduction + 1e-9);
       if (whole) fireState.set(worldBuildingId, burning - whole);

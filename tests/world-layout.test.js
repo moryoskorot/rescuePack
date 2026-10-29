@@ -41,6 +41,8 @@ test('road and sidewalk faces form a disjoint partition, including every interse
 });
 
 test('hydrant footprints stay on sidewalks and outside roads and the station driveway', () => {
+  assert.ok(HYDRANT_LOCATIONS.length >= 35, 'hydrants cover the enlarged town');
+  assert.ok(HYDRANT_LOCATIONS.filter(hydrant => hydrant.z < -100).length >= 12, 'northern districts have hydrants');
   for (const hydrant of HYDRANT_LOCATIONS) {
     assert.equal(surfaceAt(hydrant.x, hydrant.z), 'pavement', hydrant.name);
     for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {

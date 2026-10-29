@@ -22,7 +22,14 @@ test('three book boxes in separate districts each provide two books', () => {
   });
   assert.equal(progress.stage, 'returning');
   assert.equal(progress.collectedCount, 6);
-  progress.update(mission.target);
+  progress.update(mission.target, false, 1.9);
+  assert.equal(progress.stage, 'returning');
+  assert.equal(progress.holdProgress, .95);
+  progress.update({x: mission.target.x + 20, z: mission.target.z}, false, .2);
+  assert.equal(progress.holdProgress, 0, 'leaving the marker resets the return timer');
+  progress.update({...mission.target, speed: 3}, false, .5);
+  assert.equal(progress.holdProgress, 0, 'driving through the marker does not count as standing');
+  progress.update(mission.target, false, 2);
   assert.equal(progress.stage, 'complete');
 });
 
@@ -40,8 +47,27 @@ test('arrival and firefighting missions have different completion triggers', () 
   assert.equal(fire.stage, 'complete');
   const fixMission = PLAYABLE_MISSIONS.find(entry => entry.id === 'horse_02');
   const fix = createMissionProgress(fixMission);
-  fix.update(fixMission.target);
+  fix.update(fixMission.target, false, 5.9);
+  assert.equal(fix.stage, 'going');
+  assert.ok(fix.holdProgress > .98);
+  fix.update({x: fixMission.target.x + 20, z: fixMission.target.z}, false, .1);
+  assert.equal(fix.holdProgress, 0);
+  fix.update(fixMission.target, false, 6);
   assert.equal(fix.stage, 'complete');
+});
+
+test('missions do not complete at the starting position without an action', () => {
+  for (const mission of PLAYABLE_MISSIONS) {
+    const progress = createMissionProgress(mission);
+    progress.update({...mission.target, speed: 0}, false, 0);
+    assert.notEqual(progress.stage, 'complete', mission.id);
+  }
+  const rescueMission = PLAYABLE_MISSIONS.find(entry => entry.type === 'rescue');
+  const rescue = createMissionProgress(rescueMission);
+  rescue.update({...rescueMission.target, speed: 0}, false, 1.9);
+  assert.notEqual(rescue.stage, 'complete');
+  rescue.update({...rescueMission.target, speed: 0}, false, .1);
+  assert.equal(rescue.stage, 'complete');
 });
 
 test('the optional ring run follows eight ordered road checkpoints', () => {

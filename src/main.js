@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
-import { AVENUE_X, ROAD_Y, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
+import { AVENUE_X, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
 import { BUILDING_SITES, CIVIC_ENVELOPES } from './city-plan.js';
 import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
@@ -25,8 +25,8 @@ import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
 import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
-import { createMissionMarkers } from './mission-markers.js';
 import { dialogueBeats } from './mission-dialogue.js';
+import { createMissionMarkers } from './mission-markers.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -199,15 +199,45 @@ function fireStation() {
   solid(x, z - 1.5, 21, 17);
   landmark('FIRE STATION', x, z - 2, 15, '#e74e39');
 }
-function facadeSign(parent, label, width, x, y, z, color = '#174b88') {
-  const canvas = document.createElement('canvas'); canvas.width = 768; canvas.height = 160;
-  const context = canvas.getContext('2d');
-  context.fillStyle = color; context.fillRect(0, 0, 768, 160);
-  context.strokeStyle = '#ffffff'; context.lineWidth = 12; context.strokeRect(6, 6, 756, 148);
-  context.fillStyle = '#fff7d5'; context.font = 'bold 90px Arial'; context.textAlign = 'center'; context.textBaseline = 'middle';
-  context.fillText(label, 384, 83);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(width, 2.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), toneMapped: false }));
-  sign.position.set(x, y, z); parent.add(sign);
+function facadeSign(parent, label, maxWidth, x, y, z, color = '#174b88') {
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = 'bold 90px Arial';
+  const panelHeight = 2.3, panelGap = .12, padding = 52;
+  const maxPixels = maxWidth / panelHeight * 160;
+  const textWidth = text => measure.measureText(text).width;
+  let lines = Array.isArray(label) ? label : [label];
+  if (lines.length === 1 && textWidth(lines[0]) + padding > maxPixels) {
+    const words = lines[0].split(' ');
+    if (words.length > 1) {
+      let best = null;
+      for (let split = 1; split < words.length; split++) {
+        const candidate = [words.slice(0, split).join(' '), words.slice(split).join(' ')];
+        const widest = Math.max(...candidate.map(textWidth));
+        if (!best || widest < best.widest) best = { lines: candidate, widest };
+      }
+      lines = best.lines;
+    }
+  }
+  lines.forEach((line, index) => {
+    const fontSize = Math.min(90, 90 * (maxPixels - padding) / textWidth(line));
+    measure.font = `bold ${fontSize}px Arial`;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(measure.measureText(line).width + padding);
+    canvas.height = 160;
+    const context = canvas.getContext('2d');
+    context.fillStyle = color; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = '#ffffff'; context.lineWidth = 12;
+    context.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+    context.fillStyle = '#fff7d5'; context.font = `bold ${fontSize}px Arial`;
+    context.textAlign = 'center'; context.textBaseline = 'middle';
+    context.fillText(line, canvas.width / 2, 83);
+    const panelWidth = canvas.width / 160 * panelHeight;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(panelWidth, panelHeight),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), toneMapped: false }));
+    sign.position.set(x, y + (lines.length - 1 - 2 * index) * (panelHeight + panelGap) / 2, z);
+    parent.add(sign);
+    measure.font = 'bold 90px Arial';
+  });
 }
 function registerCivicFire(name, object, facadeZ, windowY = 3.4) {
   const site = BUILDING_SITES.find(entry => entry.pack === 'civic' && entry.name === name);
@@ -381,7 +411,8 @@ function building(site) {
   if (site.questName) {
     const sign = group(site.x, site.z);
     const shortName = site.questName.replace('Neighborhood ', '').replace(' Station', ' STATION');
-    facadeSign(sign, shortName.toUpperCase(), Math.min(14, Math.max(9, site.width - 2)), 0, 5.3, site.depth / 2 + .3,
+    const signLabel = site.questName === 'Canal Workshop' ? ['CANAL', 'WORKSHOP'] : shortName.toUpperCase();
+    facadeSign(sign, signLabel, Math.min(14, Math.max(9, site.width - 2)), 0, 5.3, site.depth / 2 + .3,
       site.pack === 'industrial' ? '#965837' : '#286b91');
     landmark(site.questName.toUpperCase(), site.x, site.z, 13, '#75d2e1');
   }
@@ -504,7 +535,7 @@ function createTruck() {
   blueLight.position.set(0, 2.9, -.15); firetruck.add(blueLight);
   firetruck.userData.blueLight = blueLight;
   waterEffect = createWaterEffect(THREE, scene, firetruck, getSurfaceHeight, surfaceAt, point => groundMarkers.addGroundImpact(point));
-  firetruck.position.set(player.x,ROAD_Y,player.z);
+  firetruck.position.set(player.x,getSurfaceHeight(player.x,player.z),player.z);
   firetruck.rotation.y=player.heading;
 }
 
@@ -513,6 +544,7 @@ const debugSpawn = spawnValues?.length >= 2 && spawnValues.every(Number.isFinite
   ? {x:spawnValues[0],z:spawnValues[1],heading:spawnValues[2] ?? -Math.PI/2} : null;
 const player = createVehicleState(debugSpawn ?? {x:35,z:38,heading:-Math.PI/2});
 let previousPhysicsPose = {...player}, renderPose = {...player}, hoseTarget = null;
+let truckVisualY = getSurfaceHeight(player.x, player.z);
 const waterBoost = createWaterBoostState();
 const refillRing = new THREE.Mesh(
   new THREE.RingGeometry(1.3, 1.55, 40),
@@ -612,8 +644,6 @@ const starCounter = document.querySelector('#star-counter');
 const playingCharacterId = 'bunny';
 const missionDeck = createMissionDeck(PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId));
 let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
-let dialogueAdvanceTimer = null;
-function clearDialogueAdvance() { clearTimeout(dialogueAdvanceTimer); dialogueAdvanceTimer = null; }
 function updateStars() {
   starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
   starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
@@ -626,7 +656,7 @@ function updateStars() {
 }
 updateStars();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
-function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start') {
+function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start', nextLabel = 'Continue') {
   const scene = document.createElement('div'); scene.className = `mission-dialogue ${bunnyTurn ? 'dialogue-bunny-turn' : 'dialogue-caller-turn'}`;
   const portraits = document.createElement('div'); portraits.className = 'dialogue-portraits';
   for (const [side, path, name] of [
@@ -642,7 +672,10 @@ function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start'
   const copy = document.createElement('p'); copy.textContent = line.text;
   message.append(speaker, copy);
   scene.append(portraits, message);
-  if (bunnyTurn) return scene;
+  if (bunnyTurn) {
+    scene.append(missionButton(nextLabel, onReply, 'dialogue-reply'));
+    return scene;
+  }
   const reply = missionButton(line.reply, onReply, 'dialogue-reply');
   reply.setAttribute('aria-label', `Bunny replies: ${line.reply}`);
   const replyName = document.createElement('span'); replyName.textContent = 'BUNNY REPLIES';
@@ -663,15 +696,13 @@ function appendDialogueSequence(mission, phase, onDone) {
   function showLine() {
     host.replaceChildren(makeDialogue(mission, lines[index], () => {
       const reply = lines[index].reply;
-      host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, null, true, phase));
-      clearDialogueAdvance();
-      dialogueAdvanceTimer = setTimeout(() => {
-        dialogueAdvanceTimer = null;
+      const isLast = index === lines.length - 1;
+      host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, () => {
         if (!panelOpen || !host.isConnected) return;
         index++;
         if (index < lines.length) showLine();
         else onDone();
-      }, 2200);
+      }, true, phase, isLast && phase === 'start' ? 'Start mission' : 'Continue'));
     }, false, phase));
   }
   if (lines.length) showLine(); else onDone();
@@ -681,11 +712,10 @@ function openPanel() {
   if (!activeMission) { selectedMission = missionDeck.next(); updateStars(); }
   panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
-function closePanel() { clearDialogueAdvance(); panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
+function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
 function renderMissionPanel() {
   missionContent.replaceChildren();
   const heading = document.querySelector('#mission-panel-title');
-  clearDialogueAdvance();
   if (selectedMission) {
     heading.textContent = selectedMission.title;
     const place = document.createElement('p'); place.className = 'mission-place'; place.textContent = selectedMission.label;
@@ -728,11 +758,11 @@ function updateMissionStatus() {
     return;
   }
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
-    ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Return to ${activeMission.returnLabel}`
+    ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Stop at ${activeMission.returnLabel} for 2 seconds`
     : `📦 ${missionProgress.collectedCount}/${activeMission.mechanics.item_count} ${activeMission.pickupLabel} · Follow the glowing ! markers`;
   else if (activeMission.type === 'race') missionStatus.textContent = `🏁 ${missionProgress.checkpoint}/${activeMission.route.length} rings · Follow the next glowing marker`;
   else if (activeMission.type === 'fire') missionStatus.textContent = `🔥 ${activeMission.title} · Drive close to the marker to spray`;
-  else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · Follow the marker`;
+  else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · ${activeMission.type === 'fix' ? 'Stop at the marker for 6 seconds' : 'Stop at the marker for 2 seconds'}`;
 }
 function startMission(mission) {
   if (activeMission) finishMission(false, true);
@@ -753,7 +783,6 @@ function startMission(mission) {
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
-  clearDialogueAdvance();
   activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
@@ -772,11 +801,19 @@ function finishMission(success, silent = false) {
   });
   missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
 }
-function advanceMission() {
+function advanceMission(dt) {
   if (!activeMission || panelOpen) return;
   const previousStage = missionProgress.stage, previousCount = missionProgress.collectedCount;
-  const stage = missionProgress.update(renderPose, activeMission.type === 'fire' && activeFireSiteId && !fireState.onFire.has(activeFireSiteId));
+  const speed = vehicleMotion(player).speed;
+  const fireOut = activeMission.type === 'fire' && activeFireSiteId
+    && fireProgress.hasHit(activeFireSiteId) && !fireState.onFire.has(activeFireSiteId);
+  const stage = missionProgress.update({...renderPose, speed}, fireOut, dt);
   if (stage === 'complete') { finishMission(true); return; }
+  const holdKind = stage === 'returning' ? 'return' : ['fix', 'rescue'].includes(activeMission.type) ? activeMission.type : null;
+  if (holdKind) {
+    const atMarker = speed <= 1 && Math.hypot(renderPose.x - activeMission.target.x, renderPose.z - activeMission.target.z) <= 7;
+    missionMarkers.setProgress(holdKind, missionProgress.holdProgress, atMarker);
+  }
   if (stage !== previousStage || missionProgress.collectedCount !== previousCount) {
     updateMissionStatus(); refreshMissionMarkers();
   }
@@ -825,7 +862,8 @@ function drive(dt) {
   }
   renderPose=interpolateVehiclePose(previousPhysicsPose,player,physicsAccumulator/VEHICLE_STEP);
   const groundHeight=Math.max(...[...wheelContacts(renderPose),...wheelContacts(renderPose,'front')].map(p=>getSurfaceHeight(p.x,p.z)));
-  firetruck.position.set(renderPose.x,groundHeight,renderPose.z);
+  truckVisualY += (groundHeight - truckVisualY) * (1 - Math.exp(-8 * dt));
+  firetruck.position.set(renderPose.x,truckVisualY,renderPose.z);
   firetruck.rotation.y=renderPose.heading;
   for(const wheel of firetruck.userData.wheels){
     wheel.rotation.x=renderPose.wheelSpin;
@@ -887,32 +925,68 @@ const missionWaypoint=document.createElement('div');
 missionWaypoint.className='mission-waypoint hidden';
 missionWaypoint.innerHTML='<span class="arrow" aria-hidden="true">▲</span><span class="waypoint-symbol" aria-hidden="true">!</span><strong></strong>';
 fireMarkerLayer.append(missionWaypoint);
+const collectWaypoints=new Map();
 let lastFireCount=-1;
-function updateMissionWaypoint() {
-  if (!activeMission || activeMission.type === 'fire') { missionWaypoint.classList.add('hidden'); return; }
-  let point = activeMission.target;
-  if (activeMission.type === 'race') point = activeMission.route[missionProgress.checkpoint] ?? point;
-  if (activeMission.type === 'collect' && missionProgress.stage === 'collecting') {
-    point = activeMission.pickups.filter((_, index) => !missionProgress.collected.has(index))
-      .sort((a, b) => Math.hypot(a.x-renderPose.x,a.z-renderPose.z)-Math.hypot(b.x-renderPose.x,b.z-renderPose.z))[0] ?? point;
-  }
+function clearCollectWaypoints() {
+  for (const marker of collectWaypoints.values()) marker.remove();
+  collectWaypoints.clear();
+}
+function waypointLayout(point) {
   const dx=point.x-renderPose.x,dz=point.z-renderPose.z,distance=Math.hypot(dx,dz);
+  const layout=edgeMarkerLayout(dx*markerRight.x+dz*markerRight.z,-dx*markerForward.x-dz*markerForward.z,distance,innerWidth,innerHeight);
+  layout.x=THREE.MathUtils.clamp(layout.x,78,Math.max(78,innerWidth-78));
+  const statusBounds=missionStatus.getBoundingClientRect();
+  const minY=Math.min(innerHeight-60,Math.max(90,statusBounds.bottom+48));
+  if(layout.y<minY)layout.y=minY;
+  return {layout,distance,minY};
+}
+function positionWaypoint(marker,layout,distance,label) {
+  marker.style.left=`${layout.x}px`;marker.style.top=`${layout.y}px`;
+  marker.style.setProperty('--marker-scale',layout.scale.toFixed(3));
+  marker.style.setProperty('--arrow-angle',`${layout.angle}deg`);
+  marker.querySelector('strong').textContent=`${Math.round(distance)}m`;
+  marker.setAttribute('aria-label',`${label}, ${Math.round(distance)} metres away`);
+}
+function updateMissionWaypoint() {
+  if (!activeMission || activeMission.type === 'fire') {
+    missionWaypoint.classList.add('hidden'); clearCollectWaypoints(); return;
+  }
   markerRight.set(1,0,0).applyQuaternion(camera.quaternion);
   markerForward.set(0,0,-1).applyQuaternion(camera.quaternion);
-  const layout=edgeMarkerLayout(dx*markerRight.x+dz*markerRight.z,-dx*markerForward.x-dz*markerForward.z,distance,innerWidth,innerHeight);
-  layout.x = THREE.MathUtils.clamp(layout.x, 78, Math.max(78, innerWidth - 78));
-  const statusBounds = missionStatus.getBoundingClientRect();
-  if (layout.y < statusBounds.bottom + 40) {
-    layout.y = Math.min(innerHeight - 110, statusBounds.bottom + 48);
+  if (activeMission.type === 'collect' && missionProgress.stage === 'collecting') {
+    missionWaypoint.classList.add('hidden');missionWaypoint.classList.remove('returning');
+    const remaining=activeMission.pickups.flatMap((point,index)=>missionProgress.collected.has(index)?[]:[{point,index,distance:Math.hypot(point.x-renderPose.x,point.z-renderPose.z)}]);
+    remaining.sort((a,b)=>a.distance-b.distance);
+    const remainingIds=new Set(remaining.map(item=>item.index));
+    for (const [index,marker] of collectWaypoints) if(!remainingIds.has(index)){marker.remove();collectWaypoints.delete(index);}
+    const placed=[];
+    for (const [order,item] of remaining.entries()) {
+      let marker=collectWaypoints.get(item.index);
+      if(!marker){marker=missionWaypoint.cloneNode(true);marker.classList.remove('hidden','returning');fireMarkerLayer.append(marker);collectWaypoints.set(item.index,marker);}
+      const {layout,distance,minY}=waypointLayout(item.point);
+      const original={x:layout.x,y:layout.y};
+      const alongX=layout.y<100||layout.y>innerHeight-100;
+      for(let attempt=0;attempt<18;attempt++){
+        const offset=attempt===0?0:Math.ceil(attempt/2)*(attempt%2?1:-1)*65;
+        layout.x=alongX?THREE.MathUtils.clamp(original.x+offset,78,Math.max(78,innerWidth-78)):original.x;
+        layout.y=alongX?original.y:THREE.MathUtils.clamp(original.y+offset,minY,innerHeight-60);
+        if(placed.every(prior=>Math.hypot(layout.x-prior.x,layout.y-prior.y)>=65))break;
+      }
+      placed.push({x:layout.x,y:layout.y});
+      marker.style.opacity=order===0?'1':'0.5';
+      marker.style.zIndex=String(remaining.length-order);
+      positionWaypoint(marker,layout,distance,`${activeMission.pickupLabel} ${item.index+1}`);
+    }
+    return;
   }
+  clearCollectWaypoints();
+  let point = activeMission.target;
+  if (activeMission.type === 'race') point = activeMission.route[missionProgress.checkpoint] ?? point;
+  const {layout,distance}=waypointLayout(point);
   missionWaypoint.classList.remove('hidden');
   missionWaypoint.classList.toggle('returning', missionProgress.stage === 'returning');
-  missionWaypoint.style.left=`${layout.x}px`; missionWaypoint.style.top=`${layout.y}px`;
-  missionWaypoint.style.setProperty('--marker-scale',layout.scale.toFixed(3));
-  missionWaypoint.style.setProperty('--arrow-angle',`${layout.angle}deg`);
   missionWaypoint.querySelector('.waypoint-symbol').textContent=missionProgress.stage==='returning'?'↩':'!';
-  missionWaypoint.querySelector('strong').textContent=`${Math.round(distance)}m`;
-  missionWaypoint.setAttribute('aria-label',`${activeMission.title}, ${Math.round(distance)} metres away`);
+  positionWaypoint(missionWaypoint,layout,distance,activeMission.title);
 }
 function updateFireMarkers() {
   const activeIds=new Set(fireState.onFire.keys());
@@ -973,14 +1047,17 @@ function updateLabels() {
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);
 let previous=performance.now();
+let simulationTime=0;
 function animate(now){
   requestAnimationFrame(animate);
   const elapsedSeconds=Math.max(0,(now-previous)/1000);
   const dt=Math.min(elapsedSeconds,.05);previous=now;
+  const simulationRunning=playing&&!panelOpen;
+  if(simulationRunning)simulationTime+=dt;
   drive(dt);updateCamera(dt);
-  if(playing){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
-  if(playing){advanceMission();updateLabels();updateFireMarkers();updateMissionWaypoint();}
-  if(playing){
+  if(simulationRunning){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
+  if(simulationRunning){advanceMission(dt);updateLabels();updateFireMarkers();updateMissionWaypoint();}
+  if(simulationRunning){
     firetruck.updateWorldMatrix(true,false);
     firetruckNozzleWorld(firetruck.userData.model,hoseNozzle);
     hoseForward.set(0,0,1).transformDirection(firetruck.matrixWorld);
@@ -992,10 +1069,10 @@ function animate(now){
     hoseEffect.update(result.shots,dt,waterTuning,camera,hoseImpacts,renderer.domElement.height);
     hoseImpacts.length=0;
   }
-  if(waterEffect)waterEffect.update(playing&&waterBoost.active,now/1000,dt);
-  groundMarkers.update(dt,playing?renderPose:null,fireState.onFire,now/1000);
-  missionMarkers.update(now/1000);
-  waterMaterial.color.setHSL(.54,.58,.51+Math.sin(now*.0005)*.01,THREE.SRGBColorSpace);
+  if(waterEffect&&simulationRunning)waterEffect.update(waterBoost.active,simulationTime,dt);
+  groundMarkers.update(simulationRunning?dt:0,playing?renderPose:null,fireState.onFire,simulationTime);
+  missionMarkers.update(simulationTime);
+  waterMaterial.color.setHSL(.54,.58,.51+Math.sin(simulationTime*.5)*.01,THREE.SRGBColorSpace);
   renderer.render(scene,camera);
 }
 camera.position.set(54,21,64);camera.lookAt(25,3,22);

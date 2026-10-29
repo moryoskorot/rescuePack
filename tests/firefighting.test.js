@@ -48,6 +48,21 @@ test('automatic hose starts within 22 metres of a burning building footprint', (
   assert.equal(nearestBurningBuilding({x:8.99,z:0},sites,fire),null);
 });
 
+test('a fire mission needs a real hose hit before an empty fire map can count as success', () => {
+  const fire = createBuildingFireState(sites);
+  const progress = createFirefightingProgress(fire);
+  fire.set('WB-001', 2);
+  assert.equal(progress.hasHit('WB-001'), false);
+  fire.clear();
+  assert.equal(progress.hasHit('WB-001'), false, 'clearing fire state alone is not a hose hit');
+  fire.set('WB-001', 2);
+  progress.apply('WB-001', 2);
+  assert.equal(fire.onFire.has('WB-001'), false);
+  assert.equal(progress.hasHit('WB-001'), true);
+  progress.clear();
+  assert.equal(progress.hasHit('WB-001'), false);
+});
+
 test('the water launch point stays just above the truck roof in game and preview transforms', () => {
   const gameTruck=new THREE.Group();
   gameTruck.position.set(4,0,3);gameTruck.rotation.y=Math.PI/2;

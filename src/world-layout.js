@@ -111,6 +111,17 @@ export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) =
 
 // The full hydrant, including side caps, fits within the 1.65m sidewalk.
 // Main's original hydrant should use scale .65 (its original radius is .93m).
+const EXTRA_HYDRANT_ROWS = [
+  [-236, [-98, -35, 35, 105]],
+  [-202, [-67, 0, 68]],
+  [-168, [-98, 35, 105]],
+  [-134, [-35, 68]],
+  [-100, [-98, 0, 105]],
+  [-62, [0, 68]],
+  [-30, [-35, 105]],
+  [5, [-35, 35]],
+  [70, [0, 35]],
+];
 export const HYDRANT_LOCATIONS = Object.freeze([
   { name: 'Fire station', x: 25.4, z: 32.575 },
   { name: 'School', x: -73, z: 32.575 },
@@ -127,6 +138,9 @@ export const HYDRANT_LOCATIONS = Object.freeze([
   { name: 'East factory', x: 100, z: -56.575 },
   { name: 'Industrial yards', x: 76, z: 10.425 },
   { name: 'Workers cottages', x: 103, z: 64.575 },
+  ...EXTRA_HYDRANT_ROWS.flatMap(([roadZ, xs]) => xs.map(x => ({
+    name: `Street ${roadZ}, ${x}`, x, z: roadZ + (roadZ === 70 ? -5.425 : 5.425),
+  }))),
 ].map(location => Object.freeze({ ...location, radius: .62, scale: .65 })));
 
 export function vehicleFootprint({ x, z, heading }, { halfWidth = 1.32, front = 2.85, rear = 2.85, margin = .06 } = {}) {

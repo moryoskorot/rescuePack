@@ -114,13 +114,20 @@ export function createMissionProgress(mission) {
   const collected = new Set();
   let stage = mission.type === 'collect' ? 'collecting' : mission.type === 'race' ? 'racing' : 'going';
   let checkpoint = 0;
+  let holdSeconds = 0;
+  const holdDuration = mission.type === 'collect' || mission.type === 'rescue' ? 2 : mission.type === 'fix' ? 6 : 0;
   return {
     get stage() { return stage; },
     get checkpoint() { return checkpoint; },
+    get holdSeconds() { return holdSeconds; },
+    get holdDuration() { return holdDuration; },
+    get holdProgress() { return holdDuration ? Math.min(holdSeconds / holdDuration, 1) : 0; },
     get collectedCount() { return mission.type === 'race' ? checkpoint : [...collected].reduce((sum, index) => sum + (mission.pickups[index].count ?? 1), 0); },
     get collected() { return new Set(collected); },
-    update(position, fireOut = false) {
+    update(position, fireOut = false, dt = 0) {
       if (stage === 'complete') return stage;
+      const atTarget = Math.hypot(position.x - mission.target.x, position.z - mission.target.z) <= 7;
+      const holdingStill = atTarget && (position.speed ?? 0) <= 1;
       if (mission.type === 'fire') {
         if (fireOut) stage = 'complete';
       } else if (mission.type === 'race') {
@@ -133,8 +140,14 @@ export function createMissionProgress(mission) {
             if (Math.hypot(position.x - point.x, position.z - point.z) <= 4.5) collected.add(index);
           });
           if (collected.size === mission.pickups.length) stage = 'returning';
-        } else if (Math.hypot(position.x - mission.target.x, position.z - mission.target.z) <= 7) stage = 'complete';
-      } else if (Math.hypot(position.x - mission.target.x, position.z - mission.target.z) <= 7) {
+        } else {
+          holdSeconds = holdingStill ? holdSeconds + Math.max(0, dt) : 0;
+          if (holdSeconds >= holdDuration) stage = 'complete';
+        }
+      } else if (mission.type === 'fix' || mission.type === 'rescue') {
+        holdSeconds = holdingStill ? holdSeconds + Math.max(0, dt) : 0;
+        if (holdSeconds >= holdDuration) stage = 'complete';
+      } else if (atTarget) {
         stage = 'complete';
       }
       return stage;

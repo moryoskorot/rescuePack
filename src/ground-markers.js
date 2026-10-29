@@ -4,6 +4,8 @@ export function createGroundMarkers(THREE, scene, getSurfaceHeight) {
   const red = '#ff6231';
   const ringGeometry = new THREE.RingGeometry(3.05, 3.35, 64);
   const haloGeometry = new THREE.RingGeometry(2.75, 3.65, 64);
+  // Grass sits .27m below the sidewalk, so the flat ring needs room to cross the curb.
+  const truckRingClearance = .32;
   const truckRing = new THREE.Group();
   for (const [geometry, opacity, height] of [[haloGeometry, .38, 0], [ringGeometry, 1, .012]]) {
     const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
@@ -118,7 +120,7 @@ export function createGroundMarkers(THREE, scene, getSurfaceHeight) {
     update(dt, truckPose, activeFireIds, elapsed) {
       truckRing.visible = Boolean(truckPose);
       if (truckPose) {
-        truckRing.position.set(truckPose.x, getSurfaceHeight(truckPose.x, truckPose.z) + .055, truckPose.z);
+        truckRing.position.set(truckPose.x, getSurfaceHeight(truckPose.x, truckPose.z) + truckRingClearance, truckPose.z);
         const pulse = 1 + .025 * Math.sin(elapsed * 3.8);
         truckRing.scale.set(pulse, 1, pulse);
       }

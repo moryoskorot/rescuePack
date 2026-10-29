@@ -61,6 +61,22 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
       ring.rotation.x = -Math.PI / 2; ring.position.y = y; ring.renderOrder = 5;
       group.add(ring);
     }
+    let progressRing = null;
+    if (kind === 'return' || kind === 'fix' || kind === 'rescue') {
+      progressRing = new THREE.Group();
+      progressRing.position.y = .055;
+      progressRing.visible = false;
+      for (let segment = 0; segment < 16; segment++) {
+        const mesh = new THREE.Mesh(
+          new THREE.RingGeometry(2.47, 2.94, 2, 1, segment * Math.PI / 8 + .045, Math.PI / 8 - .09),
+          new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .25, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
+        );
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.renderOrder = 7;
+        progressRing.add(mesh);
+      }
+      group.add(progressRing);
+    }
     if (pickup) {
       const material = new THREE.MeshStandardMaterial({ color: kind === 'carrot' ? '#f38e36' :
         kind === 'gear' || kind === 'tool' || kind === 'nozzle' ? '#b7d1db' :
@@ -91,16 +107,28 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
     orb.scale.set(size, size, 1); orb.position.y = pickup ? 2.15 : 3; orb.renderOrder = 6;
     group.add(orb);
     scene.add(group);
-    entries.push({ group, orb, pickup });
+    entries.push({ group, orb, pickup, kind, progressRing });
   }
   return {
     clear,
     set(points) { clear(); points.forEach(({ point, kind }) => add(point, kind)); },
+    setProgress(kind, progress, active) {
+      for (const entry of entries) {
+        if (!entry.progressRing) continue;
+        const visible = entry.kind === kind && active;
+        entry.progressRing.visible = visible;
+        if (!visible) continue;
+        entry.progressRing.children.forEach((segment, index) => {
+          segment.material.opacity = (index + 1) / 16 <= progress ? .98 : .22;
+        });
+      }
+    },
     update(elapsed) {
-      entries.forEach(({ group, orb, pickup }, index) => {
+      entries.forEach(({ group, orb, pickup, progressRing }, index) => {
         orb.position.y = (pickup ? 2.15 : 3) + .17 * Math.sin(elapsed * 2.6 + index);
         const pulse = 1 + .05 * Math.sin(elapsed * 3.5 + index);
         group.children[1].scale.setScalar(pulse);
+        if (progressRing?.visible) progressRing.rotation.y = elapsed * 1.65;
       });
     },
   };
