@@ -41,11 +41,11 @@ test('hose reaches the nearest burning footprint and aims at its wall', () => {
   assert.deepEqual(impact,{x:14,y:2.56,z:1});
 });
 
-test('automatic hose starts within 22 metres of a burning building footprint', () => {
-  assert.equal(HOSE_RANGE,22);
+test('automatic hose starts within 17.6 metres of a burning building footprint', () => {
+  assert.equal(HOSE_RANGE,17.6);
   const fire=new Map([['WB-002',50]]);
-  assert.equal(nearestBurningBuilding({x:9,z:0},sites,fire)?.site.worldBuildingId,'WB-002');
-  assert.equal(nearestBurningBuilding({x:8.99,z:0},sites,fire),null);
+  assert.equal(nearestBurningBuilding({x:13.4,z:0},sites,fire)?.site.worldBuildingId,'WB-002');
+  assert.equal(nearestBurningBuilding({x:13.39,z:0},sites,fire),null);
 });
 
 test('a fire mission needs a real hose hit before an empty fire map can count as success', () => {
