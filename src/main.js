@@ -222,7 +222,7 @@ function facadeSign(parent, label, maxWidth, x, y, z, color = '#174b88') {
     const fontSize = Math.min(90, 90 * (maxPixels - padding) / textWidth(line));
     measure.font = `bold ${fontSize}px Arial`;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(measure.measureText(line).width + padding);
+    canvas.width = Math.min(Math.ceil(measure.measureText(line).width + padding), Math.floor(maxPixels));
     canvas.height = 160;
     const context = canvas.getContext('2d');
     context.fillStyle = color; context.fillRect(0, 0, canvas.width, canvas.height);
@@ -230,7 +230,7 @@ function facadeSign(parent, label, maxWidth, x, y, z, color = '#174b88') {
     context.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
     context.fillStyle = '#fff7d5'; context.font = `bold ${fontSize}px Arial`;
     context.textAlign = 'center'; context.textBaseline = 'middle';
-    context.fillText(line, canvas.width / 2, 83);
+    context.fillText(line, canvas.width / 2, 83, canvas.width - padding);
     const panelWidth = canvas.width / 160 * panelHeight;
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(panelWidth, panelHeight),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), toneMapped: false }));
@@ -412,7 +412,7 @@ function building(site) {
     const sign = group(site.x, site.z);
     const shortName = site.questName.replace('Neighborhood ', '').replace(' Station', ' STATION');
     const signLabel = site.questName === 'Canal Workshop' ? ['CANAL', 'WORKSHOP'] : shortName.toUpperCase();
-    facadeSign(sign, signLabel, Math.min(14, Math.max(9, site.width - 2)), 0, 5.3, site.depth / 2 + .3,
+    facadeSign(sign, signLabel, Math.min(14, size.x * .8), 0, 5.3, bounds.max.z - site.z + .12,
       site.pack === 'industrial' ? '#965837' : '#286b91');
     landmark(site.questName.toUpperCase(), site.x, site.z, 13, '#75d2e1');
   }
@@ -659,9 +659,11 @@ function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
 function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start', nextLabel = 'Continue') {
   const scene = document.createElement('div'); scene.className = `mission-dialogue ${bunnyTurn ? 'dialogue-bunny-turn' : 'dialogue-caller-turn'}`;
   const portraits = document.createElement('div'); portraits.className = 'dialogue-portraits';
+  const bunnyPortrait = phase === 'start' && ['fire', 'rescue'].includes(mission.type)
+    ? 'visuals/processed/BUNNY_2_run.png' : 'visuals/processed/BUNNY_1_idle.png';
   for (const [side, path, name] of [
     ['caller', line.sprite ?? mission.dialogue.start.find(item => item.sprite)?.sprite, line.speaker],
-    ['bunny', phase === 'start' ? 'visuals/processed/BUNNY_2_run.png' : 'visuals/processed/BUNNY_1_idle.png', 'Bunny'],
+    ['bunny', bunnyPortrait, 'Bunny'],
   ]) {
     const character = document.createElement('div'); character.className = `dialogue-character dialogue-${side}`;
     const image = document.createElement('img'); image.src = missionPortrait(path); image.alt = name;

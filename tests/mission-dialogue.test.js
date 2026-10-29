@@ -17,11 +17,15 @@ test('every mission has portrait dialogue with a Bunny reply in each phase', () 
   }
 });
 
-test('start calls answer the requester and keep the closing exchange', () => {
+test('start calls end with Bunny accepting the job, before any thank-you', () => {
+  for (const mission of library.missions) {
+    assert.equal(mission.dialogue.start.length, 1, `${mission.id} has extra start lines`);
+    const beats = dialogueBeats(mission, 'start');
+    assert.equal(beats.length, 1, `${mission.id} has extra start beats`);
+    assert.doesNotMatch(beats[0].text, /thank|no problem/i, `${mission.id} thanks before completion`);
+  }
   const mission = library.missions.find(item => item.id === 'hawk_01');
   const beats = dialogueBeats(mission, 'start');
-  assert.equal(beats.length, 2);
   assert.equal(beats[0].speaker, 'Hawk');
   assert.match(beats[0].reply, /hang tight/i);
-  assert.equal(beats[1].text, 'Thank you, Rescue Pack!');
 });

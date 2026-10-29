@@ -16,9 +16,9 @@ export function dialogueBeats(mission, phase) {
   const playableReply = lines.find(line => line.speaker === 'Player')?.text;
 
   if (phase === 'start') {
-    return callerLines.map((line, index) => ({
+    return callerLines.slice(0, 1).map(line => ({
       ...line,
-      reply: index === 0 ? (firstReplies[mission.type] ?? "I'm on my way!") : 'You can count on me!',
+      reply: firstReplies[mission.type] ?? "I'm on my way!",
     }));
   }
 

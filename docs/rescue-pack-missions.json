@@ -124,15 +124,6 @@
             "speaker": "Bunny",
             "text": "Oh no! The picnic grill made the bushes smoky!",
             "sprite": "visuals/processed/BUNNY_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Bunny",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BUNNY_1_idle.png"
           }
         ],
         "success": [
@@ -201,15 +192,6 @@
             "speaker": "Bunny",
             "text": "I hear a puppy whining by the pond!",
             "sprite": "visuals/processed/BUNNY_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Bunny",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BUNNY_1_idle.png"
           }
         ],
         "success": [
@@ -276,15 +258,6 @@
             "speaker": "Bunny",
             "text": "I dropped our colorful practice nozzles. Oops!",
             "sprite": "visuals/processed/BUNNY_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Bunny",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BUNNY_1_idle.png"
           }
         ],
         "success": [
@@ -363,15 +336,6 @@
             "speaker": "Hawk",
             "text": "A toaster is smoking in the clinic kitchen!",
             "sprite": "visuals/processed/HAWK_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Hawk",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HAWK_1_idle.png"
           }
         ],
         "success": [
@@ -440,15 +404,6 @@
             "speaker": "Hawk",
             "text": "A little bear lost their teddy near the playground. Can you help?",
             "sprite": "visuals/processed/HAWK_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Hawk",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HAWK_1_idle.png"
           }
         ],
         "success": [
@@ -517,15 +472,6 @@
             "speaker": "Hawk",
             "text": "My bandages and medicine bags are ready for pickup.",
             "sprite": "visuals/processed/HAWK_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Hawk",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HAWK_1_idle.png"
           }
         ],
         "success": [
@@ -607,15 +553,6 @@
             "speaker": "Beaver",
             "text": "My workshop light sparked and a box caught fire!",
             "sprite": "visuals/processed/BEAVER_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Beaver",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAVER_1_idle.png"
           }
         ],
         "success": [
@@ -684,15 +621,6 @@
             "speaker": "Beaver",
             "text": "The canal gate is jammed. Boats cannot pass!",
             "sprite": "visuals/processed/BEAVER_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Beaver",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAVER_1_idle.png"
           }
         ],
         "success": [
@@ -761,15 +689,6 @@
             "speaker": "Beaver",
             "text": "My little gears rolled all over the workshop path!",
             "sprite": "visuals/processed/BEAVER_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Beaver",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAVER_1_idle.png"
           }
         ],
         "success": [
@@ -851,15 +770,6 @@
             "speaker": "Pig",
             "text": "My shed is on fire! My carrots are next door!",
             "sprite": "visuals/processed/PIG_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Pig",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIG_1_idle.png"
           }
         ],
         "success": [
@@ -928,15 +838,6 @@
             "speaker": "Pig",
             "text": "The ducklings wandered behind the farm fence!",
             "sprite": "visuals/processed/PIG_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Pig",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIG_1_idle.png"
           }
         ],
         "success": [
@@ -1003,15 +904,6 @@
             "speaker": "Pig",
             "text": "The cart tipped and my carrots bounced everywhere!",
             "sprite": "visuals/processed/PIG_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Pig",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIG_1_idle.png"
           }
         ],
         "success": [
@@ -1090,15 +982,6 @@
             "speaker": "Sheep",
             "text": "Oh dear! A little fire started near the reading room!",
             "sprite": "visuals/processed/SHEEP_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Sheep",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/SHEEP_1_idle.png"
           }
         ],
         "success": [
@@ -1167,15 +1050,6 @@
             "speaker": "Sheep",
             "text": "The front door is stuck and story time starts soon!",
             "sprite": "visuals/processed/SHEEP_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Sheep",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/SHEEP_1_idle.png"
           }
         ],
         "success": [
@@ -1242,15 +1116,6 @@
             "speaker": "Sheep",
             "text": "Some favorite books are waiting at return boxes around town.",
             "sprite": "visuals/processed/SHEEP_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Sheep",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/SHEEP_1_idle.png"
           }
         ],
         "success": [
@@ -1329,15 +1194,6 @@
             "speaker": "Horse",
             "text": "The gym storage room is smoky! Our ribbons are inside!",
             "sprite": "visuals/processed/HORSE_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Horse",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HORSE_1_idle.png"
           }
         ],
         "success": [
@@ -1406,15 +1262,6 @@
             "speaker": "Horse",
             "text": "The gym doors are jammed! I worked so hard for the contest!",
             "sprite": "visuals/processed/HORSE_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Horse",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HORSE_1_idle.png"
           }
         ],
         "success": [
@@ -1483,15 +1330,6 @@
             "speaker": "Horse",
             "text": "The wind scattered my colorful pom-poms!",
             "sprite": "visuals/processed/HORSE_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Horse",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/HORSE_1_idle.png"
           }
         ],
         "success": [
@@ -1570,15 +1408,6 @@
             "speaker": "Panda",
             "text": "Team, a training-room fire needs attention!",
             "sprite": "visuals/processed/PANDA_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Panda",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PANDA_1_idle.png"
           }
         ],
         "success": [
@@ -1647,15 +1476,6 @@
             "speaker": "Panda",
             "text": "Someone climbed onto the roof and cannot find the stairs!",
             "sprite": "visuals/processed/PANDA_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Panda",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PANDA_1_idle.png"
           }
         ],
         "success": [
@@ -1722,15 +1542,6 @@
             "speaker": "Panda",
             "text": "Ready for a practice route? Follow every golden ring!",
             "sprite": "visuals/processed/PANDA_2_point.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Panda",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PANDA_1_idle.png"
           }
         ],
         "success": [
@@ -1806,15 +1617,6 @@
             "speaker": "Pigeon",
             "text": "Squawk! There is smoke near the parcel shelf!",
             "sprite": "visuals/processed/PIGEON_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Pigeon",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIGEON_1_idle.png"
           }
         ],
         "success": [
@@ -1883,15 +1685,6 @@
             "speaker": "Pigeon",
             "text": "A parcel is stuck on a balcony and the owner is waiting!",
             "sprite": "visuals/processed/PIGEON_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Pigeon",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIGEON_1_idle.png"
           }
         ],
         "success": [
@@ -1958,15 +1751,6 @@
             "speaker": "Pigeon",
             "text": "Whoosh! The wind took my letters for a ride!",
             "sprite": "visuals/processed/PIGEON_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Pigeon",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/PIGEON_1_idle.png"
           }
         ],
         "success": [
@@ -2045,15 +1829,6 @@
             "speaker": "Koala",
             "text": "The cafeteria toaster made a smoky mess!",
             "sprite": "visuals/processed/KOALA_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Koala",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KOALA_1_idle.png"
           }
         ],
         "success": [
@@ -2122,15 +1897,6 @@
             "speaker": "Koala",
             "text": "Drip, drip! The school sink will not stop!",
             "sprite": "visuals/processed/KOALA_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Koala",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KOALA_1_idle.png"
           }
         ],
         "success": [
@@ -2197,15 +1963,6 @@
             "speaker": "Koala",
             "text": "My brushes and cloths rolled off the cleaning cart!",
             "sprite": "visuals/processed/KOALA_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Koala",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KOALA_1_idle.png"
           }
         ],
         "success": [
@@ -2284,15 +2041,6 @@
             "speaker": "Fox",
             "text": "Our little garden shed is smoking! Please help!",
             "sprite": "visuals/processed/FOX_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Fox",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/FOX_1_idle.png"
           }
         ],
         "success": [
@@ -2361,15 +2109,6 @@
             "speaker": "Fox",
             "text": "Our puppet is stuck on the playground roof!",
             "sprite": "visuals/processed/FOX_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Fox",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/FOX_1_idle.png"
           }
         ],
         "success": [
@@ -2436,15 +2175,6 @@
             "speaker": "Fox",
             "text": "Our crayons and craft shapes are waiting at pickup spots!",
             "sprite": "visuals/processed/FOX_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Fox",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/FOX_1_idle.png"
           }
         ],
         "success": [
@@ -2523,15 +2253,6 @@
             "speaker": "Bear",
             "text": "A science display overheated. There is a little fire!",
             "sprite": "visuals/processed/BEAR_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Bear",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAR_1_idle.png"
           }
         ],
         "success": [
@@ -2600,15 +2321,6 @@
             "speaker": "Bear",
             "text": "Our bell is broken and nobody knows when recess starts!",
             "sprite": "visuals/processed/BEAR_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Bear",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAR_1_idle.png"
           }
         ],
         "success": [
@@ -2675,15 +2387,6 @@
             "speaker": "Bear",
             "text": "Our learning shapes blew out of the classroom box!",
             "sprite": "visuals/processed/BEAR_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Bear",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/BEAR_1_idle.png"
           }
         ],
         "success": [
@@ -2762,15 +2465,6 @@
             "speaker": "Crow",
             "text": "A mysterious puff of smoke is coming from the clocktower!",
             "sprite": "visuals/processed/CROW_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Crow",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CROW_1_idle.png"
           }
         ],
         "success": [
@@ -2839,15 +2533,6 @@
             "speaker": "Crow",
             "text": "I followed a clue upstairs. Now the door is locked!",
             "sprite": "visuals/processed/CROW_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Crow",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CROW_1_idle.png"
           }
         ],
         "success": [
@@ -2916,15 +2601,6 @@
             "speaker": "Crow",
             "text": "Someone dropped my numbered clue cards all over town!",
             "sprite": "visuals/processed/CROW_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Crow",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CROW_1_idle.png"
           }
         ],
         "success": [
@@ -3003,15 +2679,6 @@
             "speaker": "Kangaroo",
             "text": "Sparks! A crate is burning at our worksite!",
             "sprite": "visuals/processed/KANGAROO_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Kangaroo",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KANGAROO_1_idle.png"
           }
         ],
         "success": [
@@ -3080,15 +2747,6 @@
             "speaker": "Kangaroo",
             "text": "The walkway is loose! We need it fixed before anyone crosses!",
             "sprite": "visuals/processed/KANGAROO_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Kangaroo",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KANGAROO_1_idle.png"
           }
         ],
         "success": [
@@ -3155,15 +2813,6 @@
             "speaker": "Kangaroo",
             "text": "My screw box fell off the beam! Please find them before anyone steps on them!",
             "sprite": "visuals/processed/KANGAROO_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Kangaroo",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/KANGAROO_1_idle.png"
           }
         ],
         "success": [
@@ -3242,15 +2891,6 @@
             "speaker": "Granny Cheetah",
             "text": "My oven made a smoky surprise. Not my best recipe!",
             "sprite": "visuals/processed/CHEETAH_5_distressed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Granny Cheetah",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CHEETAH_1_idle.png"
           }
         ],
         "success": [
@@ -3319,15 +2959,6 @@
             "speaker": "Granny Cheetah",
             "text": "I want to visit my friends tomorrow, but the elevator broke!",
             "sprite": "visuals/processed/CHEETAH_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Follow the marker. Help is on the way!"
-          },
-          {
-            "speaker": "Granny Cheetah",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CHEETAH_1_idle.png"
           }
         ],
         "success": [
@@ -3394,15 +3025,6 @@
             "speaker": "Granny Cheetah",
             "text": "My photo postcards got scattered by the wind!",
             "sprite": "visuals/processed/CHEETAH_4_annoyed.png"
-          },
-          {
-            "speaker": "Dispatcher",
-            "text": "Find the glowing items, then follow the return marker!"
-          },
-          {
-            "speaker": "Granny Cheetah",
-            "text": "Thank you, Rescue Pack!",
-            "sprite": "visuals/processed/CHEETAH_1_idle.png"
           }
         ],
         "success": [
