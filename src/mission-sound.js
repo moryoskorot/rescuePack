@@ -30,36 +30,13 @@ export function createMissionSound(AudioContextClass = globalThis.AudioContext |
     oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   }
 
-  function staticBurst(time, duration, volume) {
-    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-    const samples = buffer.getChannelData(0);
-    let seed = 45123;
-    for (let i = 0; i < samples.length; i++) {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-      const t = i / context.sampleRate;
-      samples[i] = (seed / 2147483648 - 1) * Math.min(1, t * 100) * Math.min(1, (duration - t) * 30);
-    }
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    source.buffer = buffer;
-    filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = .55;
-    gain.gain.value = volume;
-    source.connect(filter).connect(gain).connect(context.destination);
-    source.start(time);
-    source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
-  }
-
   return {
     unlock() { ready(); },
     playCall() {
       if (!ready()) return;
       const time = context.currentTime + .01;
-      // A clear radio click, two call tones, and a soft tail of static.
-      staticBurst(time, .15, .38);
-      note(time + .14, 660, .19, .18, 'triangle');
-      note(time + .37, 880, .22, .19, 'triangle');
-      staticBurst(time + .64, .2, .24);
+      note(time, 660, .19, .18, 'triangle');
+      note(time + .23, 880, .22, .19, 'triangle');
     },
     playCollect() {
       if (!ready()) return;

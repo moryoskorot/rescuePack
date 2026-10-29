@@ -11,7 +11,6 @@ class FakeAudioContext {
     this.state = 'running';
     this.destination = {};
     this.notes = [];
-    this.staticBursts = [];
   }
   resume() { this.state = 'running'; return Promise.resolve(); }
   createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {}, value: 0 }, connect() { return this; }, disconnect() {} }; }
@@ -20,13 +19,6 @@ class FakeAudioContext {
     node.start = time => this.notes.push({ time, pitch: node.frequency.value });
     return node;
   }
-  createBuffer(_channels, length) { return { getChannelData() { return new Float32Array(length); } }; }
-  createBufferSource() {
-    const node = { connect() { return this; }, disconnect() {}, buffer: null };
-    node.start = time => this.staticBursts.push(time);
-    return node;
-  }
-  createBiquadFilter() { return { connect() { return this; }, disconnect() {}, frequency: {}, Q: {} }; }
 }
 
 test('mission call is prompt, pickup dings, and charge boops rise then stop', () => {
@@ -34,9 +26,8 @@ test('mission call is prompt, pickup dings, and charge boops rise then stop', ()
   sound.unlock();
   const context = FakeAudioContext.last;
   sound.playCall();
-  assert.equal(context.staticBursts.length, 2);
   assert.equal(context.notes.length, 2);
-  assert.ok(context.staticBursts[0] - context.currentTime < .02);
+  assert.ok(context.notes[0].time - context.currentTime < .02);
   sound.playCollect();
   assert.equal(context.notes.length, 4);
   sound.updateCharge(true, 0);
