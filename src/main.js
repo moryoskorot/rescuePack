@@ -641,11 +641,20 @@ const portraitUrls = import.meta.glob('../visuals/processed/*.png', { eager: tru
 const missionPanel = document.querySelector('#mission-panel');
 const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
+const victoryScreen = document.querySelector('#victory-screen');
+const victoryImage = document.querySelector('#victory-image');
+const victoryContinue = document.querySelector('#victory-continue');
 const phoneButton = document.querySelector('#phone-button');
 const starCounter = document.querySelector('#star-counter');
 const playingCharacterId = 'bunny';
+const victoryCards = {
+  bunny: 'good-job-bunny.png',
+  beaver: 'good-job-beaver.png',
+  hawk: 'good-job-hawk-v2.png',
+};
 const missionDeck = createMissionDeck(PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId));
 let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
+let pendingVictoryMission = null;
 function updateStars() {
   starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
   starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
@@ -805,6 +814,26 @@ function skipMission(mission) {
   updateStars();
   closePanel();
 }
+function showMissionResult(mission, success) {
+  missionPanel.classList.remove('hidden');
+  document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
+  missionContent.replaceChildren();
+  appendDialogueSequence(mission, success ? 'success' : 'failure', () => {
+    missionContent.replaceChildren();
+    const message = document.createElement('p'); message.className = 'mission-objective';
+    message.textContent = success ? `★ ${missionDeck.completedCount}/${missionDeck.total} missions complete` : 'This call is saved on your phone.';
+    missionContent.append(message, missionButton('Back to the city', closePanel));
+  });
+  missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
+  missionContent.querySelector('.dialogue-reply')?.focus();
+}
+victoryContinue.addEventListener('click', () => {
+  if (!pendingVictoryMission) return;
+  const mission = pendingVictoryMission;
+  pendingVictoryMission = null;
+  victoryScreen.classList.add('hidden');
+  showMissionResult(mission, true);
+});
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
@@ -816,16 +845,15 @@ function finishMission(success, silent = false) {
   updateStars();
   updateMissionStatus();
   if (silent) return;
-  resetInput(); panelOpen = true; missionPanel.classList.remove('hidden');
-  document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
-  missionContent.replaceChildren();
-  appendDialogueSequence(mission, success ? 'success' : 'failure', () => {
-    missionContent.replaceChildren();
-    const message = document.createElement('p'); message.className = 'mission-objective';
-    message.textContent = success ? `★ ${missionDeck.completedCount}/${missionDeck.total} missions complete` : 'This call is saved on your phone.';
-    missionContent.append(message, missionButton('Back to the city', closePanel));
-  });
-  missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
+  resetInput(); panelOpen = true;
+  const card = success && victoryCards[playingCharacterId];
+  if (card) {
+    victoryImage.src = `${import.meta.env.BASE_URL}assets/victory/${card}`;
+    victoryImage.alt = `Good job, ${playingCharacterId}!`;
+    pendingVictoryMission = mission;
+    victoryScreen.classList.remove('hidden');
+    victoryContinue.focus();
+  } else showMissionResult(mission, success);
 }
 function advanceMission(dt) {
   if (!activeMission || panelOpen) return;
@@ -849,6 +877,7 @@ function advanceMission(dt) {
 phoneButton.addEventListener('click', openPanel);
 document.querySelector('#mission-close').addEventListener('click', closePanel);
 window.addEventListener('keydown',e=>{
+  if (!victoryScreen.classList.contains('hidden')) { if (e.code === 'Escape') victoryContinue.click(); return; }
   if (panelOpen) { if (e.code === 'Escape') closePanel(); return; }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
