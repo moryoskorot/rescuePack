@@ -26,6 +26,7 @@ import { createGroundMarkers } from './ground-markers.js';
 import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { createMissionMarkers } from './mission-markers.js';
+import { dialogueBeats } from './mission-dialogue.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -612,6 +613,8 @@ const missionDeck = createMissionDeck(PLAYABLE_MISSIONS);
 let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
 function updateStars() {
   starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
+let dialogueAdvanceTimer = null;
+function clearDialogueAdvance() { clearTimeout(dialogueAdvanceTimer); dialogueAdvanceTimer = null; }
   starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
   phoneButton.classList.toggle('all-complete', missionDeck.isComplete);
   phoneButton.querySelector('b').textContent = missionDeck.isComplete ? '★' : '!';
@@ -622,33 +625,53 @@ function updateStars() {
 }
 updateStars();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
-function makeDialogue(lines) {
-  const wrap = document.createElement('div'); wrap.className = 'mission-dialogue';
-  for (const line of lines) {
-    const row = document.createElement('div'); row.className = 'mission-line';
-    const portrait = missionPortrait(line.sprite ?? line.sprite_by_playable_character_id?.bunny);
-    if (portrait) { const img = document.createElement('img'); img.src = portrait; img.alt = ''; row.append(img); }
-    const text = document.createElement('div');
-    const speaker = document.createElement('strong'); speaker.textContent = line.speaker === 'Player' ? 'Bunny' : line.speaker;
-    const copy = document.createElement('p'); copy.textContent = line.text;
-    text.append(speaker, copy); row.append(text); wrap.append(row);
+function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start') {
+  const scene = document.createElement('div'); scene.className = `mission-dialogue ${bunnyTurn ? 'dialogue-bunny-turn' : 'dialogue-caller-turn'}`;
+  const portraits = document.createElement('div'); portraits.className = 'dialogue-portraits';
+  for (const [side, path, name] of [
+    ['caller', line.sprite ?? mission.dialogue.start.find(item => item.sprite)?.sprite, line.speaker],
+    ['bunny', phase === 'start' ? 'visuals/processed/BUNNY_2_run.png' : 'visuals/processed/BUNNY_1_idle.png', 'Bunny'],
+  ]) {
+    const character = document.createElement('div'); character.className = `dialogue-character dialogue-${side}`;
+    const image = document.createElement('img'); image.src = missionPortrait(path); image.alt = name;
+    character.append(image); portraits.append(character);
   }
-  return wrap;
+  const message = document.createElement('div'); message.className = 'dialogue-message';
+  const speaker = document.createElement('strong'); speaker.textContent = line.speaker;
+  const copy = document.createElement('p'); copy.textContent = line.text;
+  message.append(speaker, copy);
+  scene.append(portraits, message);
+  if (bunnyTurn) return scene;
+  const reply = missionButton(line.reply, onReply, 'dialogue-reply');
+  reply.setAttribute('aria-label', `Bunny replies: ${line.reply}`);
+  const replyName = document.createElement('span'); replyName.textContent = 'BUNNY REPLIES';
+  const replyText = document.createElement('strong'); replyText.textContent = line.reply;
+  reply.replaceChildren(replyName, replyText);
+  scene.append(reply);
+  return scene;
 }
 function missionButton(label, action, className = 'mission-action') {
   const button = document.createElement('button'); button.type = 'button'; button.className = className;
   button.textContent = label; button.addEventListener('click', action); return button;
 }
-function appendDialogueSequence(lines, onDone) {
+function appendDialogueSequence(mission, phase, onDone) {
   const host = document.createElement('div');
   missionContent.append(host);
   let index = 0;
   function showLine() {
-    host.replaceChildren(makeDialogue([lines[index]]), missionButton('OK ➜', () => {
-      index++;
-      if (index < lines.length) showLine();
-      else onDone();
-    }));
+  const lines = dialogueBeats(mission, phase);
+    host.replaceChildren(makeDialogue(mission, lines[index], () => {
+      const reply = lines[index].reply;
+      host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, null, true, phase));
+      clearDialogueAdvance();
+      dialogueAdvanceTimer = setTimeout(() => {
+        dialogueAdvanceTimer = null;
+        if (!panelOpen || !host.isConnected) return;
+        index++;
+        if (index < lines.length) showLine();
+        else onDone();
+      }, 2200);
+    }, false, phase));
   }
   if (lines.length) showLine(); else onDone();
 }
@@ -657,16 +680,17 @@ function openPanel() {
   if (!activeMission) { selectedMission = missionDeck.next(); updateStars(); }
   panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
-function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
+function closePanel() { clearDialogueAdvance(); panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
 function renderMissionPanel() {
   missionContent.replaceChildren();
   const heading = document.querySelector('#mission-panel-title');
+  clearDialogueAdvance();
   if (selectedMission) {
     heading.textContent = selectedMission.title;
     const place = document.createElement('p'); place.className = 'mission-place'; place.textContent = selectedMission.label;
     const objective = document.createElement('p'); objective.className = 'mission-objective'; objective.textContent = selectedMission.objective;
     missionContent.append(place, objective);
-    appendDialogueSequence(selectedMission.dialogue.start, () => startMission(selectedMission));
+    appendDialogueSequence(selectedMission, 'start', () => startMission(selectedMission));
     missionContent.append(missionButton('Back to city', closePanel, 'mission-secondary'));
   } else if (activeMission) {
     heading.textContent = activeMission.title;
@@ -686,7 +710,10 @@ function renderMissionPanel() {
 }
 function refreshMissionMarkers() {
   if (!activeMission) { missionMarkers.clear(); return; }
-  if (activeMission.type === 'collect') {
+  if (activeMission.type === 'fire') {
+    // The burning site already has its own ground square and fire direction cue.
+    missionMarkers.clear();
+  } else if (activeMission.type === 'collect') {
     if (missionProgress.stage === 'returning') missionMarkers.set([{ point: activeMission.target, kind: 'return' }]);
     else missionMarkers.set(activeMission.pickups.flatMap((point, index) => missionProgress.collected.has(index) ? [] : [{ point, kind: activeMission.markerKind ?? 'collect' }]));
   } else if (activeMission.type === 'race') {
@@ -725,6 +752,7 @@ function startMission(mission) {
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
+  clearDialogueAdvance();
   activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
@@ -735,7 +763,7 @@ function finishMission(success, silent = false) {
   resetInput(); panelOpen = true; missionPanel.classList.remove('hidden');
   document.querySelector('#mission-panel-title').textContent = success ? 'Mission complete! ★' : 'Mission paused';
   missionContent.replaceChildren();
-  appendDialogueSequence(mission.dialogue[success ? 'success' : 'failure'], () => {
+  appendDialogueSequence(mission, success ? 'success' : 'failure', () => {
     missionContent.replaceChildren();
     const message = document.createElement('p'); message.className = 'mission-objective';
     message.textContent = success ? `★ ${missionDeck.completedCount}/${missionDeck.total} missions complete` : 'This call is saved on your phone.';
