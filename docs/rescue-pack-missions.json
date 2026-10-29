@@ -335,7 +335,7 @@
           {
             "speaker": "Hawk",
             "text": "A toaster is smoking in the clinic kitchen!",
-            "sprite": "visuals/processed/HAWK_ALT_2_run.png"
+            "sprite": "visuals/processed/HAWK_5_distressed.png"
           }
         ],
         "success": [
@@ -346,7 +346,7 @@
           {
             "speaker": "Hawk",
             "text": "Everyone can have a safe snack now. Thank you!",
-            "sprite": "visuals/processed/HAWK_ALT_1_idle.png"
+            "sprite": "visuals/processed/HAWK_1_idle.png"
           },
           {
             "speaker": "Player",
@@ -364,7 +364,7 @@
           {
             "speaker": "Hawk",
             "text": "The panda chief arrived and made the kitchen safe.",
-            "sprite": "visuals/processed/HAWK_ALT_1_idle.png"
+            "sprite": "visuals/processed/HAWK_1_idle.png"
           },
           {
             "speaker": "Dispatcher",
@@ -403,7 +403,7 @@
           {
             "speaker": "Hawk",
             "text": "A little bear lost their teddy near the playground. Can you help?",
-            "sprite": "visuals/processed/HAWK_ALT_2_run.png"
+            "sprite": "visuals/processed/HAWK_4_annoyed.png"
           }
         ],
         "success": [
@@ -414,14 +414,14 @@
           {
             "speaker": "Hawk",
             "text": "A clean bill of cuddles!",
-            "sprite": "visuals/processed/HAWK_ALT_3_care.png"
+            "sprite": "visuals/processed/HAWK_3_care.png"
           },
           {
             "speaker": "Player",
             "text": "Happy to help!",
             "sprite_by_playable_character_id": {
               "bunny": "visuals/processed/BUNNY_1_idle.png",
-              "hawk": "visuals/processed/HAWK_ALT_1_idle.png"
+              "hawk": "visuals/processed/HAWK_1_idle.png"
             }
           }
         ],
@@ -433,7 +433,7 @@
           {
             "speaker": "Hawk",
             "text": "The pigeon found the teddy and brought it in.",
-            "sprite": "visuals/processed/HAWK_ALT_1_idle.png"
+            "sprite": "visuals/processed/HAWK_1_idle.png"
           },
           {
             "speaker": "Dispatcher",
@@ -471,7 +471,7 @@
           {
             "speaker": "Hawk",
             "text": "My bandages and medicine bags are ready for pickup.",
-            "sprite": "visuals/processed/HAWK_ALT_1_idle.png"
+            "sprite": "visuals/processed/HAWK_4_annoyed.png"
           }
         ],
         "success": [
@@ -482,14 +482,14 @@
           {
             "speaker": "Hawk",
             "text": "Everything is sorted. Excellent teamwork!",
-            "sprite": "visuals/processed/HAWK_ALT_1_idle.png"
+            "sprite": "visuals/processed/HAWK_1_idle.png"
           },
           {
             "speaker": "Player",
             "text": "Happy to help!",
             "sprite_by_playable_character_id": {
               "bunny": "visuals/processed/BUNNY_1_idle.png",
-              "hawk": "visuals/processed/HAWK_ALT_1_idle.png"
+              "hawk": "visuals/processed/HAWK_1_idle.png"
             }
           }
         ],
@@ -507,7 +507,7 @@
             "text": "I can try again another day!",
             "sprite_by_playable_character_id": {
               "bunny": "visuals/processed/BUNNY_1_idle.png",
-              "hawk": "visuals/processed/HAWK_ALT_1_idle.png"
+              "hawk": "visuals/processed/HAWK_1_idle.png"
             }
           }
         ]
@@ -2550,7 +2550,7 @@
             "text": "Happy to help!",
             "sprite_by_playable_character_id": {
               "bunny": "visuals/processed/BUNNY_1_idle.png",
-              "hawk": "visuals/processed/HAWK_ALT_1_idle.png"
+              "hawk": "visuals/processed/HAWK_1_idle.png"
             }
           }
         ],
