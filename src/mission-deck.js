@@ -52,5 +52,12 @@ export function createMissionDeck(missions, storage = globalThis.localStorage, r
       persist();
       return completedIds.size;
     },
+    skip(id) {
+      if (id !== currentId) throw new Error(`Cannot skip an unassigned mission: ${id}`);
+      currentId = null;
+      // Put a declined call back after the calls still waiting this session.
+      queue.push(id);
+      persist();
+    },
   };
 }

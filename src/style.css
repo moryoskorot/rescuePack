@@ -152,6 +152,7 @@
 .dialogue-reply:hover{transform:translateY(-2px);box-shadow:0 7px 0 #ad692d}
 .dialogue-reply:active{transform:translateY(4px);box-shadow:0 1px 0 #ad692d}
 .dialogue-reply:focus-visible{outline:4px solid #237bb6;outline-offset:3px}
+.dialogue-skip{display:block;width:min(76%,360px);min-height:59px;margin:14px 4px 0 auto;padding:12px 15px;border:3px solid #fff;border-radius:999px;background:#ef4d3f;box-shadow:0 5px 0 #a52f2d;color:#fff;font:700 17px Fredoka,Arial,sans-serif;line-height:1.15;transition:transform .12s,box-shadow .12s}.dialogue-skip:hover{transform:translateY(-2px);box-shadow:0 7px 0 #a52f2d}.dialogue-skip:active{transform:translateY(4px);box-shadow:0 1px 0 #a52f2d}.dialogue-skip:focus-visible{outline:4px solid #237bb6;outline-offset:3px}
 @media(max-width:480px){
   .mission-panel{padding:10px}
   .dialogue-portraits{height:clamp(164px,26vh,215px)}

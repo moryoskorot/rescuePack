@@ -658,7 +658,7 @@ function updateStars() {
 }
 updateStars();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
-function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start', nextLabel = 'Continue') {
+function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start', nextLabel = 'Continue', onSkip = null) {
   const scene = document.createElement('div'); scene.className = `mission-dialogue ${bunnyTurn ? 'dialogue-bunny-turn' : 'dialogue-caller-turn'}`;
   const portraits = document.createElement('div'); portraits.className = 'dialogue-portraits';
   const bunnyPortrait = phase === 'start' && ['fire', 'rescue'].includes(mission.type)
@@ -682,17 +682,24 @@ function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start'
   }
   const reply = missionButton(line.reply, onReply, 'dialogue-reply');
   reply.setAttribute('aria-label', `Bunny replies: ${line.reply}`);
+  reply.title = 'Accept Mission';
   const replyName = document.createElement('span'); replyName.textContent = 'BUNNY REPLIES';
   const replyText = document.createElement('strong'); replyText.textContent = line.reply;
   reply.replaceChildren(replyName, replyText);
   scene.append(reply);
+  if (onSkip) {
+    const skip = missionButton("I'm sorry, I can't right now", onSkip, 'dialogue-skip');
+    skip.setAttribute('aria-label', 'Skip mission for now');
+    skip.title = 'Skip for now';
+    scene.append(skip);
+  }
   return scene;
 }
 function missionButton(label, action, className = 'mission-action') {
   const button = document.createElement('button'); button.type = 'button'; button.className = className;
   button.textContent = label; button.addEventListener('click', action); return button;
 }
-function appendDialogueSequence(mission, phase, onDone) {
+function appendDialogueSequence(mission, phase, onDone, onSkip = null) {
   const host = document.createElement('div');
   missionContent.append(host);
   const lines = dialogueBeats(mission, phase);
@@ -707,7 +714,7 @@ function appendDialogueSequence(mission, phase, onDone) {
         if (index < lines.length) showLine();
         else onDone();
       }, true, phase, isLast && phase === 'start' ? 'Start mission' : 'Continue'));
-    }, false, phase));
+    }, false, phase, 'Continue', phase === 'start' ? onSkip : null));
   }
   if (lines.length) showLine(); else onDone();
 }
@@ -727,7 +734,12 @@ function renderMissionPanel() {
     const place = document.createElement('p'); place.className = 'mission-place'; place.textContent = selectedMission.label;
     const objective = document.createElement('p'); objective.className = 'mission-objective'; objective.textContent = selectedMission.objective;
     missionContent.append(place, objective);
-    appendDialogueSequence(selectedMission, 'start', () => startMission(selectedMission));
+    appendDialogueSequence(
+      selectedMission,
+      'start',
+      () => startMission(selectedMission),
+      () => skipMission(selectedMission),
+    );
     missionContent.append(missionButton('Back to city', closePanel, 'mission-secondary'));
   } else if (activeMission) {
     heading.textContent = activeMission.title;
@@ -785,6 +797,13 @@ function startMission(mission) {
   phoneButton.classList.add('on-mission');
   updateStars();
   updateMissionStatus(); refreshMissionMarkers(); closePanel();
+}
+function skipMission(mission) {
+  if (mission !== selectedMission) return;
+  missionDeck.skip(mission.id);
+  selectedMission = null;
+  updateStars();
+  closePanel();
 }
 function finishMission(success, silent = false) {
   const mission = activeMission;

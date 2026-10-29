@@ -43,3 +43,20 @@ test('stars survive a reload while the next session gets a different call', () =
   assert.notEqual(fresh.id, pending.id, 'refresh does not repeat the last offer');
   assert.notEqual(fresh.id, completed.id, 'completed calls stay out of the deck');
 });
+
+test('a skipped call stays unfinished and returns after the waiting calls', () => {
+  const missions = bunnyCalls.slice(0, 3);
+  const deck = createMissionDeck(missions, memoryStorage(), () => .5);
+  const skipped = deck.next();
+  deck.skip(skipped.id);
+  assert.equal(deck.completedCount, 0);
+  assert.equal(deck.current, null);
+
+  const second = deck.next();
+  assert.notEqual(second.id, skipped.id);
+  deck.complete(second.id);
+  const third = deck.next();
+  assert.notEqual(third.id, skipped.id);
+  deck.complete(third.id);
+  assert.equal(deck.next().id, skipped.id);
+});
