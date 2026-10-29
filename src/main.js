@@ -691,7 +691,7 @@ function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start'
   }
   const reply = missionButton(line.reply, onReply, 'dialogue-reply');
   reply.setAttribute('aria-label', `Bunny replies: ${line.reply}`);
-  reply.title = 'Accept Mission';
+  reply.title = phase === 'start' ? 'Accept mission' : 'Reply';
   const replyName = document.createElement('span'); replyName.textContent = 'BUNNY REPLIES';
   const replyText = document.createElement('strong'); replyText.textContent = line.reply;
   reply.replaceChildren(replyName, replyText);
@@ -713,16 +713,19 @@ function appendDialogueSequence(mission, phase, onDone, onSkip = null) {
   missionContent.append(host);
   const lines = dialogueBeats(mission, phase);
   let index = 0;
+  function advance() {
+    if (!panelOpen || !host.isConnected) return;
+    index++;
+    if (index < lines.length) showLine();
+    else onDone();
+  }
   function showLine() {
     host.replaceChildren(makeDialogue(mission, lines[index], () => {
+      if (phase === 'success') { advance(); return; }
       const reply = lines[index].reply;
       const isLast = index === lines.length - 1;
-      host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, () => {
-        if (!panelOpen || !host.isConnected) return;
-        index++;
-        if (index < lines.length) showLine();
-        else onDone();
-      }, true, phase, isLast && phase === 'start' ? 'Start mission' : 'Continue'));
+      host.replaceChildren(makeDialogue(mission, { speaker: 'Bunny', text: reply }, advance,
+        true, phase, isLast && phase === 'start' ? 'Start mission' : 'Continue'));
     }, false, phase, 'Continue', phase === 'start' ? onSkip : null));
   }
   if (lines.length) showLine(); else onDone();
