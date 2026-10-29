@@ -14,6 +14,7 @@ import { createTouchControls } from './touch-controls.js';
 import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
 import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
+import { createMissionSound } from './mission-sound.js';
 import { createFirefightingProgress, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
 import { firetruckNozzleWorld } from './firetruck-nozzle.js';
@@ -599,6 +600,7 @@ function updateSkids(isBraking, speed) {
 const keys = new Set();
 let playing=false, orbit=-.28, pitch=.7, zoom=36, cameraPointer=null, lastX=0,lastY=0;
 const vehicleSound=createVehicleSound(undefined,`${import.meta.env.BASE_URL}assets/tire-skid.mp3`);
+const missionSound=createMissionSound();
 const touchControls=createTouchControls({
   root:document.querySelector('#touch-controls'),
   stick:document.querySelector('#drive-stick'),
@@ -634,7 +636,7 @@ function releaseCamera() {
   if(pointerId!==null&&canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
   canvas.style.cursor=playing?'grab':'default';
 }
-function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();}
+function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();missionSound.stopCharge();}
 const portraitUrls = import.meta.glob('../visuals/processed/*.png', { eager: true, query: '?url', import: 'default' });
 const missionPanel = document.querySelector('#mission-panel');
 const missionContent = document.querySelector('#mission-content');
@@ -712,7 +714,9 @@ function appendDialogueSequence(mission, phase, onDone) {
 function openPanel() {
   if (!playing) return;
   if (!activeMission) { selectedMission = missionDeck.next(); updateStars(); }
-  panelOpen = true; resetInput(); missionPanel.classList.remove('hidden'); renderMissionPanel();
+  panelOpen = true; resetInput();
+  if (selectedMission) missionSound.playCall();
+  missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
 function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
 function renderMissionPanel() {
@@ -785,6 +789,7 @@ function startMission(mission) {
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
+  missionSound.stopCharge();
   activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
@@ -810,12 +815,14 @@ function advanceMission(dt) {
   const fireOut = activeMission.type === 'fire' && activeFireSiteId
     && fireProgress.hasHit(activeFireSiteId) && !fireState.onFire.has(activeFireSiteId);
   const stage = missionProgress.update({...renderPose, speed}, fireOut, dt);
+  if (missionProgress.collectedCount > previousCount && activeMission.type === 'collect') missionSound.playCollect();
   if (stage === 'complete') { finishMission(true); return; }
   const holdKind = stage === 'returning' ? 'return' : ['fix', 'rescue'].includes(activeMission.type) ? activeMission.type : null;
   if (holdKind) {
     const atMarker = speed <= 1 && Math.hypot(renderPose.x - activeMission.target.x, renderPose.z - activeMission.target.z) <= 7;
     missionMarkers.setProgress(holdKind, missionProgress.holdProgress, atMarker);
-  }
+    missionSound.updateCharge(atMarker, missionProgress.holdProgress);
+  } else missionSound.stopCharge();
   if (stage !== previousStage || missionProgress.collectedCount !== previousCount) {
     updateMissionStatus(); refreshMissionMarkers();
   }
@@ -837,7 +844,7 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{missionDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();missionDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
 document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {

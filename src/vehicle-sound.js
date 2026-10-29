@@ -19,7 +19,7 @@ export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake
 
 export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext, skidUrl = 'assets/tire-skid.mp3') {
   let context, master, fallback, fallbackGain, skidGain, skidBuffer, skidSource;
-  let boostGain, boostFilter, engineFilter;
+  let boostGain, boostFilter, engineFilter, nextBubbleTime = 0;
   let idleLoop, fastLoop, pauseTimer, audible = false;
   let lastInput = {};
   const assetBase = skidUrl.slice(0, skidUrl.lastIndexOf('/') + 1);
@@ -50,6 +50,21 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     source.connect(volume).connect(engineFilter);
     source.start();
     return {source,volume};
+  }
+
+  function bubble(time, pitch) {
+    const tone = context.createOscillator();
+    const volume = context.createGain();
+    tone.type = 'sine';
+    tone.frequency.setValueAtTime(pitch, time);
+    tone.frequency.exponentialRampToValueAtTime(pitch * .42, time + .13);
+    volume.gain.setValueAtTime(.001, time);
+    volume.gain.exponentialRampToValueAtTime(.65, time + .015);
+    volume.gain.exponentialRampToValueAtTime(.001, time + .15);
+    tone.connect(volume).connect(boostGain);
+    tone.start(time);
+    tone.stop(time + .16);
+    tone.onended = () => { tone.disconnect(); volume.disconnect(); };
   }
 
   async function loadEngine(url, kind) {
@@ -109,8 +124,8 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     noise.loop = true;
     boostFilter = context.createBiquadFilter();
     boostFilter.type = 'bandpass';
-    boostFilter.frequency.value = 900;
-    boostFilter.Q.value = .38;
+    boostFilter.frequency.value = 540;
+    boostFilter.Q.value = .7;
     boostGain = context.createGain();
     boostGain.gain.value = 0;
     noise.connect(boostFilter).connect(boostGain).connect(master);
@@ -154,12 +169,20 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
         skidSource.stop(context.currentTime + .18);
         skidSource = null;
       }
-      ramp(boostGain.gain, levels.boostGain, input.boost ? .16 : .08);
-      ramp(boostFilter.frequency, input.boost ? 1150 : 700, .16);
+      ramp(boostGain.gain, levels.boostGain, input.boost ? .08 : .05);
+      ramp(boostFilter.frequency, input.boost ? 650 : 440, .12);
+      if (input.boost && context.currentTime >= nextBubbleTime) {
+        // A changing cluster of descending water notes gives the jet a playful texture.
+        const time = context.currentTime;
+        bubble(time, 370 + Math.random() * 260);
+        nextBubbleTime = time + .11 + Math.random() * .08;
+      }
+      if (!input.boost) nextBubbleTime = 0;
     },
     pause() {
       if (!context) return;
       audible = false;
+      nextBubbleTime = 0;
       if (skidSource) { skidSource.stop(); skidSource = null; }
       clearTimeout(pauseTimer);
       ramp(master.gain, 0, .035);
