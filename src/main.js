@@ -24,7 +24,7 @@ import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
-import { PLAYABLE_MISSIONS, FIRE_MISSIONS, createMissionProgress } from './missions.js';
+import { PLAYABLE_MISSIONS, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
@@ -659,8 +659,8 @@ const helpDeck = createMissionDeck(
   PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId && ['collect', 'fix'].includes(mission.type)),
   globalThis.localStorage, Math.random, 'rescue-pack-help-mission-progress-v1',
 );
-const fireDeck = createMissionDeck(FIRE_MISSIONS, globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
-let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteId = null, panelOpen = false;
+const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
+let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteIds = new Set(), panelOpen = false;
 let pendingVictoryMission = null;
 function updateStars() {
   const completed = helpDeck.completedCount + fireDeck.completedCount;
@@ -803,7 +803,10 @@ function updateMissionStatus() {
     ? `📦 All ${activeMission.mechanics.item_count} ${activeMission.pickupLabel} found! Stop at ${activeMission.returnLabel} for 2 seconds`
     : `📦 ${missionProgress.collectedCount}/${activeMission.mechanics.item_count} ${activeMission.pickupLabel} · Follow the glowing ! markers`;
   else if (activeMission.type === 'race') missionStatus.textContent = `🏁 ${missionProgress.checkpoint}/${activeMission.route.length} rings · Follow the next glowing marker`;
-  else if (activeMission.type === 'fire') missionStatus.textContent = `🔥 ${activeMission.title} · Drive close to the marker to spray`;
+  else if (activeMission.type === 'fire') {
+    const remaining = [...activeFireSiteIds].filter(id => fireState.onFire.has(id)).length;
+    missionStatus.textContent = `🔥 ${remaining}/${activeFireSiteIds.size} fires left · Drive close to each fire to spray`;
+  }
   else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · ${activeMission.type === 'fix' ? 'Stop at the marker for 6 seconds' : 'Stop at the marker for 2 seconds'}`;
 }
 function startMission(mission) {
@@ -811,11 +814,13 @@ function startMission(mission) {
   activeMission = mission;
   activeDeck = selectedDeck;
   missionProgress = createMissionProgress(mission);
-  activeFireSiteId = null;
+  activeFireSiteIds.clear();
   fireState.clear(); fireProgress.clear(); fireEffect.clear();
   if (mission.type === 'fire') {
-    const site = BUILDING_SITES.find(candidate => candidate.x === mission.fireSite.x && candidate.z === mission.fireSite.z && candidate.worldBuildingId);
-    if (site) { activeFireSiteId = site.worldBuildingId; fireState.set(site.worldBuildingId, 55); }
+    for (const fireSite of mission.fireSites ?? [mission.fireSite]) {
+      const site = BUILDING_SITES.find(candidate => candidate.worldBuildingId === fireSite.worldBuildingId);
+      if (site) { activeFireSiteIds.add(site.worldBuildingId); fireState.set(site.worldBuildingId, 55); }
+    }
   }
   fireStatus.classList.toggle('hidden', mission.type !== 'fire');
   lastFireCount = -1;
@@ -856,7 +861,7 @@ function finishMission(success, silent = false) {
   const deck = activeDeck;
   if (!mission) return;
   missionSound.stopCharge();
-  activeMission = null; activeDeck = null; missionProgress = null; selectedMission = null; selectedDeck = null; activeFireSiteId = null;
+  activeMission = null; activeDeck = null; missionProgress = null; selectedMission = null; selectedDeck = null; activeFireSiteIds.clear();
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
   fireStatus.classList.add('hidden'); phoneButtons.forEach(button => button.classList.remove('on-mission'));
   if (success) deck?.complete(mission.id);
@@ -881,8 +886,8 @@ function advanceMission(dt) {
   if (!activeMission || panelOpen) return;
   const previousStage = missionProgress.stage, previousCount = missionProgress.collectedCount;
   const speed = vehicleMotion(player).speed;
-  const fireOut = activeMission.type === 'fire' && activeFireSiteId
-    && fireProgress.hasHit(activeFireSiteId) && !fireState.onFire.has(activeFireSiteId);
+  const fireOut = activeMission.type === 'fire' && activeFireSiteIds.size > 0
+    && [...activeFireSiteIds].every(id => fireProgress.hasHit(id) && !fireState.onFire.has(id));
   const stage = missionProgress.update({...renderPose, speed}, fireOut, dt);
   if (missionProgress.collectedCount > previousCount && activeMission.type === 'collect') missionSound.playCollect();
   if (stage === 'complete') { finishMission(true); return; }
@@ -1074,6 +1079,7 @@ function updateFireMarkers() {
     fireStatus.textContent=activeIds.size?`${activeIds.size} ${activeIds.size===1?'FIRE':'FIRES'} TO PUT OUT`:'ALL FIRES OUT!';
     fireStatus.classList.toggle('clear',activeIds.size===0);
     lastFireCount=activeIds.size;
+    if (activeMission?.type === 'fire') updateMissionStatus();
   }
   for(const [id,marker] of fireMarkers)if(!activeIds.has(id)){marker.remove();fireMarkers.delete(id);}
   markerRight.set(1,0,0).applyQuaternion(camera.quaternion);

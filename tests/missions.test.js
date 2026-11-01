@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, validateMissionPoints } from '../src/missions.js';
+import { FIRE_MISSIONS, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, validateMissionPoints } from '../src/missions.js';
 
 test('Chief Panda has three distinct fire calls for every dispatch district', () => {
   const byDistrict = new Map();
@@ -18,6 +18,17 @@ test('Chief Panda has three distinct fire calls for every dispatch district', ()
     assert.equal(missions.length, 3, `${district} has three fire calls`);
     assert.equal(new Set(missions.map(mission => mission.fireSite.worldBuildingId)).size, 3,
       `${district} calls do not reuse a burning building`);
+  }
+});
+
+test('Chief Panda has seven multiple-fire calls with unique burning buildings', () => {
+  assert.equal(MULTI_FIRE_MISSIONS.length, 7);
+  for (const mission of MULTI_FIRE_MISSIONS) {
+    assert.equal(mission.character_id, 'panda');
+    assert.match(mission.dialogue.start[0].text, /^Multiple fires started in the /);
+    assert.ok(mission.fireSites.length >= 2 && mission.fireSites.length <= 3);
+    assert.equal(new Set(mission.fireSites.map(site => site.worldBuildingId)).size, mission.fireSites.length);
+    assert.equal(validateMissionPoints(mission), true, mission.id);
   }
 });
 

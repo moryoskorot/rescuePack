@@ -151,9 +151,52 @@ export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([distr
   }),
 );
 
+// One bigger incident per dispatch district. Each is deliberately made from
+// different buildings in its local roster, so no building can be listed twice
+// in the same emergency.
+export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).map(([district, sites], index) => {
+  const selectedSites = [...sites]
+    .sort((a, b) => String(a.questName ?? a.name).localeCompare(String(b.questName ?? b.name)))
+    .slice(0, index % 2 === 0 ? 2 : 3);
+  const fireSites = selectedSites.map(site => ({ x: site.x, z: site.z, worldBuildingId: site.worldBuildingId }));
+  return {
+    id: `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    character_id: 'panda',
+    title: `Multiple fires in ${district}`,
+    type: 'fire',
+    district,
+    label: district,
+    target: { x: selectedSites[0].x, z: selectedSites[0].z },
+    fireSite: fireSites[0],
+    fireSites,
+    objective: `Put out all ${fireSites.length} fires in the ${district}`,
+    mechanics: { interaction: 'drive_to_site_then_extinguish_all', target_marker: 'fire' },
+    dialogue: {
+      start: [{
+        speaker: 'Chief Panda',
+        text: `Multiple fires started in the ${district}! We need you there quickly!`,
+        sprite: 'visuals/processed/PANDA_2_point.png',
+      }],
+      success: [{
+        speaker: 'Chief Panda', text: 'Every fire is out. Outstanding teamwork!',
+        sprite: 'visuals/processed/PANDA_1_idle.png',
+      }],
+      failure: [{
+        speaker: 'Chief Panda', text: 'I have backup covering every building. We can answer another call together.',
+        sprite: 'visuals/processed/PANDA_1_idle.png',
+      }],
+    },
+  };
+});
+
 export function validateMissionPoints(mission) {
   if (mission.type === 'fire') {
-    return BUILDING_SITES.some(site => site.worldBuildingId && site.x === mission.fireSite?.x && site.z === mission.fireSite?.z);
+    if (!mission.fireSites) return BUILDING_SITES.some(site => site.worldBuildingId
+      && site.x === mission.fireSite?.x && site.z === mission.fireSite?.z);
+    return mission.fireSites.length > 0
+      && new Set(mission.fireSites.map(site => site.worldBuildingId)).size === mission.fireSites.length
+      && mission.fireSites.every(fireSite => BUILDING_SITES.some(site => site.worldBuildingId === fireSite.worldBuildingId
+        && site.x === fireSite.x && site.z === fireSite.z));
   }
   if (mission.type === 'race') return mission.route?.length === mission.mechanics.checkpoint_count
     && mission.route.every(point => surfaceAt(point.x,point.z) === 'road');
