@@ -51,10 +51,11 @@ test('mission call is prompt, pickup dings, and charge boops rise then stop', ()
   assert.equal(context.notes.length, 6);
 });
 
-test('mission completion uses the selected short trumpet fanfare from the beginning', () => {
+test('mission completion uses the selected short trumpet fanfare at 75% volume from the beginning', () => {
   const sound = createMissionSound(FakeAudioContext, FakeAudio);
   sound.playMissionComplete();
   assert.match(FakeAudio.last.src, /assets\/audio\/mission-complete-fanfare\.mp3$/);
+  assert.equal(FakeAudio.last.volume, .75);
   assert.equal(FakeAudio.last.currentTime, 0);
   assert.equal(FakeAudio.last.playCount, 1);
 });

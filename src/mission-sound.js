@@ -14,6 +14,7 @@ export function createMissionSound(
   let charging = false;
   let nextBoopAt = 0;
   const missionCompleteFanfare = AudioClass ? new AudioClass(missionCompleteFanfareUrl) : null;
+  if (missionCompleteFanfare) missionCompleteFanfare.volume = .75;
 
   function ready() {
     if (!AudioContextClass) return null;
