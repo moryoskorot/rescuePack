@@ -1,6 +1,7 @@
 import library from '../docs/rescue-pack-missions.json' with { type: 'json' };
 import { surfaceAt, STREET_Z } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
+import { NEW_DISTRICTS, districtAt } from './districts.js';
 
 // Entrances are on the street-facing sidewalk. Fire coordinates are the exact
 // building sites, so missions never ignite a nearby unrelated building.
@@ -25,6 +26,27 @@ const destination = {
   industrial_footbridge: [90.5,-151], industrial_construction_zone: [68,-139.5],
   granny_cheetah_apartment: [0,-139.5,0,-151], park_and_apartment_blocks: [0,-139.5],
 };
+
+// Several named mission buildings moved into the expanded neighborhoods.
+// Resolve their street-facing entrances from the building plan, so their
+// driving markers and fire coordinates stay attached to the same landmark.
+const relocatedDestinations = {
+  neighborhood_clinic: 'Neighborhood Clinic', clinic_and_market_streets: 'Neighborhood Clinic',
+  market_and_post_office: 'Post Office Depot', preschool_garden: 'Preschool',
+  preschool_neighborhood: 'Preschool', post_office_depot: 'Post Office Depot',
+  apartment_courtyard: 'Apartment Courtyard', elementary_school: 'Elementary School',
+  school_neighborhood: 'Elementary School', primary_school_cafeteria: 'Primary School Cafeteria',
+  old_clocktower: 'Old Clocktower', granny_cheetah_apartment: 'Granny Cheetah Apartments',
+  park_and_apartment_blocks: 'Granny Cheetah Apartments',
+};
+
+function destinationFor(id) {
+  const questName = relocatedDestinations[id];
+  if (!questName) return destination[id];
+  const site = BUILDING_SITES.find(candidate => candidate.questName === questName);
+  if (!site) throw new Error(`Missing moved landmark: ${questName}`);
+  return [site.x, site.z + 11.5, site.x, site.z];
+}
 
 const itemKinds = {
   bunny_03: ['nozzles','nozzle'], hawk_03: ['supply packs','pack'],
@@ -71,7 +93,7 @@ const raceRoute = [
 ];
 
 export const PLAYABLE_MISSIONS = library.missions.map((mission,index) => {
-  const position = destination[mission.destination_id];
+  const position = destinationFor(mission.destination_id);
   if (!position) throw new Error(`Missing city destination for ${mission.id}`);
   const target = {x:position[0],z:position[1]};
   const result = { ...mission, label: mission.destination_label, target };
@@ -90,28 +112,33 @@ export const PLAYABLE_MISSIONS = library.missions.map((mission,index) => {
   return result;
 });
 
-// The chief has three calls prepared for every map district with enough
-// buildings to make a varied, no-repeat fire roster.  A call is tied to the
-// exact world building ID rather than a generic district coordinate.
-function fireDistrict({ x, z }) {
-  if (z < -195) return x < -51 ? 'Sunny Farm' : x > 52 ? 'Mail District' : 'North Town';
-  if (z < -100) return x > 52 ? 'Workshop District' : x < -51 ? 'Parks District' : 'School District';
-  return x < -51 ? 'Suburbs' : x > 52 ? 'Industrial Yards' : z < 5 ? 'Downtown' : x > 18 ? 'Fire Station' : 'Town Square';
-}
+export const GANTON_DELIVERY_MISSION = {
+  id: 'pigeon_ganton_delivery', character_id: 'pigeon', type: 'delivery',
+  title: 'A Ganton Delivery', label: 'Ganton', target: { x: -98, z: -570.5 },
+  objective: 'Deliver the baseball bat to the Ganton corner',
+  mechanics: { interaction: 'stop_to_deliver', hold_seconds: 2, target_marker: 'delivery' },
+  dialogue: {
+    start: [{ speaker: 'Pigeon', text: 'A parcel for Ganton! It says baseball bat. Can you take it to the little houses in the corner?', sprite: 'visuals/processed/PIGEON_2_deliver.png' }],
+    success: [{ speaker: 'Pigeon', text: "They didn't strike me as baseball fans. No matter, delivery well made!", sprite: 'visuals/processed/PIGEON_1_idle.png' }],
+    failure: [{ speaker: 'Pigeon', text: 'I can hold on to the parcel until we try again.', sprite: 'visuals/processed/PIGEON_1_idle.png' }],
+  },
+};
 
 const FIRE_CALL_DISTRICTS = new Set([
   'Suburbs', 'Downtown', 'Industrial Yards', 'Parks District',
   'School District', 'Workshop District', 'North Town',
+  ...NEW_DISTRICTS.map(district => district.name),
 ]);
+const newDistrictNames = new Set(NEW_DISTRICTS.map(district => district.name));
 
 const readableBuildingName = site => site.questName ?? site.name
-  .replace(/^building-/, '').replace(/^building-type-/, 'house ')
+  .replace(/^building-type-/, 'house ').replace(/^building-/, '')
   .replace(/-/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
 const fireSitesByDistrict = BUILDING_SITES
-  .filter(site => site.worldBuildingId && FIRE_CALL_DISTRICTS.has(fireDistrict(site)))
+  .filter(site => site.worldBuildingId && FIRE_CALL_DISTRICTS.has(districtAt(site)))
   .reduce((districts, site) => {
-    const district = fireDistrict(site);
+    const district = districtAt(site);
     (districts[district] ??= []).push(site);
     return districts;
   }, {});
@@ -136,19 +163,19 @@ function fireMissionBlueprint(id, district, fireCount, candidates, title, openin
 // These calls keep a district roster, not a fixed building assignment. The
 // actual burning buildings are randomly selected only when the phone rings.
 export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
-  Array.from({ length: 3 }, (_, index) => fireMissionBlueprint(
+  Array.from({ length: newDistrictNames.has(district) ? 4 : 3 }, (_, index) => fireMissionBlueprint(
     `chief-fire-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
     district, 1, sites, `Fire in ${district}`,
     `A fire started in the ${district}. They need you there quickly!`,
   )),
 );
 
-export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).map(([district, sites], index) =>
-  fireMissionBlueprint(
-    `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
+  Array.from({ length: newDistrictNames.has(district) ? 4 : 1 }, (_, index) => fireMissionBlueprint(
+    `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}${newDistrictNames.has(district) ? `-${index + 1}` : ''}`,
     district, index % 2 === 0 ? 2 : 3, sites, `Multiple fires in ${district}`,
     `Multiple fires started in the ${district}! We need you there quickly!`,
-  ),
+  )),
 );
 
 export const CITYWIDE_FIRE_MISSION = fireMissionBlueprint(
@@ -214,7 +241,7 @@ export function createMissionProgress(mission) {
   let stage = mission.type === 'collect' ? 'collecting' : mission.type === 'race' ? 'racing' : 'going';
   let checkpoint = 0;
   let holdSeconds = 0;
-  const holdDuration = mission.type === 'collect' || mission.type === 'rescue' ? 2 : mission.type === 'fix' ? 6 : 0;
+  const holdDuration = ['collect', 'rescue', 'delivery'].includes(mission.type) ? 2 : mission.type === 'fix' ? 6 : 0;
   return {
     get stage() { return stage; },
     get checkpoint() { return checkpoint; },
@@ -243,7 +270,7 @@ export function createMissionProgress(mission) {
           holdSeconds = holdingStill ? holdSeconds + Math.max(0, dt) : 0;
           if (holdSeconds >= holdDuration) stage = 'complete';
         }
-      } else if (mission.type === 'fix' || mission.type === 'rescue') {
+      } else if (mission.type === 'fix' || mission.type === 'rescue' || mission.type === 'delivery') {
         holdSeconds = holdingStill ? holdSeconds + Math.max(0, dt) : 0;
         if (holdSeconds >= holdDuration) stage = 'complete';
       } else if (atTarget) {

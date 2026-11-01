@@ -9,11 +9,13 @@ import {
   buildWorldSurfaces,
 } from '../src/world-layout.js';
 
-test('the expanded city provides about twice the original playable land', () => {
+test('the new neighborhoods extend the playable street grid far north', () => {
   const originalArea = (145 - -130) * (85 - -91);
   const currentArea = (LAND_BOUNDS.maxX - LAND_BOUNDS.minX) * (LAND_BOUNDS.maxZ - LAND_BOUNDS.minZ);
-  assert.ok(currentArea >= originalArea * 1.95);
-  assert.ok(currentArea <= originalArea * 2.05);
+  assert.ok(currentArea >= originalArea * 3.7);
+  assert.ok(LAND_BOUNDS.minZ < -580);
+  assert.equal(surfaceAt(-98, -576), 'road');
+  assert.equal(surfaceAt(105, -525), 'grass');
 });
 
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {

@@ -3,7 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
 import { AVENUE_X, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
-import { BUILDING_SITES, CIVIC_ENVELOPES } from './city-plan.js';
+import { BUILDING_SITES, CIVIC_ENVELOPES, EXPANSION_LANDMARKS } from './city-plan.js';
+import { districtAt } from './districts.js';
 import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
 import { createBuildingFireState } from './building-fire.js';
@@ -24,7 +25,7 @@ import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
-import { PLAYABLE_MISSIONS, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION, materializeFireMission, createMissionProgress } from './missions.js';
+import { PLAYABLE_MISSIONS, GANTON_DELIVERY_MISSION, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION, materializeFireMission, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
@@ -75,8 +76,8 @@ function startFires() {
   } else fireState.clear();
 }
 scene.background = new THREE.Color('#a8cfe3');
-scene.fog = new THREE.Fog('#a8cfe3', 185, 420);
-const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 500);
+scene.fog = new THREE.Fog('#a8cfe3', 185, 850);
+const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .5, 900);
 const hemi = new THREE.HemisphereLight('#ffffff', '#8fa38b', 1.8);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff0ce', 1.95);
@@ -491,6 +492,7 @@ function farmAndParks() {
 function buildBlocks() {
   BUILDING_SITES.forEach(building);
   farmAndParks();
+  for (const district of EXPANSION_LANDMARKS) landmark(district.title,district.x,district.z,10,'#91e0a4');
   landmark('INDUSTRIAL YARDS',68,-12,16,'#d08f5c');
   landmark('THE YARDS',99,46,9,'#e5a36b');
   // Parked vehicles have their own space inside lots, never in through lanes.
@@ -509,6 +511,10 @@ function details() {
     const x=-120+random()*250,z=-250+random()*137;
     if(CIVIC_ENVELOPES.some(site=>Math.abs(x-site.x)<site.width/2+2&&Math.abs(z-site.z)<site.depth/2+2))continue;
     tree(x,z,4+random()*1.8);
+  }
+  for(let i=0;i<260;i++) {
+    const x=-119+random()*250,z=-582+random()*311;
+    tree(x,z,3.8+random()*1.8);
   }
   for(const {x,z} of HYDRANT_LOCATIONS)hydrant(x,z);
   // Lamppost bases occupy the sidewalk's outer edge and avoid driveways.
@@ -656,7 +662,7 @@ const victoryCards = {
   hawk: 'good-job-hawk-v2.png',
 };
 const helpDeck = createMissionDeck(
-  PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId && ['collect', 'fix'].includes(mission.type)),
+  [...PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId && ['collect', 'fix'].includes(mission.type)), GANTON_DELIVERY_MISSION],
   globalThis.localStorage, Math.random, 'rescue-pack-help-mission-progress-v1',
 );
 const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
@@ -667,7 +673,7 @@ function updateStars() {
   const total = helpDeck.total + fireDeck.total;
   starCounter.textContent = `★ ${completed}/${total} MISSIONS`;
   starCounter.setAttribute('aria-label', `Stars: ${completed} out of ${total} missions`);
-  for (const [button, deck, label] of [[bluePhoneButton, helpDeck, 'collect and fix'], [redPhoneButton, fireDeck, 'fire']]) {
+  for (const [button, deck, label] of [[bluePhoneButton, helpDeck, 'collect, fix and delivery'], [redPhoneButton, fireDeck, 'fire']]) {
     button.classList.toggle('all-complete', deck.isComplete);
     button.querySelector('b').textContent = deck.isComplete ? '★' : '!';
     const phoneLabel = deck.isComplete ? `All ${label} missions complete` : activeMission ? 'View current mission'
@@ -797,7 +803,7 @@ function updateMissionStatus() {
   if (!activeMission) {
     missionStatus.textContent = helpDeck.isComplete && fireDeck.isComplete ? `★ All ${helpDeck.total + fireDeck.total} missions complete!`
       : helpDeck.current || fireDeck.current ? '☎ Your mission call is waiting on its phone'
-        : '☎ Blue phone: collect/fix · Red phone: fire calls';
+        : '☎ Blue phone: collect/fix/deliver · Red phone: fire calls';
     return;
   }
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
@@ -808,7 +814,7 @@ function updateMissionStatus() {
     const remaining = [...activeFireSiteIds].filter(id => fireState.onFire.has(id)).length;
     missionStatus.textContent = `🔥 ${remaining}/${activeFireSiteIds.size} fires left · Drive close to each fire to spray`;
   }
-  else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : '🐾'} ${activeMission.objective} · ${activeMission.type === 'fix' ? 'Stop at the marker for 6 seconds' : 'Stop at the marker for 2 seconds'}`;
+  else missionStatus.textContent = `${activeMission.type === 'fix' ? '🔧' : activeMission.type === 'delivery' ? '📦' : '🐾'} ${activeMission.objective} · ${activeMission.type === 'fix' ? 'Stop at the marker for 6 seconds' : 'Stop at the marker for 2 seconds'}`;
 }
 function startMission(mission) {
   if (activeMission) finishMission(false, true);
@@ -892,7 +898,7 @@ function advanceMission(dt) {
   const stage = missionProgress.update({...renderPose, speed}, fireOut, dt);
   if (missionProgress.collectedCount > previousCount && activeMission.type === 'collect') missionSound.playCollect();
   if (stage === 'complete') { finishMission(true); return; }
-  const holdKind = stage === 'returning' ? 'return' : ['fix', 'rescue'].includes(activeMission.type) ? activeMission.type : null;
+  const holdKind = stage === 'returning' ? 'return' : ['fix', 'rescue', 'delivery'].includes(activeMission.type) ? activeMission.type : null;
   if (holdKind) {
     const atMarker = speed <= 1 && Math.hypot(renderPose.x - activeMission.target.x, renderPose.z - activeMission.target.z) <= 7;
     missionMarkers.setProgress(holdKind, missionProgress.holdProgress, atMarker);
@@ -981,10 +987,7 @@ function drive(dt) {
     refillRing.position.set(hydrant.x,getSurfaceHeight(hydrant.x,hydrant.z)+.045,hydrant.z);
     refillRing.scale.setScalar(1+.09*Math.sin(performance.now()*.006));
   }
-  const area=player.z>74?'HARBOR WALK':player.z<-195?(player.x<-51?'SUNNY FARM':player.x>52?'MAIL DISTRICT':'NORTH TOWN')
-    :player.z<-100?(player.x>52?'WORKSHOP DISTRICT':player.x<-51?'PARKS DISTRICT':'SCHOOL DISTRICT')
-      :player.x<-51?'SUBURBS':player.x>52?'INDUSTRIAL YARDS':player.z<5?'DOWNTOWN':player.x>18?'FIRE STATION':'TOWN SQUARE';
-  document.querySelector('#district-name').textContent=area;
+  document.querySelector('#district-name').textContent=districtAt(player)?.toUpperCase() ?? 'CITY EDGE';
 }
 const target=new THREE.Vector3(),desired=new THREE.Vector3();
 const hoseNozzle=new THREE.Vector3(),hoseForward=new THREE.Vector3();

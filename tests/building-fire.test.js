@@ -8,7 +8,7 @@ import { AFTER_FIRE_SMOKE_SECONDS, createBuildingFireEffect } from '../src/build
 
 test('world building IDs are stable and distinct from model type IDs', () => {
   const buildings = BUILDING_SITES.filter(site => site.worldBuildingId);
-  assert.equal(buildings.length, 72);
+  assert.equal(buildings.length, 134);
   assert.deepEqual(buildings.map(site => site.worldBuildingId),
     buildings.map((_, index) => `WB-${String(index + 1).padStart(3, '0')}`));
   assert.equal(BUILDING_SITES.filter(site => !site.worldBuildingId).length, 8);

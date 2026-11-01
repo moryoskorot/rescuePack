@@ -1,9 +1,9 @@
 // Shared city plan. All positions are in metres; the truck's local front is +Z.
 export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 125]);
-export const STREET_Z = Object.freeze([-236, -202, -168, -134, -100, -62, -30, 5, 38, 70]);
+export const STREET_Z = Object.freeze([-576, -542, -508, -474, -440, -406, -372, -338, -304, -270, -236, -202, -168, -134, -100, -62, -30, 5, 38, 70]);
 // A few local streets end at a through road, creating larger, less regular blocks.
 export const AVENUE_SEGMENTS = Object.freeze(AVENUE_X.map(x => Object.freeze({
-  x, minZ: -251, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
+  x, minZ: -589, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
 })));
 export const STREET_SEGMENTS = Object.freeze(STREET_Z.map(z => Object.freeze({
   z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 134,
@@ -14,12 +14,12 @@ export const ROAD_Y = .12;
 export const PAVEMENT_Y = .19;
 export const GROUND_Y = -.08;
 export const DECK_Y = .29;
-// The northward extension doubles the playable land area without moving the
-// original town, its harbor, or any existing mission coordinates.
-export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -265, maxZ: 85 });
+// The northward extension gives the new neighborhoods room while preserving
+// the original town and harbor street positions.
+export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -590, maxZ: 85 });
 export const PIER_BOUNDS = Object.freeze({ minX: 6, maxX: 18, minZ: 79.5, maxZ: 104.5 });
 export const BOARDWALK_BOUNDS = Object.freeze({ minX: -115, maxX: 115, minZ: 76, maxZ: 82 });
-const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -251, maxZ: 74 };
+const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -589, maxZ: 74 };
 export const DRIVEWAYS = Object.freeze([
   // The station apron meets the near curb and never covers the street itself.
   { name: 'fire-station', minX: 27, maxX: 43, minZ: 27.3, maxZ: 33.4 },
@@ -112,6 +112,8 @@ export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) =
 // The full hydrant, including side caps, fits within the 1.65m sidewalk.
 // Main's original hydrant should use scale .65 (its original radius is .93m).
 const EXTRA_HYDRANT_ROWS = [
+  ...[-576, -542, -508, -474, -440, -406, -372, -338, -304, -270]
+    .map(z => [z, [-98, -35, 35, 105]]),
   [-236, [-98, -35, 35, 105]],
   [-202, [-67, 0, 68]],
   [-168, [-98, 35, 105]],

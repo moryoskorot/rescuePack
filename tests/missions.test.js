@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
+import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, GANTON_DELIVERY_MISSION, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
+import { NEW_DISTRICTS, districtAt } from '../src/districts.js';
+import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES } from '../src/city-plan.js';
 
-test('Chief Panda has three distinct fire calls for every dispatch district', () => {
+test('Chief Panda has four single-fire calls in each new district', () => {
   const byDistrict = new Map();
   for (const mission of FIRE_MISSIONS) {
     assert.equal(mission.character_id, 'panda');
@@ -13,21 +15,55 @@ test('Chief Panda has three distinct fire calls for every dispatch district', ()
     missions.push(mission);
     byDistrict.set(mission.district, missions);
   }
-  assert.ok(byDistrict.size >= 3);
+  assert.equal(NEW_DISTRICTS.length, 8);
   for (const [district, missions] of byDistrict) {
-    assert.equal(missions.length, 3, `${district} has three fire calls`);
-    assert.ok(missions.every(mission => mission.fireCandidates.length >= 3), `${district} has a building roster`);
+    const expected = NEW_DISTRICTS.some(entry => entry.name === district) ? 4 : 3;
+    assert.equal(missions.length, expected, `${district} has ${expected} fire calls`);
+    assert.ok(missions.every(mission => mission.fireCandidates.length >= expected), `${district} has a building roster`);
+    assert.ok(missions.every(mission => mission.fireCandidates.every(site => districtAt(site) === district)),
+      `${district} only offers its own buildings`);
   }
+  for (const district of NEW_DISTRICTS) assert.ok(byDistrict.has(district.name), district.name);
 });
 
-test('Chief Panda has seven multiple-fire calls with unique burning buildings', () => {
-  assert.equal(MULTI_FIRE_MISSIONS.length, 7);
+test('Chief Panda has four multiple-fire calls in each new district', () => {
+  assert.equal(MULTI_FIRE_MISSIONS.length, 7 + NEW_DISTRICTS.length * 4);
   for (const mission of MULTI_FIRE_MISSIONS) {
     assert.equal(mission.character_id, 'panda');
     assert.match(mission.dialogue.start[0].text, /^Multiple fires started in the /);
     assert.ok(mission.fireCount >= 2 && mission.fireCount <= 3);
     assert.ok(mission.fireCandidates.length >= mission.fireCount);
     assert.equal(validateMissionPoints(mission), true, mission.id);
+  }
+  for (const district of NEW_DISTRICTS) {
+    assert.equal(MULTI_FIRE_MISSIONS.filter(mission => mission.district === district.name).length, 4);
+  }
+});
+
+test('Crowdie clusters, Crowdiecity towers, Ganton homes and delivery are placed in their districts', () => {
+  assert.deepEqual(CROWDIE_HOUSE_GROUPS.map(group => group.length), [4,6,7]);
+  for (const [x,z] of CROWDIE_HOUSE_GROUPS.flat()) assert.ok(BUILDING_SITES.some(site => site.pack === 'suburban' && site.x === x && site.z === z));
+  for (const [x,z] of CROWDIECITY_TOWERS) assert.ok(BUILDING_SITES.some(site => site.x === x && site.z === z
+    && site.pack === 'commercial' && site.name.startsWith('building-skyscraper-')));
+  for (const [x,z] of GANTON_HOMES) assert.ok(BUILDING_SITES.some(site => site.x === x && site.z === z && site.pack === 'suburban'));
+  assert.equal(districtAt(GANTON_DELIVERY_MISSION.target), 'Ganton');
+  assert.equal(validateMissionPoints(GANTON_DELIVERY_MISSION), true);
+  const delivery = createMissionProgress(GANTON_DELIVERY_MISSION);
+  delivery.update(GANTON_DELIVERY_MISSION.target, false, 1.9);
+  assert.equal(delivery.stage, 'going');
+  delivery.update(GANTON_DELIVERY_MISSION.target, false, .1);
+  assert.equal(delivery.stage, 'complete');
+});
+
+test('relocated mission labels and return points match their new neighborhoods', () => {
+  for (const [id, district] of [
+    ['hawk_03', 'Orchard Grove'], ['pigeon_03', 'Brickworks'],
+    ['fox_03', 'Cedar Park'], ['bear_03', 'Skyline Court'],
+    ['cheetah_03', 'Crowdie'],
+  ]) {
+    const mission = PLAYABLE_MISSIONS.find(entry => entry.id === id);
+    assert.equal(districtAt(mission.target), district, id);
+    assert.ok(mission.label.includes(district), id);
   }
 });
 

@@ -464,7 +464,7 @@
       "title": "Medical Supply Run",
       "type": "collect",
       "destination_id": "clinic_and_market_streets",
-      "destination_label": "Clinic and Market Streets",
+      "destination_label": "Orchard Grove Clinic",
       "objective": "Collect 6 sealed supply packs and return to clinic",
       "dialogue": {
         "start": [
@@ -1743,7 +1743,7 @@
       "title": "Scattered Letters",
       "type": "collect",
       "destination_id": "market_and_post_office",
-      "destination_label": "Market and Post Office",
+      "destination_label": "Brickworks Post Office",
       "objective": "Collect 7 letters and return to the post office",
       "dialogue": {
         "start": [
@@ -2167,7 +2167,7 @@
       "title": "Art Time Treasure Hunt",
       "type": "collect",
       "destination_id": "preschool_neighborhood",
-      "destination_label": "Preschool Neighborhood",
+      "destination_label": "Cedar Park Preschool",
       "objective": "Collect 7 art packs and return to preschool",
       "dialogue": {
         "start": [
@@ -2379,7 +2379,7 @@
       "title": "Missing Classroom Shapes",
       "type": "collect",
       "destination_id": "school_neighborhood",
-      "destination_label": "School Neighborhood",
+      "destination_label": "Skyline Court School",
       "objective": "Collect 6 shapes and return to school",
       "dialogue": {
         "start": [
@@ -3017,7 +3017,7 @@
       "title": "Grandma’s Photo Memories",
       "type": "collect",
       "destination_id": "park_and_apartment_blocks",
-      "destination_label": "Park and Apartment Blocks",
+      "destination_label": "Crowdie Apartments",
       "objective": "Collect 6 photo postcards and return to Granny",
       "dialogue": {
         "start": [

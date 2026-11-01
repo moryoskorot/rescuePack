@@ -3,6 +3,7 @@ const firstReplies = {
   fix: "Hang tight! I'll fix it!",
   rescue: "I'm on my way!",
   collect: "I'll find them and bring them back!",
+  delivery: "I'll take it to Ganton!",
   race: "Ready! Let's go!",
 };
 

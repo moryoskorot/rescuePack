@@ -33,6 +33,7 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
     fire: orbTexture(THREE, '!', ['#ffeaaa', '#ff8c47', '#dc3d4b']),
     fix: orbTexture(THREE, '!', ['#d6ffcf', '#69d6a5', '#158b91']),
     rescue: orbTexture(THREE, '!', ['#fce2ff', '#f49bd9', '#9953ce']),
+    delivery: orbTexture(THREE, '!', ['#fff1b8', '#f5b64b', '#be6b39']),
     race: orbTexture(THREE, '★', ['#fff4ba', '#ffbd50', '#ef779e']),
   };
   const entries = [];
@@ -48,10 +49,10 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
   }
   function add(point, kind = 'collect') {
     const group = new THREE.Group();
-    const color = { return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff', race: '#ffe284' }[kind] ?? '#65d9ff';
+    const color = { return: '#ffd65a', fire: '#ff7b54', fix: '#87ecc4', rescue: '#e5adff', delivery: '#ffc674', race: '#ffe284' }[kind] ?? '#65d9ff';
     const ground = getSurfaceHeight(point.x, point.z);
     group.position.set(point.x, ground + .06, point.z);
-    const pickup = !['return','fire','fix','rescue','race'].includes(kind);
+    const pickup = !['return','fire','fix','rescue','delivery','race'].includes(kind);
     const radius = pickup ? 1.25 : 2.25;
     for (const [inner, outer, opacity, y] of [[radius - .18, radius + .42, .22, 0], [radius, radius + .2, .95, .018], [radius - .43, radius - .34, .75, .03]]) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 64), new THREE.MeshBasicMaterial({
@@ -62,7 +63,7 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
       group.add(ring);
     }
     let progressRing = null;
-    if (kind === 'return' || kind === 'fix' || kind === 'rescue') {
+    if (kind === 'return' || kind === 'fix' || kind === 'rescue' || kind === 'delivery') {
       progressRing = new THREE.Group();
       progressRing.position.y = .055;
       progressRing.visible = false;
@@ -101,6 +102,21 @@ export function createMissionMarkers(THREE, scene, getSurfaceHeight) {
         const slot = new THREE.Mesh(new THREE.BoxGeometry(.54,.1,.03),new THREE.MeshBasicMaterial({color:'#527fb7'}));
         slot.position.set(0,.58,.35);group.add(slot);
       }
+    }
+    if (kind === 'delivery') {
+      // A little bat silhouette makes this stop feel like a delivery, not a repair.
+      const wood = new THREE.MeshStandardMaterial({ color: '#bf824d', roughness: .7 });
+      const grip = new THREE.MeshStandardMaterial({ color: '#46546b', roughness: .85 });
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.22, .1, 1.35, 12), wood);
+      barrel.position.set(0, .81, 0);
+      barrel.rotation.z = -Math.PI / 3;
+      barrel.castShadow = true;
+      group.add(barrel);
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(.1, .09, .67, 10), grip);
+      handle.position.set(-.87, .31, 0);
+      handle.rotation.z = -Math.PI / 3;
+      handle.castShadow = true;
+      group.add(handle);
     }
     const orb = new THREE.Sprite(new THREE.SpriteMaterial({ map: textures[kind] ?? textures.collect, transparent: true, depthWrite: false, toneMapped: false }));
     const size = pickup ? 3.1 : 4.6;
