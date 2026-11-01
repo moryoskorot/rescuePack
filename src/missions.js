@@ -90,6 +90,67 @@ export const PLAYABLE_MISSIONS = library.missions.map((mission,index) => {
   return result;
 });
 
+// The chief has three calls prepared for every map district with enough
+// buildings to make a varied, no-repeat fire roster.  A call is tied to the
+// exact world building ID rather than a generic district coordinate.
+function fireDistrict({ x, z }) {
+  if (z < -195) return x < -51 ? 'Sunny Farm' : x > 52 ? 'Mail District' : 'North Town';
+  if (z < -100) return x > 52 ? 'Workshop District' : x < -51 ? 'Parks District' : 'School District';
+  return x < -51 ? 'Suburbs' : x > 52 ? 'Industrial Yards' : z < 5 ? 'Downtown' : x > 18 ? 'Fire Station' : 'Town Square';
+}
+
+const FIRE_CALL_DISTRICTS = new Set([
+  'Suburbs', 'Downtown', 'Industrial Yards', 'Parks District',
+  'School District', 'Workshop District', 'North Town',
+]);
+
+const readableBuildingName = site => site.questName ?? site.name
+  .replace(/^building-/, '').replace(/^building-type-/, 'house ')
+  .replace(/-/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+
+const fireSitesByDistrict = BUILDING_SITES
+  .filter(site => site.worldBuildingId && FIRE_CALL_DISTRICTS.has(fireDistrict(site)))
+  .reduce((districts, site) => {
+    const district = fireDistrict(site);
+    (districts[district] ??= []).push(site);
+    return districts;
+  }, {});
+
+export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) => sites
+  .sort((a, b) => String(a.questName ?? a.name).localeCompare(String(b.questName ?? b.name)))
+  .slice(0, 3)
+  .map((site, index) => {
+    const building = readableBuildingName(site);
+    return {
+      id: `chief-fire-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
+      character_id: 'panda',
+      title: `Fire at ${building}`,
+      type: 'fire',
+      district,
+      label: building,
+      target: { x: site.x, z: site.z },
+      fireSite: { x: site.x, z: site.z, worldBuildingId: site.worldBuildingId },
+      objective: `Put out the fire at ${building}`,
+      mechanics: { interaction: 'drive_to_site_then_extinguish', target_marker: 'fire' },
+      dialogue: {
+        start: [{
+          speaker: 'Chief Panda',
+          text: `A fire started in the ${district}, at the ${building}. They need you there quickly!`,
+          sprite: 'visuals/processed/PANDA_2_point.png',
+        }],
+        success: [{
+          speaker: 'Chief Panda', text: 'Great work! The building is safe again.',
+          sprite: 'visuals/processed/PANDA_1_idle.png',
+        }],
+        failure: [{
+          speaker: 'Chief Panda', text: 'I have it covered. We can answer another call together.',
+          sprite: 'visuals/processed/PANDA_1_idle.png',
+        }],
+      },
+    };
+  }),
+);
+
 export function validateMissionPoints(mission) {
   if (mission.type === 'fire') {
     return BUILDING_SITES.some(site => site.worldBuildingId && site.x === mission.fireSite?.x && site.z === mission.fireSite?.z);

@@ -18,7 +18,8 @@ export function dialogueBeats(mission, phase) {
   if (phase === 'start') {
     return callerLines.slice(0, 1).map(line => ({
       ...line,
-      reply: firstReplies[mission.type] ?? "I'm on my way!",
+      reply: mission.character_id === 'panda' && mission.type === 'fire'
+        ? "I'm on my way!" : firstReplies[mission.type] ?? "I'm on my way!",
     }));
   }
 

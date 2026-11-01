@@ -24,7 +24,7 @@ import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
-import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
+import { PLAYABLE_MISSIONS, FIRE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
@@ -645,7 +645,9 @@ const victoryScreen = document.querySelector('#victory-screen');
 const victoryBadge = document.querySelector('#victory-badge');
 const victoryImage = document.querySelector('#victory-image');
 const victoryContinue = document.querySelector('#victory-continue');
-const phoneButton = document.querySelector('#phone-button');
+const bluePhoneButton = document.querySelector('#blue-phone-button');
+const redPhoneButton = document.querySelector('#red-phone-button');
+const phoneButtons = [bluePhoneButton, redPhoneButton];
 const starCounter = document.querySelector('#star-counter');
 const playingCharacterId = 'bunny';
 const victoryCards = {
@@ -653,18 +655,26 @@ const victoryCards = {
   beaver: 'good-job-beaver.png',
   hawk: 'good-job-hawk-v2.png',
 };
-const missionDeck = createMissionDeck(PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId));
-let activeMission = null, missionProgress = null, selectedMission = null, activeFireSiteId = null, panelOpen = false;
+const helpDeck = createMissionDeck(
+  PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId && ['collect', 'fix'].includes(mission.type)),
+  globalThis.localStorage, Math.random, 'rescue-pack-help-mission-progress-v1',
+);
+const fireDeck = createMissionDeck(FIRE_MISSIONS, globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
+let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteId = null, panelOpen = false;
 let pendingVictoryMission = null;
 function updateStars() {
-  starCounter.textContent = `★ ${missionDeck.completedCount}/${missionDeck.total} MISSIONS`;
-  starCounter.setAttribute('aria-label', `Stars: ${missionDeck.completedCount} out of ${missionDeck.total} missions`);
-  phoneButton.classList.toggle('all-complete', missionDeck.isComplete);
-  phoneButton.querySelector('b').textContent = missionDeck.isComplete ? '★' : '!';
-  const phoneLabel = missionDeck.isComplete ? 'All missions complete' : activeMission ? 'View current mission'
-    : missionDeck.current ? 'View mission call' : 'Get a random mission';
-  phoneButton.setAttribute('aria-label', phoneLabel);
-  phoneButton.title = phoneLabel;
+  const completed = helpDeck.completedCount + fireDeck.completedCount;
+  const total = helpDeck.total + fireDeck.total;
+  starCounter.textContent = `★ ${completed}/${total} MISSIONS`;
+  starCounter.setAttribute('aria-label', `Stars: ${completed} out of ${total} missions`);
+  for (const [button, deck, label] of [[bluePhoneButton, helpDeck, 'collect and fix'], [redPhoneButton, fireDeck, 'fire']]) {
+    button.classList.toggle('all-complete', deck.isComplete);
+    button.querySelector('b').textContent = deck.isComplete ? '★' : '!';
+    const phoneLabel = deck.isComplete ? `All ${label} missions complete` : activeMission ? 'View current mission'
+      : deck.current ? 'View mission call' : `Get a ${label} mission`;
+    button.setAttribute('aria-label', phoneLabel);
+    button.title = phoneLabel;
+  }
 }
 updateStars();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
@@ -731,14 +741,14 @@ function appendDialogueSequence(mission, phase, onDone, onSkip = null) {
   }
   if (lines.length) showLine(); else onDone();
 }
-function openPanel() {
+function openPanel(deck = null) {
   if (!playing) return;
-  if (!activeMission) { selectedMission = missionDeck.next(); updateStars(); }
+  if (!activeMission && deck) { selectedDeck = deck; selectedMission = deck.next(); updateStars(); }
   panelOpen = true; resetInput();
   if (selectedMission) missionSound.playCall();
   missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
-function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; updateMissionStatus(); }
+function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; selectedDeck = null; updateMissionStatus(); }
 function renderMissionPanel() {
   missionContent.replaceChildren();
   const heading = document.querySelector('#mission-panel-title');
@@ -758,10 +768,10 @@ function renderMissionPanel() {
     heading.textContent = activeMission.title;
     const detail = document.createElement('p'); detail.className = 'mission-objective'; detail.textContent = missionStatus.textContent;
     missionContent.append(detail, missionButton('Keep helping ➜', closePanel));
-  } else if (missionDeck.isComplete) {
+  } else if (helpDeck.isComplete && fireDeck.isComplete) {
     heading.textContent = 'Every mission complete! ★';
     const message = document.createElement('p'); message.className = 'mission-objective';
-    message.textContent = `You earned all ${missionDeck.total} stars. The whole city is smiling!`;
+    message.textContent = `You earned all ${helpDeck.total + fireDeck.total} stars. The whole city is smiling!`;
     missionContent.append(message, missionButton('Back to the city', closePanel));
   } else {
     heading.textContent = 'New mission';
@@ -784,8 +794,9 @@ function refreshMissionMarkers() {
 }
 function updateMissionStatus() {
   if (!activeMission) {
-    missionStatus.textContent = missionDeck.isComplete ? `★ All ${missionDeck.total} missions complete!`
-      : missionDeck.current ? '📱 Your mission call is waiting on the phone' : '📱 Tap the phone for a new mission';
+    missionStatus.textContent = helpDeck.isComplete && fireDeck.isComplete ? `★ All ${helpDeck.total + fireDeck.total} missions complete!`
+      : helpDeck.current || fireDeck.current ? '☎ Your mission call is waiting on its phone'
+        : '☎ Blue phone: collect/fix · Red phone: fire calls';
     return;
   }
   if (activeMission.type === 'collect') missionStatus.textContent = missionProgress.stage === 'returning'
@@ -798,6 +809,7 @@ function updateMissionStatus() {
 function startMission(mission) {
   if (activeMission) finishMission(false, true);
   activeMission = mission;
+  activeDeck = selectedDeck;
   missionProgress = createMissionProgress(mission);
   activeFireSiteId = null;
   fireState.clear(); fireProgress.clear(); fireEffect.clear();
@@ -807,13 +819,13 @@ function startMission(mission) {
   }
   fireStatus.classList.toggle('hidden', mission.type !== 'fire');
   lastFireCount = -1;
-  phoneButton.classList.add('on-mission');
+  phoneButtons.forEach(button => button.classList.add('on-mission'));
   updateStars();
   updateMissionStatus(); refreshMissionMarkers(); closePanel();
 }
 function skipMission(mission) {
   if (mission !== selectedMission) return;
-  missionDeck.skip(mission.id);
+  selectedDeck?.skip(mission.id);
   selectedMission = null;
   updateStars();
   closePanel();
@@ -825,7 +837,8 @@ function showMissionResult(mission, success) {
   appendDialogueSequence(mission, success ? 'success' : 'failure', () => {
     missionContent.replaceChildren();
     const message = document.createElement('p'); message.className = 'mission-objective';
-    message.textContent = success ? `★ ${missionDeck.completedCount}/${missionDeck.total} missions complete` : 'This call is saved on your phone.';
+    const completed = helpDeck.completedCount + fireDeck.completedCount;
+    message.textContent = success ? `★ ${completed}/${helpDeck.total + fireDeck.total} missions complete` : 'This call is saved on its phone.';
     missionContent.append(message, missionButton('Back to the city', closePanel));
   });
   missionContent.append(missionButton('Back to the city', closePanel, 'mission-secondary'));
@@ -840,12 +853,13 @@ victoryContinue.addEventListener('click', () => {
 });
 function finishMission(success, silent = false) {
   const mission = activeMission;
+  const deck = activeDeck;
   if (!mission) return;
   missionSound.stopCharge();
-  activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
+  activeMission = null; activeDeck = null; missionProgress = null; selectedMission = null; selectedDeck = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
-  fireStatus.classList.add('hidden'); phoneButton.classList.remove('on-mission');
-  if (success) missionDeck.complete(mission.id);
+  fireStatus.classList.add('hidden'); phoneButtons.forEach(button => button.classList.remove('on-mission'));
+  if (success) deck?.complete(mission.id);
   updateStars();
   updateMissionStatus();
   if (silent) return;
@@ -882,7 +896,8 @@ function advanceMission(dt) {
     updateMissionStatus(); refreshMissionMarkers();
   }
 }
-phoneButton.addEventListener('click', openPanel);
+bluePhoneButton.addEventListener('click', () => openPanel(helpDeck));
+redPhoneButton.addEventListener('click', () => openPanel(fireDeck));
 document.querySelector('#mission-close').addEventListener('click', closePanel);
 window.addEventListener('keydown',e=>{
   if (!victoryScreen.classList.contains('hidden')) { if (e.code === 'Escape') victoryContinue.click(); return; }
@@ -900,7 +915,7 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();missionDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();helpDeck.startSession();fireDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
 document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {

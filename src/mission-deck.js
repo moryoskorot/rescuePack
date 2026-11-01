@@ -2,10 +2,10 @@ const STORAGE_KEY = 'rescue-pack-mission-progress-v1';
 
 // A call stays on the phone during this play session. A new page load shuffles
 // the remaining calls while keeping completed stars and avoiding the last offer.
-export function createMissionDeck(missions, storage = globalThis.localStorage, random = Math.random) {
+export function createMissionDeck(missions, storage = globalThis.localStorage, random = Math.random, storageKey = STORAGE_KEY) {
   const byId = new Map(missions.map(mission => [mission.id, mission]));
   let saved = {};
-  try { saved = JSON.parse(storage?.getItem(STORAGE_KEY) ?? '{}') ?? {}; } catch { /* Browsers may block storage. */ }
+  try { saved = JSON.parse(storage?.getItem(storageKey) ?? '{}') ?? {}; } catch { /* Browsers may block storage. */ }
   const completedIds = new Set((Array.isArray(saved.completedIds) ? saved.completedIds : [])
     .filter(id => byId.has(id)));
   let lastOfferedId = saved.lastOfferedId ?? saved.currentId ?? null;
@@ -26,7 +26,7 @@ export function createMissionDeck(missions, storage = globalThis.localStorage, r
   }
 
   function persist() {
-    try { storage?.setItem(STORAGE_KEY, JSON.stringify({completedIds:[...completedIds],lastOfferedId})); }
+    try { storage?.setItem(storageKey, JSON.stringify({completedIds:[...completedIds],lastOfferedId})); }
     catch { /* Keep progress for this session when storage is unavailable. */ }
   }
 
