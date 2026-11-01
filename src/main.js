@@ -642,6 +642,7 @@ const missionPanel = document.querySelector('#mission-panel');
 const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
 const victoryScreen = document.querySelector('#victory-screen');
+const victoryBadge = document.querySelector('#victory-badge');
 const victoryImage = document.querySelector('#victory-image');
 const victoryContinue = document.querySelector('#victory-continue');
 const phoneButton = document.querySelector('#phone-button');
@@ -856,6 +857,9 @@ function finishMission(success, silent = false) {
     victoryImage.alt = `Good job, ${playingCharacterId}!`;
     pendingVictoryMission = mission;
     victoryScreen.classList.remove('hidden');
+    victoryBadge.classList.remove('victory-badge--reveal');
+    void victoryBadge.offsetWidth;
+    victoryBadge.classList.add('victory-badge--reveal');
     victoryContinue.focus();
   } else showMissionResult(mission, success);
 }

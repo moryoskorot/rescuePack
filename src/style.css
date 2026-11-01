@@ -154,11 +154,28 @@
 .dialogue-reply:focus-visible{outline:4px solid #237bb6;outline-offset:3px}
 .dialogue-skip{display:block;width:min(76%,360px);min-height:59px;margin:14px 4px 0 auto;padding:12px 15px;border:3px solid #fff;border-radius:999px;background:#ef4d3f;box-shadow:0 5px 0 #a52f2d;color:#fff;font:700 17px Fredoka,Arial,sans-serif;line-height:1.15;transition:transform .12s,box-shadow .12s}.dialogue-skip:hover{transform:translateY(-2px);box-shadow:0 7px 0 #a52f2d}.dialogue-skip:active{transform:translateY(4px);box-shadow:0 1px 0 #a52f2d}.dialogue-skip:focus-visible{outline:4px solid #237bb6;outline-offset:3px}
 .victory-screen{position:absolute;inset:0;z-index:11;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;background:#092550c7;pointer-events:auto;backdrop-filter:blur(6px)}
-.victory-screen img{display:block;width:min(560px,88vw,calc(100dvh - 112px));max-height:calc(100dvh - 112px);object-fit:contain;filter:drop-shadow(0 16px 22px #0417399c)}
+.victory-badge{position:relative;isolation:isolate;width:min(560px,88vw,calc(100dvh - 112px));opacity:0;transform:scale(.1)}
+.victory-badge img{position:relative;z-index:2;display:block;width:100%;max-height:calc(100dvh - 112px);object-fit:contain;filter:drop-shadow(0 16px 22px #0417399c)}
+.victory-shockwave,.victory-flash,.victory-gleam{position:absolute;pointer-events:none;opacity:0}
+.victory-shockwave{z-index:0;inset:50% auto auto 50%;width:32%;aspect-ratio:1;border:clamp(3px,.65vw,7px) solid #fff;border-radius:50%;box-shadow:0 0 18px 7px #fff9,0 0 44px 15px #ffec93b8;transform:translate(-50%,-50%) scale(.15)}
+.victory-flash{z-index:1;inset:7%;border-radius:35%;background:radial-gradient(ellipse,#fff 0 18%,#fff9 33%,#fffa 49%,transparent 72%);mix-blend-mode:screen}
+.victory-gleam{z-index:3;inset:3% 0 6%;overflow:hidden;border-radius:38%;mix-blend-mode:screen}
+.victory-gleam:after{content:'';position:absolute;inset:-25% -40%;background:linear-gradient(112deg,transparent 42%,#ffffff08 46%,#fff 50%,#ffffff20 55%,transparent 60%);transform:translateX(-70%) skewX(-12deg)}
+.victory-badge--reveal{animation:victory-pop .46s cubic-bezier(.2,.9,.3,1.35) both}
+.victory-badge--reveal .victory-shockwave{animation:victory-shockwave .25s ease-out both}
+.victory-badge--reveal .victory-flash{animation:victory-flash .25s ease-out .42s both}
+.victory-badge--reveal .victory-gleam:after{animation:victory-gleam .55s ease-out .42s both}
+.victory-badge--reveal img{animation:victory-wiggle 4s ease-in-out .52s forwards}
+@keyframes victory-pop{0%{opacity:0;transform:scale(.1)}65%{opacity:1;transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
+@keyframes victory-shockwave{0%{opacity:0;transform:translate(-50%,-50%) scale(.15)}12%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(5)}}
+@keyframes victory-flash{0%{opacity:0;transform:scale(.55)}20%{opacity:.92;transform:scale(1.02)}100%{opacity:0;transform:scale(1.22)}}
+@keyframes victory-gleam{from{transform:translateX(-70%) skewX(-12deg)}to{transform:translateX(70%) skewX(-12deg)}}
+@keyframes victory-wiggle{0%,100%{transform:rotate(0deg)}12%{transform:rotate(-.8deg)}25%{transform:rotate(.7deg)}38%{transform:rotate(-.5deg)}51%{transform:rotate(.38deg)}64%{transform:rotate(-.24deg)}77%{transform:rotate(.12deg)}90%{transform:rotate(-.04deg)}}
 .victory-continue{min-width:190px;padding:12px 26px;border:3px solid #fff8d9;border-radius:16px;background:linear-gradient(#ffe789,#ffc74a);box-shadow:0 5px 0 #a75b29;color:#173e73;font:700 20px Fredoka,Arial,sans-serif;transition:transform .12s,box-shadow .12s}
 .victory-continue:hover{transform:translateY(-2px);box-shadow:0 7px 0 #a75b29}
 .victory-continue:active{transform:translateY(4px);box-shadow:0 1px 0 #a75b29}
 .victory-continue:focus-visible{outline:4px solid #fff;outline-offset:5px}
+@media (prefers-reduced-motion:reduce){.victory-badge,.victory-badge--reveal{opacity:1;transform:none;animation:none}.victory-badge--reveal img,.victory-badge--reveal .victory-shockwave,.victory-badge--reveal .victory-flash,.victory-badge--reveal .victory-gleam:after{animation:none}}
 @media(max-width:480px){
   .mission-panel{padding:10px}
   .dialogue-portraits{height:clamp(164px,26vh,215px)}
