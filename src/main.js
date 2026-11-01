@@ -28,8 +28,10 @@ import { PLAYABLE_MISSIONS, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
+import { createGameTelemetry } from './otel.js';
 
 const canvas = document.querySelector('#world');
+const telemetry = createGameTelemetry();
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
@@ -52,6 +54,7 @@ const hoseImpacts = [];
 const hose = createHoseProjectiles(THREE,(id,windowId,point,reduction)=>{
   if(fireState.onFire.has(id)){
     fireProgress.apply(id,reduction);
+    telemetry.hoseHit(id, windowId);
     hoseImpacts.push(point.clone());
     const window=fireTargets.get(id)?.find(target=>target.id===windowId);
     if(window)groundMarkers?.addWallImpact(point,window.normal);
@@ -799,6 +802,7 @@ function startMission(mission) {
   if (activeMission) finishMission(false, true);
   activeMission = mission;
   missionProgress = createMissionProgress(mission);
+  telemetry.startMission(mission);
   activeFireSiteId = null;
   fireState.clear(); fireProgress.clear(); fireEffect.clear();
   if (mission.type === 'fire') {
@@ -841,6 +845,7 @@ victoryContinue.addEventListener('click', () => {
 function finishMission(success, silent = false) {
   const mission = activeMission;
   if (!mission) return;
+  telemetry.endMission(mission, success).catch(() => {});
   missionSound.stopCharge();
   activeMission = null; missionProgress = null; selectedMission = null; activeFireSiteId = null;
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
@@ -879,6 +884,12 @@ function advanceMission(dt) {
     missionSound.updateCharge(atMarker, missionProgress.holdProgress);
   } else missionSound.stopCharge();
   if (stage !== previousStage || missionProgress.collectedCount !== previousCount) {
+    telemetry.missionProgress({
+      stage,
+      collectedCount: missionProgress.collectedCount,
+      holdProgress: missionProgress.holdProgress,
+      missionType: activeMission.type,
+    });
     updateMissionStatus(); refreshMissionMarkers();
   }
 }
@@ -954,6 +965,13 @@ function drive(dt) {
   boostButton.classList.toggle('active',waterBoost.active||waterBoost.spraying);
   boostButton.classList.toggle('empty',charge===0);
   vehicleSound.update({speed:motion.speed,throttle:input.throttle,braking:motion.braking,handbrake:input.handbrake,boost:waterBoost.active});
+  telemetry.collision(motion.blocked);
+  telemetry.update({
+    vehicleSpeed: motion.speed,
+    waterCharge: waterBoost.charge,
+    activeFires: fireState.onFire.size,
+    missionProgress: missionProgress?.holdProgress ?? 0,
+  });
   const hydrant=waterBoost.nearHydrant;
   refillRing.visible=Boolean(hydrant)&&charge<100&&!waterBoost.active&&!waterBoost.spraying;
   if(refillRing.visible){
