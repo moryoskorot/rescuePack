@@ -848,6 +848,7 @@ function finishMission(success, silent = false) {
   updateStars();
   updateMissionStatus();
   if (silent) return;
+  if (success) missionSound.playMissionComplete();
   resetInput(); panelOpen = true;
   const card = success && victoryCards[playingCharacterId];
   if (card) {

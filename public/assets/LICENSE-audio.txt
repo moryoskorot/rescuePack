@@ -7,3 +7,12 @@ Engine idle and fast loops: "racing car engine sound loops" by domasx2, via Open
 Source: https://opengameart.org/content/racing-car-engine-sound-loops
 License: Creative Commons CC0 1.0 (public domain dedication).
 Files loop_0.wav and loop_5.wav are included as engine-idle.wav and engine-fast.wav.
+
+Mission-complete fanfares, via Pixabay Content License.
+Source #1 (alternate): "Success Fanfare Trumpets" by FunWithSound (Freesound),
+https://pixabay.com/sound-effects/film-special-effects-success-fanfare-trumpets-6185/
+Included as audio/mission-complete-fanfare-alternate.mp3.
+
+Source #2 (currently used): "Fanfare" by ricniclas (Freesound),
+https://pixabay.com/sound-effects/film-special-effects-fanfare-46385/
+Included as audio/mission-complete-fanfare.mp3.

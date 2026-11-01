@@ -21,8 +21,14 @@ class FakeAudioContext {
   }
 }
 
+class FakeAudio {
+  static last;
+  constructor(src) { FakeAudio.last = this; this.src = src; this.currentTime = 3; this.playCount = 0; }
+  play() { this.playCount += 1; return Promise.resolve(); }
+}
+
 test('mission call is prompt, pickup dings, and charge boops rise then stop', () => {
-  const sound = createMissionSound(FakeAudioContext);
+  const sound = createMissionSound(FakeAudioContext, FakeAudio);
   sound.unlock();
   const context = FakeAudioContext.last;
   sound.playCall();
@@ -43,4 +49,12 @@ test('mission call is prompt, pickup dings, and charge boops rise then stop', ()
   context.currentTime += 1;
   sound.updateCharge(false, 1);
   assert.equal(context.notes.length, 6);
+});
+
+test('mission completion uses the selected short trumpet fanfare from the beginning', () => {
+  const sound = createMissionSound(FakeAudioContext, FakeAudio);
+  sound.playMissionComplete();
+  assert.match(FakeAudio.last.src, /assets\/audio\/mission-complete-fanfare\.mp3$/);
+  assert.equal(FakeAudio.last.currentTime, 0);
+  assert.equal(FakeAudio.last.playCount, 1);
 });

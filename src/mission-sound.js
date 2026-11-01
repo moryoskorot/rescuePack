@@ -4,10 +4,16 @@ export function chargeCueShape(progress) {
   return { pitch: 350 + amount * 480, interval: .43 - amount * .23 };
 }
 
-export function createMissionSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext) {
+const missionCompleteFanfareUrl = `${import.meta.env?.BASE_URL ?? '/'}assets/audio/mission-complete-fanfare.mp3`;
+
+export function createMissionSound(
+  AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext,
+  AudioClass = globalThis.Audio,
+) {
   let context;
   let charging = false;
   let nextBoopAt = 0;
+  const missionCompleteFanfare = AudioClass ? new AudioClass(missionCompleteFanfareUrl) : null;
 
   function ready() {
     if (!AudioContextClass) return null;
@@ -43,6 +49,11 @@ export function createMissionSound(AudioContextClass = globalThis.AudioContext |
       const time = context.currentTime + .005;
       note(time, 1047, .4, .15);
       note(time + .015, 1568, .32, .07);
+    },
+    playMissionComplete() {
+      if (!missionCompleteFanfare) return;
+      missionCompleteFanfare.currentTime = 0;
+      missionCompleteFanfare.play().catch(() => {});
     },
     updateCharge(active, progress = 0) {
       if (!active) { charging = false; nextBoopAt = 0; return; }
