@@ -116,81 +116,76 @@ const fireSitesByDistrict = BUILDING_SITES
     return districts;
   }, {});
 
-export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) => sites
-  .sort((a, b) => String(a.questName ?? a.name).localeCompare(String(b.questName ?? b.name)))
-  .slice(0, 3)
-  .map((site, index) => {
-    const building = readableBuildingName(site);
-    return {
-      id: `chief-fire-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
-      character_id: 'panda',
-      title: `Fire at ${building}`,
-      type: 'fire',
-      district,
-      label: building,
-      target: { x: site.x, z: site.z },
-      fireSite: { x: site.x, z: site.z, worldBuildingId: site.worldBuildingId },
-      objective: `Put out the fire at ${building}`,
-      mechanics: { interaction: 'drive_to_site_then_extinguish', target_marker: 'fire' },
-      dialogue: {
-        start: [{
-          speaker: 'Chief Panda',
-          text: `A fire started in the ${district}, at the ${building}. They need you there quickly!`,
-          sprite: 'visuals/processed/PANDA_2_point.png',
-        }],
-        success: [{
-          speaker: 'Chief Panda', text: 'Great work! The building is safe again.',
-          sprite: 'visuals/processed/PANDA_1_idle.png',
-        }],
-        failure: [{
-          speaker: 'Chief Panda', text: 'I have it covered. We can answer another call together.',
-          sprite: 'visuals/processed/PANDA_1_idle.png',
-        }],
-      },
-    };
-  }),
+const siteChoice = site => ({ x: site.x, z: site.z, worldBuildingId: site.worldBuildingId, label: readableBuildingName(site) });
+const chiefDialogue = (text, success = 'Great work! The building is safe again.') => ({
+  start: [{ speaker: 'Chief Panda', text, sprite: 'visuals/processed/PANDA_2_point.png' }],
+  success: [{ speaker: 'Chief Panda', text: success, sprite: 'visuals/processed/PANDA_1_idle.png' }],
+  failure: [{ speaker: 'Chief Panda', text: 'I have backup covering every building. We can answer another call together.', sprite: 'visuals/processed/PANDA_1_idle.png' }],
+});
+
+function fireMissionBlueprint(id, district, fireCount, candidates, title, opening) {
+  return {
+    id, character_id: 'panda', title, type: 'fire', district, label: district, fireCount,
+    fireCandidates: candidates.map(siteChoice),
+    objective: `Put out all ${fireCount} fires in the ${district}`,
+    mechanics: { interaction: 'drive_to_site_then_extinguish_all', target_marker: 'fire' },
+    dialogue: chiefDialogue(opening),
+  };
+}
+
+// These calls keep a district roster, not a fixed building assignment. The
+// actual burning buildings are randomly selected only when the phone rings.
+export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
+  Array.from({ length: 3 }, (_, index) => fireMissionBlueprint(
+    `chief-fire-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
+    district, 1, sites, `Fire in ${district}`,
+    `A fire started in the ${district}. They need you there quickly!`,
+  )),
 );
 
-// One bigger incident per dispatch district. Each is deliberately made from
-// different buildings in its local roster, so no building can be listed twice
-// in the same emergency.
-export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).map(([district, sites], index) => {
-  const selectedSites = [...sites]
-    .sort((a, b) => String(a.questName ?? a.name).localeCompare(String(b.questName ?? b.name)))
-    .slice(0, index % 2 === 0 ? 2 : 3);
-  const fireSites = selectedSites.map(site => ({ x: site.x, z: site.z, worldBuildingId: site.worldBuildingId }));
+export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).map(([district, sites], index) =>
+  fireMissionBlueprint(
+    `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    district, index % 2 === 0 ? 2 : 3, sites, `Multiple fires in ${district}`,
+    `Multiple fires started in the ${district}! We need you there quickly!`,
+  ),
+);
+
+export const CITYWIDE_FIRE_MISSION = fireMissionBlueprint(
+  'chief-fire-fire-fire-fire-aahhh', 'Citywide', 10,
+  BUILDING_SITES.filter(site => site.worldBuildingId), 'FIRE FIRE FIRE FIRE AAHHHH!',
+  'FIRE FIRE FIRE FIRE AAHHHH! Ten buildings are on fire around the city!',
+);
+
+export function materializeFireMission(mission, random = Math.random) {
+  if (!mission.fireCandidates) return mission;
+  const choices = [...mission.fireCandidates];
+  for (let index = choices.length - 1; index > 0; index--) {
+    const pick = Math.floor(random() * (index + 1));
+    [choices[index], choices[pick]] = [choices[pick], choices[index]];
+  }
+  const fireSites = choices.slice(0, mission.fireCount);
+  const buildingNames = fireSites.map(site => site.label).join(', ');
+  const isCitywide = mission.district === 'Citywide';
+  const isMultiple = fireSites.length > 1;
+  const text = isCitywide ? `FIRE FIRE FIRE FIRE AAHHHH! ${buildingNames} need you now!`
+    : isMultiple ? `Multiple fires started in the ${mission.district}: ${buildingNames}! We need you there quickly!`
+      : `A fire started in the ${mission.district}, at the ${buildingNames}. They need you there quickly!`;
   return {
-    id: `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-    character_id: 'panda',
-    title: `Multiple fires in ${district}`,
-    type: 'fire',
-    district,
-    label: district,
-    target: { x: selectedSites[0].x, z: selectedSites[0].z },
+    ...mission,
+    label: isCitywide ? 'All around the city' : buildingNames,
+    target: { x: fireSites[0].x, z: fireSites[0].z },
     fireSite: fireSites[0],
     fireSites,
-    objective: `Put out all ${fireSites.length} fires in the ${district}`,
-    mechanics: { interaction: 'drive_to_site_then_extinguish_all', target_marker: 'fire' },
-    dialogue: {
-      start: [{
-        speaker: 'Chief Panda',
-        text: `Multiple fires started in the ${district}! We need you there quickly!`,
-        sprite: 'visuals/processed/PANDA_2_point.png',
-      }],
-      success: [{
-        speaker: 'Chief Panda', text: 'Every fire is out. Outstanding teamwork!',
-        sprite: 'visuals/processed/PANDA_1_idle.png',
-      }],
-      failure: [{
-        speaker: 'Chief Panda', text: 'I have backup covering every building. We can answer another call together.',
-        sprite: 'visuals/processed/PANDA_1_idle.png',
-      }],
-    },
+    objective: `Put out all ${fireSites.length} fires${isCitywide ? ' around the city' : ` in the ${mission.district}`}`,
+    dialogue: chiefDialogue(text, isMultiple ? 'Every fire is out. Outstanding teamwork!' : undefined),
   };
-});
+}
 
 export function validateMissionPoints(mission) {
   if (mission.type === 'fire') {
+    if (mission.fireCandidates) return mission.fireCandidates.length >= mission.fireCount
+      && new Set(mission.fireCandidates.map(site => site.worldBuildingId)).size === mission.fireCandidates.length;
     if (!mission.fireSites) return BUILDING_SITES.some(site => site.worldBuildingId
       && site.x === mission.fireSite?.x && site.z === mission.fireSite?.z);
     return mission.fireSites.length > 0

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FIRE_MISSIONS, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, validateMissionPoints } from '../src/missions.js';
+import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
 
 test('Chief Panda has three distinct fire calls for every dispatch district', () => {
   const byDistrict = new Map();
@@ -16,8 +16,7 @@ test('Chief Panda has three distinct fire calls for every dispatch district', ()
   assert.ok(byDistrict.size >= 3);
   for (const [district, missions] of byDistrict) {
     assert.equal(missions.length, 3, `${district} has three fire calls`);
-    assert.equal(new Set(missions.map(mission => mission.fireSite.worldBuildingId)).size, 3,
-      `${district} calls do not reuse a burning building`);
+    assert.ok(missions.every(mission => mission.fireCandidates.length >= 3), `${district} has a building roster`);
   }
 });
 
@@ -26,10 +25,23 @@ test('Chief Panda has seven multiple-fire calls with unique burning buildings', 
   for (const mission of MULTI_FIRE_MISSIONS) {
     assert.equal(mission.character_id, 'panda');
     assert.match(mission.dialogue.start[0].text, /^Multiple fires started in the /);
-    assert.ok(mission.fireSites.length >= 2 && mission.fireSites.length <= 3);
-    assert.equal(new Set(mission.fireSites.map(site => site.worldBuildingId)).size, mission.fireSites.length);
+    assert.ok(mission.fireCount >= 2 && mission.fireCount <= 3);
+    assert.ok(mission.fireCandidates.length >= mission.fireCount);
     assert.equal(validateMissionPoints(mission), true, mission.id);
   }
+});
+
+test('fire calls select fresh unique buildings from their district rosters', () => {
+  const random = () => .42;
+  const multi = materializeFireMission(MULTI_FIRE_MISSIONS[0], random);
+  assert.equal(multi.fireSites.length, multi.fireCount);
+  assert.equal(new Set(multi.fireSites.map(site => site.worldBuildingId)).size, multi.fireCount);
+  assert.equal(validateMissionPoints(multi), true);
+  const citywide = materializeFireMission(CITYWIDE_FIRE_MISSION, random);
+  assert.equal(citywide.title, 'FIRE FIRE FIRE FIRE AAHHHH!');
+  assert.equal(citywide.fireSites.length, 10);
+  assert.equal(new Set(citywide.fireSites.map(site => site.worldBuildingId)).size, 10);
+  assert.equal(validateMissionPoints(citywide), true);
 });
 
 test('every authored mission uses its own destination or reachable interaction points', () => {

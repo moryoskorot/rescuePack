@@ -24,7 +24,7 @@ import { loadWaterTuning } from './water-tuning-config.js';
 import { edgeMarkerLayout } from './fire-markers.js';
 import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
-import { PLAYABLE_MISSIONS, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, createMissionProgress } from './missions.js';
+import { PLAYABLE_MISSIONS, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION, materializeFireMission, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
@@ -659,7 +659,7 @@ const helpDeck = createMissionDeck(
   PLAYABLE_MISSIONS.filter(mission => mission.character_id !== playingCharacterId && ['collect', 'fix'].includes(mission.type)),
   globalThis.localStorage, Math.random, 'rescue-pack-help-mission-progress-v1',
 );
-const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
+const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
 let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteIds = new Set(), panelOpen = false;
 let pendingVictoryMission = null;
 function updateStars() {
@@ -743,7 +743,8 @@ function appendDialogueSequence(mission, phase, onDone, onSkip = null) {
 }
 function openPanel(deck = null) {
   if (!playing) return;
-  if (!activeMission && deck) { selectedDeck = deck; selectedMission = deck.next(); updateStars(); }
+  if (!activeMission && deck) { selectedDeck = deck; selectedMission = deck.next();
+    if (selectedMission?.type === 'fire') selectedMission = materializeFireMission(selectedMission); updateStars(); }
   panelOpen = true; resetInput();
   if (selectedMission) missionSound.playCall();
   missionPanel.classList.remove('hidden'); renderMissionPanel();
