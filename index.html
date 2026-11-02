@@ -39,6 +39,7 @@
             <button id="blue-phone-button" class="phone-button phone-button--blue" type="button" title="Collect and fix missions" aria-label="Collect and fix missions"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b><small>HELP</small></button>
             <button id="red-phone-button" class="phone-button phone-button--red" type="button" title="Fire missions from Chief Panda" aria-label="Fire missions from Chief Panda"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b><small>FIRE</small></button>
           </div>
+          <button id="map-button" class="round-button map-button" type="button" title="Open city map (M)" aria-label="Open city map">🗺</button>
           <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
         </header>
         <div id="fire-status" class="fire-status hidden" role="status" aria-live="polite"></div>
@@ -53,6 +54,14 @@
             <div id="mission-eyebrow" class="mission-eyebrow">RESCUE PACK CALLS</div>
             <h2 id="mission-panel-title">New mission</h2>
             <div id="mission-content"></div>
+          </div>
+        </section>
+
+        <section id="map-panel" class="map-panel hidden" role="dialog" aria-modal="true" aria-labelledby="map-title">
+          <div class="map-sheet">
+            <div class="map-heading"><div><small>THE WHOLE CITY</small><h2 id="map-title">City Map</h2></div><button id="map-close" class="mission-close" type="button" aria-label="Close city map">×</button></div>
+            <canvas id="map-canvas" aria-label="City roads, buildings, districts, truck, fires and mission destination"></canvas>
+            <div class="map-legend"><span><i class="map-key map-key--truck"></i>You</span><span><i class="map-key map-key--fire"></i>Fire</span><span><i class="map-key map-key--mission"></i>Mission</span><span class="map-hint">Press M or Esc to close</span></div>
           </div>
         </section>
 
@@ -72,6 +81,7 @@
             <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="guide-or">or</span><span class="arrows">↑ ← ↓ →</span><span>Drive</span></div>
             <div><kbd class="space-key">SPACE</kbd><span>Handbrake & drift</span></div>
             <div><kbd class="space-key">SHIFT</kbd><span>Water boost while driving · hose auto fires near flames</span></div>
+            <div><kbd>M</kbd><span>City map</span></div>
             <div><span class="mouse-icon">◉</span><span>Drag to look around</span><span class="guide-separator">·</span><span>Scroll to zoom</span></div>
           </div>
           <div class="speed-card"><span class="speed-icon">⚡</span><strong id="speed-value">00</strong><span class="speed-unit">KM/H</span><div id="drift-indicator" class="drift-indicator">DRIFTING!</div></div>

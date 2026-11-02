@@ -1,13 +1,32 @@
 // Shared city plan. All positions are in metres; the truck's local front is +Z.
 export const AVENUE_X = Object.freeze([-112, -84, -51, -18, 18, 52, 85, 125]);
-export const STREET_Z = Object.freeze([-576, -542, -508, -474, -440, -406, -372, -338, -304, -270, -236, -202, -168, -134, -100, -62, -30, 5, 38, 70]);
-// A few local streets end at a through road, creating larger, less regular blocks.
-export const AVENUE_SEGMENTS = Object.freeze(AVENUE_X.map(x => Object.freeze({
-  x, minZ: -589, maxZ: ({ '-84': -30, '-18': 38, '85': 5 })[x] ?? 74,
-})));
-export const STREET_SEGMENTS = Object.freeze(STREET_Z.map(z => Object.freeze({
-  z, minX: z === 5 ? -51 : -122, maxX: z === 38 ? 52 : 134,
-})));
+export const STREET_Z = Object.freeze([-542, -508, -474, -440, -406, -372, -338, -270, -236, -202, -168, -134, -100, -62, -30, 5, 38, 70]);
+// The old town keeps its connected streets. The northern neighborhoods use
+// branching spines, short local streets and a cul-de-sac instead of a grid.
+export const AVENUE_SEGMENTS = Object.freeze([
+  {x:-112,minZ:-236,maxZ:70}, {x:-84,minZ:-338,maxZ:-30},
+  {x:-51,minZ:-406,maxZ:-338}, {x:-51,minZ:-236,maxZ:70},
+  {x:-18,minZ:-542,maxZ:38},
+  {x:18,minZ:-474,maxZ:70}, {x:52,minZ:-542,maxZ:70},
+  {x:85,minZ:-406,maxZ:-338}, {x:85,minZ:-236,maxZ:5},
+  {x:125,minZ:-338,maxZ:70},
+].map(road => Object.freeze(road)));
+export const STREET_SEGMENTS = Object.freeze([
+  {z:-542,minX:-98,maxX:-18}, {z:-542,minX:52,maxX:105},
+  {z:-508,minX:52,maxX:105},
+  {z:-474,minX:-18,maxX:52}, {z:-440,minX:-18,maxX:52},
+  {z:-406,minX:-51,maxX:85}, {z:-372,minX:-51,maxX:85},
+  {z:-338,minX:-84,maxX:125}, {z:-270,minX:-84,maxX:125},
+  ...STREET_Z.filter(z => z >= -236).map(z => ({z,minX:z===5?-51:-112,maxX:z===38?52:125})),
+].map(road => Object.freeze(road)));
+// A widened turn at the Ganton dead end is a deliberate destination, not an
+// asphalt stub cut off by the edge of the world.
+export const ROAD_PADS = Object.freeze([
+  {minX:-108,maxX:-98,minZ:-549,maxZ:-535},
+  {minX:-111,maxX:-108,minZ:-546,maxZ:-538},
+  {minX:105,maxX:113,minZ:-514,maxZ:-502},
+  {minX:105,maxX:113,minZ:-548,maxZ:-536},
+].map(pad => Object.freeze(pad)));
 export const ROAD_HALF_WIDTH = 4.6;
 export const SIDEWALK_OUTER = 6.25;
 export const ROAD_Y = .12;
@@ -31,7 +50,8 @@ export function insideRect(x, z, rect, padding = 0) {
 
 function inRoadNetwork(x, z, halfWidth) {
   return AVENUE_SEGMENTS.some(road => Math.abs(x - road.x) <= halfWidth && z >= road.minZ && z <= road.maxZ)
-    || STREET_SEGMENTS.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX);
+    || STREET_SEGMENTS.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX)
+    || ROAD_PADS.some(pad => insideRect(x,z,pad,halfWidth-ROAD_HALF_WIDTH));
 }
 
 export function isRoad(x, z, padding = 0) {
@@ -76,6 +96,10 @@ export function createRoadSurfaceRects() {
   for (const rect of DRIVEWAYS) {
     xCuts.add(rect.minX); xCuts.add(rect.maxX); zCuts.add(rect.minZ); zCuts.add(rect.maxZ);
   }
+  for (const pad of ROAD_PADS) for (const offset of [0, SIDEWALK_OUTER-ROAD_HALF_WIDTH]) {
+    xCuts.add(pad.minX-offset); xCuts.add(pad.maxX+offset);
+    zCuts.add(pad.minZ-offset); zCuts.add(pad.maxZ+offset);
+  }
   const xs = [...xCuts].sort((a, b) => a - b), zs = [...zCuts].sort((a, b) => a - b);
   const rectangles = [], active = new Map();
   for (let iz = 0; iz < zs.length - 1; iz++) {
@@ -101,19 +125,23 @@ export function createRoadSurfaceRects() {
   return rectangles;
 }
 
-export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) => STREET_Z.slice(0, -1).map((north, row) => ({
+// The old town has regular lots; northern blocks are shaped individually.
+const ORIGINAL_STREET_Z = STREET_Z.filter(z => z >= -236);
+export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) => ORIGINAL_STREET_Z.slice(0, -1).map((north, row) => ({
   id: `${column}-${row}`, column, row,
   minX: left + SIDEWALK_OUTER + .5,
   maxX: AVENUE_X[column + 1] - SIDEWALK_OUTER - .5,
   minZ: north + SIDEWALK_OUTER + .5,
-  maxZ: STREET_Z[row + 1] - SIDEWALK_OUTER - .5,
+  maxZ: ORIGINAL_STREET_Z[row + 1] - SIDEWALK_OUTER - .5,
 }))));
 
 // The full hydrant, including side caps, fits within the 1.65m sidewalk.
 // Main's original hydrant should use scale .65 (its original radius is .93m).
 const EXTRA_HYDRANT_ROWS = [
-  ...[-576, -542, -508, -474, -440, -406, -372, -338, -304, -270]
-    .map(z => [z, [-98, -35, 35, 105]]),
+  [-542, [-90,-67,-35,0,35]], [-508, [68,105]],
+  [-474, [0,35]], [-440, [0,35]],
+  [-406, [-35,0,35,68]], [-372, [-35,0,35,68]],
+  [-338, [-67,-35,0,35,68,105]], [-270, [-67,-35,0,35,68,105]],
   [-236, [-98, -35, 35, 105]],
   [-202, [-67, 0, 68]],
   [-168, [-98, 35, 105]],
@@ -142,7 +170,7 @@ export const HYDRANT_LOCATIONS = Object.freeze([
   { name: 'Workers cottages', x: 103, z: 64.575 },
   ...EXTRA_HYDRANT_ROWS.flatMap(([roadZ, xs]) => xs.map(x => ({
     name: `Street ${roadZ}, ${x}`, x, z: roadZ + (roadZ === 70 ? -5.425 : 5.425),
-  }))),
+  }))).filter(location => surfaceAt(location.x, location.z) === 'pavement'),
 ].map(location => Object.freeze({ ...location, radius: .62, scale: .65 })));
 
 export function vehicleFootprint({ x, z, heading }, { halfWidth = 1.32, front = 2.85, rear = 2.85, margin = .06 } = {}) {

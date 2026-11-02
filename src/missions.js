@@ -1,5 +1,5 @@
 import library from '../docs/rescue-pack-missions.json' with { type: 'json' };
-import { surfaceAt, STREET_Z } from './world-layout.js';
+import { AVENUE_SEGMENTS, ROAD_HALF_WIDTH, STREET_SEGMENTS, surfaceAt, STREET_Z } from './world-layout.js';
 import { BUILDING_SITES } from './city-plan.js';
 import { NEW_DISTRICTS, districtAt } from './districts.js';
 
@@ -45,7 +45,21 @@ function destinationFor(id) {
   if (!questName) return destination[id];
   const site = BUILDING_SITES.find(candidate => candidate.questName === questName);
   if (!site) throw new Error(`Missing moved landmark: ${questName}`);
-  return [site.x, site.z + 11.5, site.x, site.z];
+  const curb = ROAD_HALF_WIDTH + .825;
+  const candidates = [
+    ...AVENUE_SEGMENTS.flatMap(road => [0,-3,3,-6,6].map(offset => ({
+      x: road.x + Math.sign(site.x-road.x || 1) * curb,
+      z: Math.max(road.minZ, Math.min(site.z+offset, road.maxZ)),
+    }))),
+    ...STREET_SEGMENTS.flatMap(road => [0,-3,3,-6,6].map(offset => ({
+      x: Math.max(road.minX, Math.min(site.x+offset, road.maxX)),
+      z: road.z + Math.sign(site.z-road.z || 1) * curb,
+    }))),
+  ].filter(point => surfaceAt(point.x,point.z) === 'pavement'
+    && (Math.abs(point.x-site.x) > site.width/2+1 || Math.abs(point.z-site.z) > site.depth/2+1))
+    .sort((a,b) => Math.hypot(a.x-site.x,a.z-site.z)-Math.hypot(b.x-site.x,b.z-site.z));
+  if (!candidates.length) throw new Error(`No road entrance for ${questName}`);
+  return [candidates[0].x,candidates[0].z,site.x,site.z];
 }
 
 const itemKinds = {
@@ -59,7 +73,7 @@ const itemKinds = {
 };
 
 const bookBoxes = [
-  { x: -120, z: 43.7, count: 2, district: 'Suburbs' },
+  { x: -106.6, z: 43.7, count: 2, district: 'Suburbs' },
   { x: -24, z: -.7, count: 2, district: 'Downtown' },
   { x: 57.6, z: 10.6, count: 2, district: 'Industrial Yards' },
 ];
@@ -114,7 +128,7 @@ export const PLAYABLE_MISSIONS = library.missions.map((mission,index) => {
 
 export const GANTON_DELIVERY_MISSION = {
   id: 'pigeon_ganton_delivery', character_id: 'pigeon', type: 'delivery',
-  title: 'A Ganton Delivery', label: 'Ganton', target: { x: -98, z: -570.5 },
+  title: 'A Ganton Delivery', label: 'Ganton', target: { x: -90, z: -536.575 },
   objective: 'Deliver the baseball bat to the Ganton corner',
   mechanics: { interaction: 'stop_to_deliver', hold_seconds: 2, target_marker: 'delivery' },
   dialogue: {

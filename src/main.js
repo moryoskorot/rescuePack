@@ -3,8 +3,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 import { FIRETRUCK, VEHICLE_STEP, createVehicleState, vehicleMotion, wheelContacts } from './vehicle-physics.js';
 import { AVENUE_X, HYDRANT_LOCATIONS, SHORE_BARRIERS, buildWorldSurfaces, getSurfaceHeight, surfaceAt, isReserved } from './world-layout.js';
-import { BUILDING_SITES, CIVIC_ENVELOPES, EXPANSION_LANDMARKS } from './city-plan.js';
+import { BUILDING_SITES, CIVIC_ENVELOPES, EXPANSION_LANDMARKS, NEIGHBORHOOD_PARKS } from './city-plan.js';
 import { districtAt } from './districts.js';
+import { createWorldMap } from './world-map.js';
 import { BUILDING_TYPES_BY_PATH } from './building-catalog.js';
 import WINDOW_MAP from './building-windows.json';
 import { createBuildingFireState } from './building-fire.js';
@@ -500,6 +501,15 @@ function buildBlocks() {
   solid(-74.7,62,4.1,1.8);
 }
 function details() {
+  for (const park of NEIGHBORHOOD_PARKS) {
+    const ground = getSurfaceHeight(park.x,park.z);
+    disc(scene,park.radius,M.park,park.x,ground+.008,park.z,48);
+    disc(scene,3.4,M.stone,park.x,ground+.014,park.z,32);
+    for (let index=0;index<6;index++) {
+      const angle=index*Math.PI/3;
+      tree(park.x+Math.cos(angle)*(park.radius-5),park.z+Math.sin(angle)*(park.radius-5),4.8);
+    }
+  }
   // Reserve the open corners of each lot for greenery.
   for(let i=0;i<230;i++) {
     const x=-107+random()*214,z=-56+random()*119;
@@ -645,6 +655,10 @@ function releaseCamera() {
 function resetInput() {keys.clear();touchControls.reset();releaseBoost();releaseCamera();previousWheels=null;physicsAccumulator=0;previousPhysicsPose={...player};renderPose={...player};hoseTarget=null;hose.reset();hoseEffect.reset();waterBoost.active=false;waterBoost.spraying=false;refillRing.visible=false;boostButton.classList.remove('active');vehicleSound.pause();missionSound.stopCharge();}
 const portraitUrls = import.meta.glob('../visuals/processed/*.png', { eager: true, query: '?url', import: 'default' });
 const missionPanel = document.querySelector('#mission-panel');
+const mapPanel = document.querySelector('#map-panel');
+const mapButton = document.querySelector('#map-button');
+const mapClose = document.querySelector('#map-close');
+const worldMap = createWorldMap(document.querySelector('#map-canvas'));
 const missionContent = document.querySelector('#mission-content');
 const missionStatus = document.querySelector('#mission-status');
 const victoryScreen = document.querySelector('#victory-screen');
@@ -666,7 +680,7 @@ const helpDeck = createMissionDeck(
   globalThis.localStorage, Math.random, 'rescue-pack-help-mission-progress-v1',
 );
 const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
-let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteIds = new Set(), panelOpen = false;
+let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteIds = new Set(), panelOpen = false, mapOpen = false;
 let pendingVictoryMission = null;
 function updateStars() {
   const completed = helpDeck.completedCount + fireDeck.completedCount;
@@ -756,6 +770,32 @@ function openPanel(deck = null) {
   missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
 function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; selectedDeck = null; updateMissionStatus(); }
+function mapMissionPoint() {
+  if (!activeMission) return null;
+  if (activeMission.type === 'collect' && missionProgress?.stage === 'collecting') {
+    return activeMission.pickups.find((_, index) => !missionProgress.collected.has(index)) ?? activeMission.target;
+  }
+  if (activeMission.type === 'race') return activeMission.route[missionProgress.checkpoint] ?? null;
+  return activeMission.type === 'fire' ? null : activeMission.target;
+}
+function renderWorldMap(elapsed = performance.now() / 1000) {
+  worldMap.draw({
+    player: renderPose,
+    fires: [...fireState.onFire.keys()].map(id => fireSitesById.get(id)).filter(Boolean),
+    mission: mapMissionPoint(), elapsed,
+  });
+}
+function openMap() {
+  if (!playing || panelOpen || !victoryScreen.classList.contains('hidden')) return;
+  resetInput(); mapOpen = true; mapPanel.classList.remove('hidden');
+  mapButton.setAttribute('aria-label', 'Close city map');
+  renderWorldMap(); mapClose.focus();
+}
+function closeMap() {
+  mapOpen = false; mapPanel.classList.add('hidden');
+  mapButton.setAttribute('aria-label', 'Open city map');
+  if (playing) mapButton.focus();
+}
 function renderMissionPanel() {
   missionContent.replaceChildren();
   const heading = document.querySelector('#mission-panel-title');
@@ -911,8 +951,16 @@ function advanceMission(dt) {
 bluePhoneButton.addEventListener('click', () => openPanel(helpDeck));
 redPhoneButton.addEventListener('click', () => openPanel(fireDeck));
 document.querySelector('#mission-close').addEventListener('click', closePanel);
+mapButton.addEventListener('click', () => mapOpen ? closeMap() : openMap());
+mapClose.addEventListener('click', closeMap);
 window.addEventListener('keydown',e=>{
   if (!victoryScreen.classList.contains('hidden')) { if (e.code === 'Escape') victoryContinue.click(); return; }
+  if (e.code === 'KeyM' && playing && !panelOpen) {
+    e.preventDefault();
+    if (!e.repeat) (mapOpen ? closeMap : openMap)();
+    return;
+  }
+  if (mapOpen) { if (e.code === 'Escape') closeMap(); return; }
   if (panelOpen) { if (e.code === 'Escape') closePanel(); return; }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
@@ -928,10 +976,10 @@ for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addE
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();helpDeck.startSession();fireDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
-document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
+document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closeMap();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
-  if(!playing||!firetruck||panelOpen){physicsAccumulator=0;return;}
+  if(!playing||!firetruck||panelOpen||mapOpen){physicsAccumulator=0;return;}
   const input={
     throttle:(Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')))||touchControls.input.throttle,
     steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
@@ -1142,7 +1190,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const elapsedSeconds=Math.max(0,(now-previous)/1000);
   const dt=Math.min(elapsedSeconds,.05);previous=now;
-  const simulationRunning=playing&&!panelOpen;
+  const simulationRunning=playing&&!panelOpen&&!mapOpen;
   if(simulationRunning)simulationTime+=dt;
   drive(dt);updateCamera(dt);
   if(simulationRunning){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
@@ -1163,6 +1211,7 @@ function animate(now){
   groundMarkers.update(simulationRunning?dt:0,playing?renderPose:null,fireState.onFire,simulationTime);
   missionMarkers.update(simulationTime);
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(simulationTime*.5)*.01,THREE.SRGBColorSpace);
+  if (mapOpen) renderWorldMap(now / 1000);
   renderer.render(scene,camera);
 }
 camera.position.set(54,21,64);camera.lookAt(25,3,22);

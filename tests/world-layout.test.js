@@ -2,20 +2,36 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
-  AVENUE_X, STREET_Z, ROAD_Y, PAVEMENT_Y, DECK_Y,
+  AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_PADS, ROAD_Y, PAVEMENT_Y, DECK_Y,
   DRIVEWAYS, HYDRANT_LOCATIONS, LOTS, LAND_BOUNDS, PIER_BOUNDS,
   createRoadSurfaceRects, insideRect, isRoad, isDriveway, isReserved,
   surfaceAt, getSurfaceHeight, footprintOnLandOrPier, vehicleFootprint,
   buildWorldSurfaces,
 } from '../src/world-layout.js';
 
-test('the new neighborhoods extend the playable street grid far north', () => {
+test('northern streets form branches and Ganton has an L-shaped cul-de-sac', () => {
   const originalArea = (145 - -130) * (85 - -91);
   const currentArea = (LAND_BOUNDS.maxX - LAND_BOUNDS.minX) * (LAND_BOUNDS.maxZ - LAND_BOUNDS.minZ);
   assert.ok(currentArea >= originalArea * 3.7);
   assert.ok(LAND_BOUNDS.minZ < -580);
-  assert.equal(surfaceAt(-98, -576), 'road');
+  assert.equal(surfaceAt(-90, -542), 'road');
+  assert.equal(surfaceAt(-18, -510), 'road');
+  assert.equal(surfaceAt(-90, -510), 'grass');
+  assert.equal(surfaceAt(-90, -576), 'grass');
+  assert.equal(isRoad(85, -440), false, 'Skyline Court is not cut into grid squares');
   assert.equal(surfaceAt(105, -525), 'grass');
+});
+
+test('street ends meet another street or a deliberate turnaround', () => {
+  for (const avenue of AVENUE_SEGMENTS) for (const z of [avenue.minZ, avenue.maxZ]) {
+    assert.ok(STREET_SEGMENTS.some(street => street.z === z && avenue.x >= street.minX && avenue.x <= street.maxX),
+      `avenue ${avenue.x} ends at ${z} without a junction`);
+  }
+  for (const street of STREET_SEGMENTS) for (const x of [street.minX, street.maxX]) {
+    assert.ok(AVENUE_SEGMENTS.some(avenue => avenue.x === x && street.z >= avenue.minZ && street.z <= avenue.maxZ)
+      || ROAD_PADS.some(pad => insideRect(x,street.z,pad)),
+    `street ${street.z} ends at ${x} without a junction or turnaround`);
+  }
 });
 
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {
@@ -27,8 +43,9 @@ test('road and sidewalk faces form a disjoint partition, including every interse
     assert.ok(width <= 1e-9 || depth <= 1e-9, `surfaces overlap: ${JSON.stringify(a)} and ${JSON.stringify(b)}`);
   }
   for (const x of AVENUE_X) for (const z of STREET_Z) {
-    const roadFaces = rectangles.filter(rect => rect.kind === 'road' && insideRect(x, z, rect));
-    assert.equal(roadFaces.length, Number(isRoad(x, z)), `junction ${x},${z} has the correct asphalt face`);
+    const point = {x:x+.013,z:z+.017};
+    const roadFaces = rectangles.filter(rect => rect.kind === 'road' && insideRect(point.x, point.z, rect));
+    assert.equal(roadFaces.length, Number(isRoad(point.x,point.z)), `junction ${x},${z} has the correct asphalt face`);
   }
   for (const [x, z] of [[-84, 5], [-18, 55], [85, 38], [-100, 5], [85, 50]]) {
     assert.equal(isRoad(x, z), false, `local street ends before ${x},${z}`);

@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, GANTON_DELIVERY_MISSION, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
 import { NEW_DISTRICTS, districtAt } from '../src/districts.js';
-import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES } from '../src/city-plan.js';
+import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES, NEIGHBORHOOD_PARKS, SKYLINE_H_TOWERS } from '../src/city-plan.js';
+import { isRoad } from '../src/world-layout.js';
 
 test('Chief Panda has four single-fire calls in each new district', () => {
   const byDistrict = new Map();
@@ -45,7 +46,15 @@ test('Crowdie clusters, Crowdiecity towers, Ganton homes and delivery are placed
   for (const [x,z] of CROWDIE_HOUSE_GROUPS.flat()) assert.ok(BUILDING_SITES.some(site => site.pack === 'suburban' && site.x === x && site.z === z));
   for (const [x,z] of CROWDIECITY_TOWERS) assert.ok(BUILDING_SITES.some(site => site.x === x && site.z === z
     && site.pack === 'commercial' && site.name.startsWith('building-skyscraper-')));
+  assert.equal(CROWDIECITY_TOWERS.length, 7);
+  assert.deepEqual(CROWDIECITY_TOWERS.filter(([x]) => x === 86), [[86,-287]], 'the U stays open above its base');
+  assert.equal(SKYLINE_H_TOWERS.length, 7);
+  assert.deepEqual(SKYLINE_H_TOWERS.filter(([x]) => x === 86), [[86,-440]], 'the H has one center bridge');
   for (const [x,z] of GANTON_HOMES) assert.ok(BUILDING_SITES.some(site => site.x === x && site.z === z && site.pack === 'suburban'));
+  assert.ok(GANTON_HOMES.length >= 12);
+  assert.ok(isRoad(-90,-542) && isRoad(-18,-510) && !isRoad(-90,-510), 'Ganton follows an L street');
+  assert.ok(BUILDING_SITES.filter(site => site.z > -270 && site.z < -236).length >= 7, 'the old gap has homes');
+  for (const park of NEIGHBORHOOD_PARKS) assert.ok(BUILDING_SITES.every(site => Math.hypot(site.x-park.x,site.z-park.z) >= park.radius-3), park.name);
   assert.equal(districtAt(GANTON_DELIVERY_MISSION.target), 'Ganton');
   assert.equal(validateMissionPoints(GANTON_DELIVERY_MISSION), true);
   const delivery = createMissionProgress(GANTON_DELIVERY_MISSION);

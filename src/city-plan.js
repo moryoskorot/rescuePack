@@ -83,11 +83,11 @@ export const QUEST_BUILDINGS = [
   ['commercial','building-j',35,-525,8.5,17,16,'Market Hall'],
   ['commercial','building-k',0,-457,8.5,17,16,'Preschool'],
   ['industrial','building-m',105,-389,8.2,18,17,'Post Office Depot'],
-  ['commercial','building-skyscraper-e',105,-321,8.5,18,17,'Apartment Courtyard'],
-  ['commercial','building-d',68,-457,8.5,17,17,'Elementary School'],
+  ['commercial','building-skyscraper-e',104,-319,8.5,12.5,12.5,'Apartment Courtyard'],
+  ['commercial','building-d',68,-456,8.5,12.5,12.5,'Elementary School'],
   ['commercial','building-e',-35,-457,8.5,17,17,'Primary School Cafeteria'],
   ['industrial','building-n',0,-185,8.2,17,17,'Fire Station Annex'],
-  ['commercial','building-skyscraper-a',35,-321,8.5,17,17,'Old Clocktower'],
+  ['commercial','building-skyscraper-a',68,-319,8.5,12.5,12.5,'Old Clocktower'],
   ['industrial','building-g',105,-151,8.2,18,17,'Canal Workshop'],
   ['industrial','building-h',68,-151,8.2,17,17,'Building Site'],
   ['commercial','building-c',0,-321,8.5,17,17,'Granny Cheetah Apartments'],
@@ -112,12 +112,18 @@ site('commercial','building-m',-35,-219,8.5,17,16);
 site('commercial','building-n',0,-219,8.5,17,16);
 site('commercial','building-f',35,-219,8.5,17,16);
 
-// Crowdie contains three intentionally different clusters: 4, 6 and 7 homes.
-// Narrow house models keep paths and sidewalks clear within each block.
+// The narrow transition block is inhabited too: it no longer leaves a blank
+// row between Sunny Farm / North Town and the first northern neighborhoods.
+for (const [x,z,type] of [
+  [-98,-259,'a'],[-98,-247,'c'],[-67,-253,'h'],[-35,-253,'k'],[0,-253,'l'],
+  [35,-253,'p'],[68,-253,'q'],[105,-253,'a'],
+]) houseSite(type,x,z);
+
+// Crowdie has three distinct tight clusters instead of one house per lot.
 export const CROWDIE_HOUSE_GROUPS = Object.freeze([
-  [[-98,-326],[-98,-315],[-98,-293],[-98,-281]],
-  [[-72,-326],[-62,-326],[-72,-315],[-62,-315],[-72,-287],[-62,-287]],
-  [[-39,-326],[-29,-326],[-39,-315],[-29,-315],[-39,-293],[-29,-293],[-39,-281]],
+  [[-109,-318],[-97,-318],[-109,-304],[-97,-304]],
+  [[-73,-321],[-61,-321],[-73,-309],[-61,-309],[-73,-297],[-61,-297]],
+  [[-42,-321],[-30,-321],[-42,-309],[-30,-309],[-42,-297],[-30,-297],[-42,-285]],
 ]);
 const compactHomes = ['a','c','h','k','l','p','q'];
 let newHomeIndex = 0;
@@ -125,50 +131,65 @@ for (const group of CROWDIE_HOUSE_GROUPS) for (const [x,z] of group) {
   houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
 }
 
-// A U of tall buildings frames Crowdiecity's open middle block.
+// Crowdiecity's seven tall buildings make a real U: two continuous legs and
+// a three-tower base, with a clear open court between the upper legs.
 export const CROWDIECITY_TOWERS = Object.freeze([
-  [35,-321],[68,-321],[105,-321],[35,-287],[105,-287],
+  [68,-319],[104,-319],[68,-303],[104,-303],[68,-287],[86,-287],[104,-287],
 ]);
 for (const [x,z] of CROWDIECITY_TOWERS) {
   if (BUILDING_SITES.some(entry => entry.x === x && entry.z === z)) continue;
-  site('commercial',`building-skyscraper-${newHomeIndex++ % 2 ? 'b' : 'd'}`,x,z,8.5,17,17);
+  site('commercial',`building-skyscraper-${newHomeIndex++ % 2 ? 'b' : 'd'}`,x,z,8.5,12.5,12.5);
 }
-houseSite('a',68,-287);
+for (const z of [-321,-303,-285]) site('commercial',`building-${newHomeIndex++ % 2 ? 'f' : 'g'}`,35,z,8.5,12.5,12.5);
 
-// Fill the five other neighborhoods with their own mix of low homes, shops,
-// workshops and towers. Mission buildings above anchor the named districts.
+// Skyline Court gets the turned H from the user's sketch: two three-building
+// arms and one center connector, all within the same large parcel.
+export const SKYLINE_H_TOWERS = Object.freeze([
+  [68,-456],[104,-456],[68,-440],[86,-440],[104,-440],[68,-424],[104,-424],
+]);
+for (const [x,z] of SKYLINE_H_TOWERS) {
+  if (BUILDING_SITES.some(entry => entry.x === x && entry.z === z)) continue;
+  site('commercial',`building-skyscraper-${newHomeIndex++ % 2 ? 'b' : 'd'}`,x,z,8.5,12.5,12.5);
+}
+for (const z of [-457,-423]) site('commercial','building-skyscraper-e',35,z,8.5,17,17);
+
+// Brickworks mixes rows of workshops with smaller sheds; Market Mile groups
+// shops around its local street rather than scattering them across empty cells.
 for (const [pack,name,x,z,scale,width,depth] of [
   ['industrial','building-p',35,-389,8.2,17,17],
   ['industrial','building-q',35,-355,8.2,17,17],
   ['industrial','building-r',68,-355,8.2,17,17],
   ['industrial','building-s',105,-355,8.2,17,17],
-  ['commercial','building-skyscraper-b',35,-457,8.5,17,17],
-  ['commercial','building-skyscraper-d',35,-423,8.5,17,17],
-  ['commercial','building-skyscraper-e',68,-423,8.5,17,17],
-  ['commercial','building-skyscraper-b',105,-423,8.5,17,17],
-  ['commercial','building-skyscraper-d',105,-457,8.5,17,17],
-  ['commercial','building-f',68,-525,8.5,17,17],
-  ['commercial','building-g',105,-525,8.5,17,17],
-  ['commercial','building-h',35,-559,8.5,17,17],
-  ['commercial','building-i',68,-559,8.5,17,17],
-  ['commercial','building-j',105,-559,8.5,17,17],
-  ['commercial','building-k',35,-491,8.5,17,17],
-  ['commercial','building-m',68,-491,8.5,17,17],
-  ['commercial','building-n',105,-491,8.5,17,17],
+  ['industrial','building-t',105,-372,8.2,12.5,12.5],
+  ['industrial','building-q',122,-389,8.2,12.5,12.5],
+  ['industrial','building-o',122,-355,8.2,12.5,12.5],
+  ['commercial','building-f',68,-525,8.5,12.5,13],
+  ['commercial','building-g',85,-525,8.5,12.5,13],
+  ['commercial','building-h',102,-525,8.5,12.5,13],
+  ['commercial','building-k',68,-491,8.5,12.5,13],
+  ['commercial','building-m',85,-491,8.5,12.5,13],
+  ['commercial','building-n',102,-491,8.5,12.5,13],
 ]) site(pack,name,x,z,scale,width,depth);
 
-// Ganton sits in the far corner. Small houses trace the two arms of an L,
-// echoing the supplied street-map reference without using tall buildings.
+// Ganton is a corner cul-de-sac: small homes flank its westbound L street,
+// then turn up the connecting arm. There are no tall buildings here.
 export const GANTON_HOMES = Object.freeze([
-  [-98,-559],[-67,-559],[-35,-559],[0,-559],
-  [-98,-525],[-98,-491],[-67,-525],[-35,-525],
+  [-109,-560],[-95,-560],[-81,-560],[-67,-560],[-53,-560],[-39,-560],
+  [-109,-524],[-95,-524],[-81,-524],[-67,-524],[-53,-524],[-39,-524],
+  [-36,-508],[-36,-491],[0,-524],[0,-508],[0,-491],
 ]);
 for (const [x,z] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
 
 for (const [x,z] of [
-  [-98,-389],[-67,-389],[-35,-389],[0,-389],[-98,-355],[-67,-355],[0,-355],
-  [-98,-457],[-67,-457],[-98,-423],[-67,-423],[-35,-423],[0,-423],
+  [-112,-389],[-98,-389],[-82,-389],[-67,-389],[-35,-389],[0,-389],
+  [-112,-355],[-98,-355],[-82,-355],[-67,-355],[0,-355],
+  [-35,-440],[-35,-423],[0,-423],
 ]) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
+
+export const NEIGHBORHOOD_PARKS = Object.freeze([
+  {name:'Cedar Green',x:-84,z:-440,radius:22},
+  {name:'Ganton Grove',x:-96,z:-491,radius:12},
+]);
 
 export const EXPANSION_LANDMARKS = NEW_DISTRICTS.map(district => ({
   title: district.name.toUpperCase(), x: district.center[0], z: district.center[1],
