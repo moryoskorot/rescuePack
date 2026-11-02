@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
-  AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_CURVES, ROAD_ROUND_ENDS, ROAD_Y, PAVEMENT_Y, DECK_Y,
+  AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_CURVES, ROAD_ROUND_ENDS, ROAD_HALF_WIDTH, SIDEWALK_OUTER, ROAD_Y, PAVEMENT_Y, DECK_Y,
   DRIVEWAYS, HYDRANT_LOCATIONS, LOTS, LAND_BOUNDS, PIER_BOUNDS,
   GROUND_ZONES, createRoadSurfaceRects, groundZoneAt, insideRect, isRoad, isDriveway, isReserved,
   surfaceAt, getSurfaceHeight, footprintOnLandOrPier, vehicleFootprint,
@@ -60,7 +60,7 @@ test('street ends meet another street, curved bend or rounded turnaround', () =>
 test('curved roads and round ends use exact shared collision and rendering geometry', () => {
   const palette=Object.fromEntries(['grass','asphalt','pavement','line','wood','stone','urbanGround','civicGround','industrialGround','marketGround'].map(name=>[name,new THREE.MeshStandardMaterial()]));
   const group=buildWorldSurfaces(THREE,palette);
-  assert.equal(ROAD_CURVES.length,2);
+  assert.equal(ROAD_CURVES.length,11, 'every endpoint-to-endpoint turn is a tangent curve');
   assert.equal(ROAD_ROUND_ENDS.length,2);
   assert.ok(group.children.some(child=>child.geometry?.type==='BufferGeometry' && child.geometry.getAttribute('position')?.count===66));
   assert.ok(group.children.some(child=>child.geometry?.type==='CircleGeometry' && child.geometry.parameters.radius===8));
@@ -71,6 +71,12 @@ test('curved roads and round ends use exact shared collision and rendering geome
 
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {
   const rectangles = createRoadSurfaceRects();
+  const inCurve = (x, z, halfWidth = ROAD_HALF_WIDTH) => ROAD_CURVES.some(curve => {
+    const angle = Math.atan2(z - curve.z, x - curve.x);
+    const normalized = angle < 0 ? angle + Math.PI * 2 : angle;
+    return normalized >= curve.start && normalized <= curve.end
+      && Math.abs(Math.hypot(x - curve.x, z - curve.z) - curve.radius) <= halfWidth;
+  });
   for (let i = 0; i < rectangles.length; i++) for (let j = i + 1; j < rectangles.length; j++) {
     const a = rectangles[i], b = rectangles[j];
     const width = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX);
@@ -80,6 +86,7 @@ test('road and sidewalk faces form a disjoint partition, including every interse
   for (const x of AVENUE_X) for (const z of STREET_Z) {
     if (z < -430) continue; // northern bends are exact meshes, not rectangles
     const point = {x:x+.013,z:z+.017};
+    if (inCurve(point.x, point.z)) continue; // an elbow is an exact arc mesh
     const roadFaces = rectangles.filter(rect => rect.kind === 'road' && insideRect(point.x, point.z, rect));
     assert.equal(roadFaces.length, Number(isRoad(point.x,point.z)), `junction ${x},${z} has the correct asphalt face`);
   }
@@ -90,8 +97,8 @@ test('road and sidewalk faces form a disjoint partition, including every interse
   for (let x = -121.73; x < 122; x += 1.47) for (let z = -81.71; z < 76; z += 1.31) {
     const matches = rectangles.filter(rect => insideRect(x, z, rect));
     assert.ok(matches.length <= 1);
-    if (isRoad(x, z)) assert.equal(matches[0]?.kind, 'road', `missing asphalt at ${x},${z}`);
-    if (isReserved(x, z)) assert.equal(matches.length, 1, `reserved surface missing at ${x},${z}`);
+    if (isRoad(x, z) && !inCurve(x, z)) assert.equal(matches[0]?.kind, 'road', `missing asphalt at ${x},${z}`);
+    if (isReserved(x, z) && !inCurve(x, z, SIDEWALK_OUTER)) assert.equal(matches.length, 1, `reserved surface missing at ${x},${z}`);
   }
 });
 

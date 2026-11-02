@@ -5,30 +5,42 @@ export const STREET_Z = Object.freeze([-542, -508, -474, -440, -406, -372, -338,
 // branching spines, short local streets and a cul-de-sac instead of a grid.
 export const AVENUE_SEGMENTS = Object.freeze([
   {x:-112,minZ:-532,maxZ:-450},
-  {x:-112,minZ:-236,maxZ:70}, {x:-84,minZ:-338,maxZ:-30},
-  {x:-51,minZ:-406,maxZ:-338}, {x:-51,minZ:-236,maxZ:70},
-  {x:-18,minZ:-542,maxZ:38},
-  {x:18,minZ:-474,maxZ:70}, {x:52,minZ:-542,maxZ:70},
-  {x:85,minZ:-406,maxZ:-338}, {x:85,minZ:-236,maxZ:5},
-  {x:125,minZ:-338,maxZ:70},
+  {x:-112,minZ:-226,maxZ:60}, {x:-84,minZ:-328,maxZ:-30},
+  {x:-51,minZ:-396,maxZ:-338}, {x:-51,minZ:-236,maxZ:70},
+  {x:-18,minZ:-532,maxZ:38},
+  {x:18,minZ:-474,maxZ:70}, {x:52,minZ:-532,maxZ:70},
+  {x:85,minZ:-396,maxZ:-338}, {x:85,minZ:-236,maxZ:5},
+  {x:125,minZ:-328,maxZ:60},
 ].map(road => Object.freeze(road)));
 export const STREET_SEGMENTS = Object.freeze([
-  {z:-542,minX:-102,maxX:-18}, {z:-542,minX:52,maxX:105},
+  {z:-542,minX:-102,maxX:-28}, {z:-542,minX:62,maxX:105},
   {z:-508,minX:52,maxX:105},
   {z:-474,minX:-18,maxX:52}, {z:-440,minX:-102,maxX:52},
-  {z:-406,minX:-51,maxX:85}, {z:-372,minX:-51,maxX:85},
-  {z:-338,minX:-84,maxX:125}, {z:-270,minX:-84,maxX:125},
-  ...STREET_Z.filter(z => z >= -236).map(z => ({z,minX:z===5?-51:-112,maxX:z===38?52:125})),
+  {z:-406,minX:-41,maxX:75}, {z:-372,minX:-51,maxX:85},
+  {z:-338,minX:-74,maxX:115}, {z:-270,minX:-84,maxX:125},
+  ...STREET_Z.filter(z => z >= -236).map(z => ({z,minX:z===5?-51:(z===-236||z===70)?-102:-112,maxX:z===38?52:z===70?115:125})),
 ].map(road => Object.freeze(road)));
-// Ganton's western road follows two real quarter-circle bends. The eastern
-// Market Mile lanes finish in circular bulbs, never square asphalt pads.
-// When a map edge turns 90 degrees, add a ROAD_CURVES entry that is tangent
-// to both straight segments. Do not fake the corner with two perpendicular
-// ROAD_SEGMENTS: their square road ends leave visible broken asphalt/sidewalk
-// edges and make the collision surface disagree with the rendered road.
+// Every endpoint-to-endpoint 90-degree turn is a real quarter-circle. Its two
+// straight segments stop at the curve's tangent points, one radius before the
+// virtual square corner. Never place two perpendicular segment ends together:
+// that creates the broken outer asphalt/sidewalk corner visible in the map.
+// ROAD_CURVES is shared by collision, surface classification, map rendering,
+// and the 3D road mesh, so a turn must be defined here rather than faked by
+// visually adjacent segment endpoints.
 export const ROAD_CURVES = Object.freeze([
+  // Ganton's western loop.
   {x:-102,z:-532,radius:10,start:Math.PI,end:Math.PI*1.5},
   {x:-102,z:-450,radius:10,start:Math.PI*.5,end:Math.PI},
+  // Endpoint-to-endpoint turns in the northern districts.
+  {x:-28,z:-532,radius:10,start:Math.PI*1.5,end:Math.PI*2},
+  {x:62,z:-532,radius:10,start:Math.PI,end:Math.PI*1.5},
+  {x:-41,z:-396,radius:10,start:Math.PI,end:Math.PI*1.5},
+  {x:75,z:-396,radius:10,start:Math.PI*1.5,end:Math.PI*2},
+  {x:-74,z:-328,radius:10,start:Math.PI,end:Math.PI*1.5},
+  {x:115,z:-328,radius:10,start:Math.PI*1.5,end:Math.PI*2},
+  {x:-102,z:-226,radius:10,start:Math.PI,end:Math.PI*1.5},
+  {x:-102,z:60,radius:10,start:Math.PI*.5,end:Math.PI},
+  {x:115,z:60,radius:10,start:0,end:Math.PI*.5},
 ].map(curve => Object.freeze(curve)));
 export const ROAD_ROUND_ENDS = Object.freeze([
   {x:105,z:-542,radius:8}, {x:105,z:-508,radius:8},
@@ -177,13 +189,20 @@ export function createRoadSurfaceRects() {
 
 // The old town has regular lots; northern blocks are shaped individually.
 const ORIGINAL_STREET_Z = STREET_Z.filter(z => z >= -236);
-export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) => ORIGINAL_STREET_Z.slice(0, -1).map((north, row) => ({
-  id: `${column}-${row}`, column, row,
-  minX: left + SIDEWALK_OUTER + .5,
-  maxX: AVENUE_X[column + 1] - SIDEWALK_OUTER - .5,
-  minZ: north + SIDEWALK_OUTER + .5,
-  maxZ: ORIGINAL_STREET_Z[row + 1] - SIDEWALK_OUTER - .5,
-}))));
+export const LOTS = Object.freeze(AVENUE_X.slice(0, -1).flatMap((left, column) => ORIGINAL_STREET_Z.slice(0, -1).map((north, row) => {
+  const lot = {
+    id: `${column}-${row}`, column, row,
+    minX: left + SIDEWALK_OUTER + .5,
+    maxX: AVENUE_X[column + 1] - SIDEWALK_OUTER - .5,
+    minZ: north + SIDEWALK_OUTER + .5,
+    maxZ: ORIGINAL_STREET_Z[row + 1] - SIDEWALK_OUTER - .5,
+  };
+  // These rectangular lots sit beside rounded block corners, so keep their
+  // corners outside the curve's wider pavement band.
+  if (lot.id === '0-0') lot.minX += 11;
+  if (lot.id === '0-8' || lot.id === '6-8') lot.maxZ -= 9;
+  return lot;
+})));
 
 // The full hydrant, including side caps, fits within the 1.65m sidewalk.
 // Main's original hydrant should use scale .65 (its original radius is .93m).

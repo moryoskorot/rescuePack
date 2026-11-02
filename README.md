@@ -41,13 +41,14 @@ Each one-second tick gives every burning building a 30% chance to gain 1%. A bui
 
 ## City-road authoring
 
-For a 90-degree road corner, use a tangent `ROAD_CURVES` quarter-circle in
-[`src/world-layout.js`](src/world-layout.js), joined to the two straight road
-segments. Do not place two perpendicular road ends at the corner: that creates
-the broken square asphalt and sidewalk edges shown by the old map layout. The
-curve is shared by road collision, surface classification, map rendering, and
-the 3D road mesh, so new turns must be added there rather than as visually
-adjacent segment endpoints.
+For every endpoint-to-endpoint 90-degree road turn, use a tangent
+`ROAD_CURVES` quarter-circle in [`src/world-layout.js`](src/world-layout.js).
+Stop both straight segments at the curve's tangent points—one curve radius
+before the virtual square corner. Do not place two perpendicular road ends at
+that corner: although their inner edges touch, their outer asphalt and sidewalk
+edges form a visibly broken square join. A true curve keeps the road, pavement,
+collision surface, map rendering, and 3D mesh aligned. This applies to every
+turn; ordinary crossings and T-junctions remain straight intersections.
 
 ```sh
 pnpm test
