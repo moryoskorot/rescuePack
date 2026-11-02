@@ -36,9 +36,10 @@ test('every suburban house uses the same source scale and fits its full model in
     const sourceDepth=position.max[2]-position.min[2];
     assert.ok(Math.abs(sourceWidth-SUBURBAN_MODEL_FOOTPRINTS[type][0])<.005,`${site.name} source width changed`);
     assert.ok(Math.abs(sourceDepth-SUBURBAN_MODEL_FOOTPRINTS[type][1])<.005,`${site.name} source depth changed`);
-    const rotated=Math.abs(Math.sin(site.rotation))>.5;
-    assert.ok(site.width>=(rotated?sourceDepth:sourceWidth)*site.scale,`${site.name} is squeezed across its lot`);
-    assert.ok(site.depth>=(rotated?sourceWidth:sourceDepth)*site.scale,`${site.name} is squeezed along its lot`);
+    const width=(Math.abs(Math.cos(site.rotation))*sourceWidth+Math.abs(Math.sin(site.rotation))*sourceDepth)*site.scale;
+    const depth=(Math.abs(Math.sin(site.rotation))*sourceWidth+Math.abs(Math.cos(site.rotation))*sourceDepth)*site.scale;
+    assert.ok(site.width>=width,`${site.name} is squeezed across its lot`);
+    assert.ok(site.depth>=depth,`${site.name} is squeezed along its lot`);
     for(let x=site.x-site.width/2;x<=site.x+site.width/2;x+=.25) for(let z=site.z-site.depth/2;z<=site.z+site.depth/2;z+=.25) {
       assert.ok(insideRect(x,z,LAND_BOUNDS),`${site.name} extends off land`);
       assert.equal(isReserved(x,z),false,`${site.name} occupies sidewalk at ${x},${z}`);

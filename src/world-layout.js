@@ -4,6 +4,7 @@ export const STREET_Z = Object.freeze([-542, -508, -474, -440, -406, -372, -338,
 // The old town keeps its connected streets. The northern neighborhoods use
 // branching spines, short local streets and a cul-de-sac instead of a grid.
 export const AVENUE_SEGMENTS = Object.freeze([
+  {x:-112,minZ:-532,maxZ:-450},
   {x:-112,minZ:-236,maxZ:70}, {x:-84,minZ:-338,maxZ:-30},
   {x:-51,minZ:-406,maxZ:-338}, {x:-51,minZ:-236,maxZ:70},
   {x:-18,minZ:-542,maxZ:38},
@@ -12,21 +13,22 @@ export const AVENUE_SEGMENTS = Object.freeze([
   {x:125,minZ:-338,maxZ:70},
 ].map(road => Object.freeze(road)));
 export const STREET_SEGMENTS = Object.freeze([
-  {z:-542,minX:-98,maxX:-18}, {z:-542,minX:52,maxX:105},
+  {z:-542,minX:-102,maxX:-18}, {z:-542,minX:52,maxX:105},
   {z:-508,minX:52,maxX:105},
-  {z:-474,minX:-18,maxX:52}, {z:-440,minX:-18,maxX:52},
+  {z:-474,minX:-18,maxX:52}, {z:-440,minX:-102,maxX:52},
   {z:-406,minX:-51,maxX:85}, {z:-372,minX:-51,maxX:85},
   {z:-338,minX:-84,maxX:125}, {z:-270,minX:-84,maxX:125},
   ...STREET_Z.filter(z => z >= -236).map(z => ({z,minX:z===5?-51:-112,maxX:z===38?52:125})),
 ].map(road => Object.freeze(road)));
-// A widened turn at the Ganton dead end is a deliberate destination, not an
-// asphalt stub cut off by the edge of the world.
-export const ROAD_PADS = Object.freeze([
-  {minX:-108,maxX:-98,minZ:-549,maxZ:-535},
-  {minX:-111,maxX:-108,minZ:-546,maxZ:-538},
-  {minX:105,maxX:113,minZ:-514,maxZ:-502},
-  {minX:105,maxX:113,minZ:-548,maxZ:-536},
-].map(pad => Object.freeze(pad)));
+// Ganton's western road follows two real quarter-circle bends. The eastern
+// Market Mile lanes finish in circular bulbs, never square asphalt pads.
+export const ROAD_CURVES = Object.freeze([
+  {x:-102,z:-532,radius:10,start:Math.PI,end:Math.PI*1.5},
+  {x:-102,z:-450,radius:10,start:Math.PI*.5,end:Math.PI},
+].map(curve => Object.freeze(curve)));
+export const ROAD_ROUND_ENDS = Object.freeze([
+  {x:105,z:-542,radius:8}, {x:105,z:-508,radius:8},
+].map(end => Object.freeze(end)));
 export const ROAD_HALF_WIDTH = 4.6;
 export const SIDEWALK_OUTER = 6.25;
 export const ROAD_Y = .12;
@@ -48,10 +50,19 @@ export function insideRect(x, z, rect, padding = 0) {
   return x >= rect.minX - padding && x <= rect.maxX + padding && z >= rect.minZ - padding && z <= rect.maxZ + padding;
 }
 
-function inRoadNetwork(x, z, halfWidth) {
+function inCurvedRoad(x, z, halfWidth) {
+  return ROAD_CURVES.some(curve => {
+    const angle = Math.atan2(z-curve.z,x-curve.x);
+    const normalized = angle < 0 ? angle + Math.PI*2 : angle;
+    return normalized >= curve.start && normalized <= curve.end
+      && Math.abs(Math.hypot(x-curve.x,z-curve.z)-curve.radius) <= halfWidth;
+  }) || ROAD_ROUND_ENDS.some(end => Math.hypot(x-end.x,z-end.z) <= end.radius + halfWidth - ROAD_HALF_WIDTH);
+}
+
+function inRoadNetwork(x, z, halfWidth, includeCurves = true) {
   return AVENUE_SEGMENTS.some(road => Math.abs(x - road.x) <= halfWidth && z >= road.minZ && z <= road.maxZ)
     || STREET_SEGMENTS.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX)
-    || ROAD_PADS.some(pad => insideRect(x,z,pad,halfWidth-ROAD_HALF_WIDTH));
+    || (includeCurves && inCurvedRoad(x,z,halfWidth));
 }
 
 export function isRoad(x, z, padding = 0) {
@@ -96,17 +107,13 @@ export function createRoadSurfaceRects() {
   for (const rect of DRIVEWAYS) {
     xCuts.add(rect.minX); xCuts.add(rect.maxX); zCuts.add(rect.minZ); zCuts.add(rect.maxZ);
   }
-  for (const pad of ROAD_PADS) for (const offset of [0, SIDEWALK_OUTER-ROAD_HALF_WIDTH]) {
-    xCuts.add(pad.minX-offset); xCuts.add(pad.maxX+offset);
-    zCuts.add(pad.minZ-offset); zCuts.add(pad.maxZ+offset);
-  }
   const xs = [...xCuts].sort((a, b) => a - b), zs = [...zCuts].sort((a, b) => a - b);
   const rectangles = [], active = new Map();
   for (let iz = 0; iz < zs.length - 1; iz++) {
     const row = [];
     for (let ix = 0; ix < xs.length - 1; ix++) {
       const x = (xs[ix] + xs[ix + 1]) / 2, z = (zs[iz] + zs[iz + 1]) / 2;
-      const kind = isRoad(x, z) ? 'road' : isDriveway(x, z) ? 'driveway' : inRoadNetwork(x, z, SIDEWALK_OUTER) ? 'pavement' : null;
+      const kind = inRoadNetwork(x,z,ROAD_HALF_WIDTH,false) ? 'road' : isDriveway(x, z) ? 'driveway' : inRoadNetwork(x, z, SIDEWALK_OUTER,false) ? 'pavement' : null;
       if (!kind) continue;
       const previous = row[row.length - 1];
       if (previous?.kind === kind && previous.maxX === xs[ix]) previous.maxX = xs[ix + 1];
@@ -225,9 +232,41 @@ export function buildWorldSurfaces(THREE, materials) {
   water.name = 'Ocean beyond the shore';
   for (const rect of createRoadSurfaceRects()) plane(rect, rect.kind === 'pavement' ? PAVEMENT_Y : ROAD_Y, rect.kind === 'road' ? materials.asphalt : materials.pavement);
 
+  // Exact annular meshes keep the bends smooth at driving distance. Their
+  // straight tangent pieces are supplied by the usual street rectangles.
+  function arcBand(curve, inner, outer, y, mat) {
+    const vertices = [], indices = [], steps = 32;
+    for (let i=0;i<=steps;i++) {
+      const angle=curve.start+(curve.end-curve.start)*i/steps;
+      for (const radius of [inner,outer]) vertices.push(curve.x+Math.cos(angle)*radius,y,curve.z+Math.sin(angle)*radius);
+      if (i<steps) { const n=i*2; indices.push(n,n+1,n+3,n,n+3,n+2); }
+    }
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    geometry.setIndex(indices); geometry.computeVertexNormals();
+    const mesh=new THREE.Mesh(geometry,mat.clone()); mesh.material.side=THREE.DoubleSide;
+    mesh.receiveShadow=true; root.add(mesh);
+  }
+  for (const curve of ROAD_CURVES) {
+    arcBand(curve,curve.radius-SIDEWALK_OUTER,curve.radius-ROAD_HALF_WIDTH,PAVEMENT_Y,materials.pavement);
+    arcBand(curve,curve.radius+ROAD_HALF_WIDTH,curve.radius+SIDEWALK_OUTER,PAVEMENT_Y,materials.pavement);
+    arcBand(curve,curve.radius-ROAD_HALF_WIDTH,curve.radius+ROAD_HALF_WIDTH,ROAD_Y,materials.asphalt);
+  }
+  for (const end of ROAD_ROUND_ENDS) {
+    const ring=new THREE.Mesh(new THREE.RingGeometry(end.radius,end.radius+SIDEWALK_OUTER-ROAD_HALF_WIDTH,48),materials.pavement);
+    ring.rotation.x=-Math.PI/2; ring.position.set(end.x,PAVEMENT_Y,end.z); ring.receiveShadow=true; root.add(ring);
+    const asphalt=new THREE.Mesh(new THREE.CircleGeometry(end.radius,48),materials.asphalt);
+    asphalt.rotation.x=-Math.PI/2; asphalt.position.set(end.x,ROAD_Y,end.z); asphalt.receiveShadow=true; root.add(asphalt);
+  }
+
   const markingMaterial = materials.line.clone();
   markingMaterial.polygonOffset = true; markingMaterial.polygonOffsetFactor = -1; markingMaterial.polygonOffsetUnits = -2;
   const mark = (x, z, w, d) => plane({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 }, ROAD_Y + .012, markingMaterial);
+  for (const curve of ROAD_CURVES) for (const [from,to] of [[.17,.35],[.61,.79]]) {
+    const sweep=curve.end-curve.start;
+    arcBand({...curve,start:curve.start+sweep*from,end:curve.start+sweep*to},
+      curve.radius-.08,curve.radius+.08,ROAD_Y+.014,markingMaterial);
+  }
   for (const road of AVENUE_SEGMENTS) for (let z = road.minZ + 4; z < road.maxZ - 3; z += 8) {
     if (STREET_SEGMENTS.every(crossing => z < crossing.z - 8.6 || z > crossing.z + 8.6 || road.x < crossing.minX || road.x > crossing.maxX)) mark(road.x, z, .16, 3);
   }

@@ -52,7 +52,10 @@ test('Crowdie clusters, Crowdiecity towers, Ganton homes and delivery are placed
   assert.deepEqual(SKYLINE_H_TOWERS.filter(([x]) => x === 86), [[86,-440]], 'the H has one center bridge');
   for (const [x,z] of GANTON_HOMES) assert.ok(BUILDING_SITES.some(site => site.x === x && site.z === z && site.pack === 'suburban'));
   assert.ok(GANTON_HOMES.length >= 12);
-  assert.ok(isRoad(-90,-542) && isRoad(-18,-510) && !isRoad(-90,-510), 'Ganton follows an L street');
+  assert.ok(isRoad(-90,-542) && isRoad(-112,-510) && isRoad(-90,-440)
+    && !isRoad(-90,-510), 'Ganton follows a curved western loop');
+  assert.ok(GANTON_HOMES.filter(([, ,rotation])=>Math.abs(rotation??0)===Math.PI/4).length>=3,
+    'diagonal homes frame Ganton');
   assert.ok(BUILDING_SITES.filter(site => site.z > -270 && site.z < -236).length >= 7, 'the old gap has homes');
   for (const park of NEIGHBORHOOD_PARKS) assert.ok(BUILDING_SITES.every(site => Math.hypot(site.x-park.x,site.z-park.z) >= park.radius-3), park.name);
   assert.equal(districtAt(GANTON_DELIVERY_MISSION.target), 'Ganton');

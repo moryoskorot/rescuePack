@@ -1,7 +1,8 @@
 import {
-  BOARDWALK_BOUNDS, LAND_BOUNDS, PIER_BOUNDS, createRoadSurfaceRects,
+  BOARDWALK_BOUNDS, LAND_BOUNDS, PIER_BOUNDS, ROAD_CURVES, ROAD_ROUND_ENDS,
+  ROAD_HALF_WIDTH, SIDEWALK_OUTER, createRoadSurfaceRects,
 } from './world-layout.js';
-import { BUILDING_SITES, CIVIC_ENVELOPES, NEIGHBORHOOD_PARKS } from './city-plan.js';
+import { BUILDING_SITES, CIVIC_ENVELOPES, NEIGHBORHOOD_PARKS, SUBURBAN_MODEL_FOOTPRINTS } from './city-plan.js';
 import { NEW_DISTRICTS, districtAt } from './districts.js';
 
 const MAP_BOUNDS = Object.freeze({
@@ -27,6 +28,8 @@ export function worldMapFeatures() {
   return {
     bounds: MAP_BOUNDS,
     roads: createRoadSurfaceRects(),
+    roadCurves: ROAD_CURVES,
+    roadRoundEnds: ROAD_ROUND_ENDS,
     buildings: BUILDING_SITES,
     civic: CIVIC_ENVELOPES,
     parks: NEIGHBORHOOD_PARKS,
@@ -68,6 +71,20 @@ export function createWorldMap(canvas) {
     context.fillStyle = color; context.fill();
     context.lineWidth = 2; context.strokeStyle = stroke; context.stroke();
   }
+  function curvedRoad(frame, width, color) {
+    context.strokeStyle=color; context.lineWidth=width*2*frame.scale;
+    context.lineCap='butt';
+    for (const curve of features.roadCurves) {
+      const center=worldToMap(curve,features.bounds,frame);
+      context.beginPath(); context.arc(center.x,center.y,curve.radius*frame.scale,curve.start,curve.end);
+      context.stroke();
+    }
+    for (const end of features.roadRoundEnds) {
+      const center=worldToMap(end,features.bounds,frame);
+      context.beginPath(); context.arc(center.x,center.y,(end.radius+width-ROAD_HALF_WIDTH)*frame.scale,0,Math.PI*2);
+      context.fillStyle=color; context.fill();
+    }
+  }
   function draw({ player, fires = [], mission = null, elapsed = 0 }) {
     const { width, height } = canvas.getBoundingClientRect();
     if (!width || !height) return;
@@ -92,11 +109,21 @@ export function createWorldMap(canvas) {
     for (const road of features.roads.filter(road => road.kind !== 'road')) {
       drawRectangle(road, frame, road.kind === 'driveway' ? '#b5b9bc' : '#e4ded1');
     }
+    curvedRoad(frame,SIDEWALK_OUTER,'#e4ded1');
     for (const road of features.roads.filter(road => road.kind === 'road')) drawRectangle(road, frame, '#708493');
+    curvedRoad(frame,ROAD_HALF_WIDTH,'#708493');
     for (const site of features.buildings) {
       const color = site.questName ? '#f7d170' : site.pack === 'suburban' ? '#f5e5bd'
         : site.pack === 'industrial' ? '#9fabb5' : site.pack === 'civic' ? '#acd9e8' : '#e6a88c';
-      drawRectangle({ minX: site.x - site.width / 2, maxX: site.x + site.width / 2,
+      if (site.pack === 'suburban' && Math.abs(Math.sin(site.rotation)) > .1) {
+        const [sourceWidth,sourceDepth]=SUBURBAN_MODEL_FOOTPRINTS[site.name.at(-1)];
+        const center=worldToMap(site,features.bounds,frame);
+        context.save(); context.translate(center.x,center.y); context.rotate(-site.rotation);
+        context.fillStyle=color;
+        context.fillRect(-sourceWidth*site.scale*frame.scale/2,-sourceDepth*site.scale*frame.scale/2,
+          sourceWidth*site.scale*frame.scale,sourceDepth*site.scale*frame.scale);
+        context.restore();
+      } else drawRectangle({ minX: site.x - site.width / 2, maxX: site.x + site.width / 2,
         minZ: site.z - site.depth / 2, maxZ: site.z + site.depth / 2 }, frame, color);
     }
     for (const site of features.civic) drawRectangle({ minX: site.x - site.width / 2,

@@ -28,9 +28,8 @@ export const SUBURBAN_MODEL_FOOTPRINTS = Object.freeze({
 });
 function houseSite(type,x,z,rotation=0) {
   const [sourceWidth,sourceDepth]=SUBURBAN_MODEL_FOOTPRINTS[type];
-  const quarterTurn=Math.abs(Math.sin(rotation))>.5;
-  const width=(quarterTurn?sourceDepth:sourceWidth)*SUBURBAN_HOUSE_SCALE+.1;
-  const depth=(quarterTurn?sourceWidth:sourceDepth)*SUBURBAN_HOUSE_SCALE+.1;
+  const width=(Math.abs(Math.cos(rotation))*sourceWidth+Math.abs(Math.sin(rotation))*sourceDepth)*SUBURBAN_HOUSE_SCALE+.1;
+  const depth=(Math.abs(Math.sin(rotation))*sourceWidth+Math.abs(Math.cos(rotation))*sourceDepth)*SUBURBAN_HOUSE_SCALE+.1;
   site('suburban',`building-type-${type}`,x,z,SUBURBAN_HOUSE_SCALE,width,depth,rotation);
 }
 let house = 0;
@@ -171,24 +170,25 @@ for (const [pack,name,x,z,scale,width,depth] of [
   ['commercial','building-n',102,-491,8.5,12.5,13],
 ]) site(pack,name,x,z,scale,width,depth);
 
-// Ganton is a corner cul-de-sac: small homes flank its westbound L street,
-// then turn up the connecting arm. There are no tall buildings here.
+// Ganton's small houses frame a curved western loop. The diagonal homes at
+// the outer corners echo the neighborhood in the reference image.
 export const GANTON_HOMES = Object.freeze([
-  [-109,-560],[-95,-560],[-81,-560],[-67,-560],[-53,-560],[-39,-560],
-  [-109,-524],[-95,-524],[-81,-524],[-67,-524],[-53,-524],[-39,-524],
+  [-119,-560,Math.PI/4],[-95,-560],[-81,-560],[-67,-560],[-53,-560],[-39,-560],[-4,-560,-Math.PI/4],
+  [-95,-524],[-81,-524],[-67,-524],[-53,-524],[-39,-524],
   [-36,-508],[-36,-491],[0,-524],[0,-508],[0,-491],
+  [-51,-480,Math.PI/4],
 ]);
-for (const [x,z] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
+for (const [x,z,rotation=0] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z,rotation);
 
 for (const [x,z] of [
   [-112,-389],[-98,-389],[-82,-389],[-67,-389],[-35,-389],[0,-389],
   [-112,-355],[-98,-355],[-82,-355],[-67,-355],[0,-355],
-  [-35,-440],[-35,-423],[0,-423],
+  [-35,-423],[0,-423],
 ]) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
 
 export const NEIGHBORHOOD_PARKS = Object.freeze([
-  {name:'Cedar Green',x:-84,z:-440,radius:22},
-  {name:'Ganton Grove',x:-96,z:-491,radius:12},
+  {name:'Cedar Green',x:-84,z:-463,radius:17},
+  {name:'Ganton Grove',x:-84,z:-491,radius:11},
 ]);
 
 export const EXPANSION_LANDMARKS = NEW_DISTRICTS.map(district => ({

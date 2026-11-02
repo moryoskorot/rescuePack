@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BUILDING_SITES } from '../src/city-plan.js';
 import { NEW_DISTRICTS } from '../src/districts.js';
-import { LAND_BOUNDS, PIER_BOUNDS, createRoadSurfaceRects } from '../src/world-layout.js';
+import { LAND_BOUNDS, PIER_BOUNDS, ROAD_CURVES, ROAD_ROUND_ENDS, createRoadSurfaceRects } from '../src/world-layout.js';
 import { mapFrame, worldMapFeatures, worldToMap } from '../src/world-map.js';
 
 test('the city map reads the world roads, buildings and districts', () => {
   const features = worldMapFeatures();
   assert.deepEqual(features.roads, createRoadSurfaceRects());
+  assert.equal(features.roadCurves,ROAD_CURVES);
+  assert.equal(features.roadRoundEnds,ROAD_ROUND_ENDS);
   assert.equal(features.buildings, BUILDING_SITES);
   assert.ok(features.parks.some(park => park.name === 'Cedar Green'));
   assert.equal(features.bounds.minZ, LAND_BOUNDS.minZ);

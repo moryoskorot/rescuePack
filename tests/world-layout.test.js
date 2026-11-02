@@ -2,36 +2,57 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
-  AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_PADS, ROAD_Y, PAVEMENT_Y, DECK_Y,
+  AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_CURVES, ROAD_ROUND_ENDS, ROAD_Y, PAVEMENT_Y, DECK_Y,
   DRIVEWAYS, HYDRANT_LOCATIONS, LOTS, LAND_BOUNDS, PIER_BOUNDS,
   createRoadSurfaceRects, insideRect, isRoad, isDriveway, isReserved,
   surfaceAt, getSurfaceHeight, footprintOnLandOrPier, vehicleFootprint,
   buildWorldSurfaces,
 } from '../src/world-layout.js';
 
-test('northern streets form branches and Ganton has an L-shaped cul-de-sac', () => {
+test('northern streets form branches and Ganton has a curved western loop', () => {
   const originalArea = (145 - -130) * (85 - -91);
   const currentArea = (LAND_BOUNDS.maxX - LAND_BOUNDS.minX) * (LAND_BOUNDS.maxZ - LAND_BOUNDS.minZ);
   assert.ok(currentArea >= originalArea * 3.7);
   assert.ok(LAND_BOUNDS.minZ < -580);
   assert.equal(surfaceAt(-90, -542), 'road');
   assert.equal(surfaceAt(-18, -510), 'road');
+  assert.equal(surfaceAt(-112,-490),'road');
+  assert.equal(surfaceAt(-90,-440),'road');
+  assert.equal(surfaceAt(-102-Math.SQRT1_2*10,-532-Math.SQRT1_2*10),'road');
+  assert.equal(surfaceAt(-102-Math.SQRT1_2*10,-450+Math.SQRT1_2*10),'road');
+  assert.equal(surfaceAt(-122,-542),'grass','outside of the rounded corner remains lawn');
   assert.equal(surfaceAt(-90, -510), 'grass');
   assert.equal(surfaceAt(-90, -576), 'grass');
   assert.equal(isRoad(85, -440), false, 'Skyline Court is not cut into grid squares');
   assert.equal(surfaceAt(105, -525), 'grass');
 });
 
-test('street ends meet another street or a deliberate turnaround', () => {
+test('street ends meet another street, curved bend or rounded turnaround', () => {
+  const curveTangent=(x,z)=>ROAD_CURVES.some(curve => [curve.start,curve.end].some(angle =>
+    Math.hypot(x-curve.x-Math.cos(angle)*curve.radius,z-curve.z-Math.sin(angle)*curve.radius)<1e-8));
   for (const avenue of AVENUE_SEGMENTS) for (const z of [avenue.minZ, avenue.maxZ]) {
-    assert.ok(STREET_SEGMENTS.some(street => street.z === z && avenue.x >= street.minX && avenue.x <= street.maxX),
+    assert.ok(STREET_SEGMENTS.some(street => street.z === z && avenue.x >= street.minX && avenue.x <= street.maxX)
+      || curveTangent(avenue.x,z),
       `avenue ${avenue.x} ends at ${z} without a junction`);
   }
   for (const street of STREET_SEGMENTS) for (const x of [street.minX, street.maxX]) {
     assert.ok(AVENUE_SEGMENTS.some(avenue => avenue.x === x && street.z >= avenue.minZ && street.z <= avenue.maxZ)
-      || ROAD_PADS.some(pad => insideRect(x,street.z,pad)),
+      || curveTangent(x,street.z)
+      || ROAD_ROUND_ENDS.some(end => end.x === x && end.z === street.z),
     `street ${street.z} ends at ${x} without a junction or turnaround`);
   }
+});
+
+test('curved roads and round ends use exact shared collision and rendering geometry', () => {
+  const palette=Object.fromEntries(['grass','asphalt','pavement','line','wood','stone'].map(name=>[name,new THREE.MeshStandardMaterial()]));
+  const group=buildWorldSurfaces(THREE,palette);
+  assert.equal(ROAD_CURVES.length,2);
+  assert.equal(ROAD_ROUND_ENDS.length,2);
+  assert.ok(group.children.some(child=>child.geometry?.type==='BufferGeometry' && child.geometry.getAttribute('position')?.count===66));
+  assert.ok(group.children.some(child=>child.geometry?.type==='CircleGeometry' && child.geometry.parameters.radius===8));
+  assert.equal(surfaceAt(112,-542),'road');
+  assert.equal(surfaceAt(114.5,-542),'pavement');
+  assert.equal(surfaceAt(115,-542),'grass');
 });
 
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {
@@ -43,6 +64,7 @@ test('road and sidewalk faces form a disjoint partition, including every interse
     assert.ok(width <= 1e-9 || depth <= 1e-9, `surfaces overlap: ${JSON.stringify(a)} and ${JSON.stringify(b)}`);
   }
   for (const x of AVENUE_X) for (const z of STREET_Z) {
+    if (z < -430) continue; // northern bends are exact meshes, not rectangles
     const point = {x:x+.013,z:z+.017};
     const roadFaces = rectangles.filter(rect => rect.kind === 'road' && insideRect(point.x, point.z, rect));
     assert.equal(roadFaces.length, Number(isRoad(point.x,point.z)), `junction ${x},${z} has the correct asphalt face`);
