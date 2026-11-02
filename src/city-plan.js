@@ -170,13 +170,14 @@ for (const [pack,name,x,z,scale,width,depth] of [
   ['commercial','building-n',102,-491,8.5,12.5,13],
 ]) site(pack,name,x,z,scale,width,depth);
 
-// Ganton's small houses frame a curved western loop. The diagonal homes at
-// the outer corners echo the neighborhood in the reference image.
+// Street-facing rows sit just behind the sidewalks, using the same authored
+// house scale as the rest of town. Local +Z is the entrance side.
 export const GANTON_HOMES = Object.freeze([
-  [-119,-560,Math.PI/4],[-95,-560],[-81,-560],[-67,-560],[-53,-560],[-39,-560],[-4,-560,-Math.PI/4],
-  [-95,-524],[-81,-524],[-67,-524],[-53,-524],[-39,-524],
-  [-36,-508],[-36,-491],[0,-524],[0,-508],[0,-491],
-  [-51,-480,Math.PI/4],
+  ...[-94,-83,-72,-61,-50,-39].map(x => [x,-553,0]),
+  ...[-94,-83,-72,-61,-50,-39].map(x => [x,-531,Math.PI]),
+  ...[-519,-507,-495,-483].map(z => [-101,z,-Math.PI/2]),
+  ...[-519,-507,-495,-483].map(z => [-29,z,Math.PI/2]),
+  ...[-531,-519,-507,-495,-485].map(z => [-7,z,-Math.PI/2]),
 ]);
 for (const [x,z,rotation=0] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z,rotation);
 
