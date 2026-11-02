@@ -172,12 +172,26 @@ for (const [pack,name,x,z,scale,width,depth] of [
 
 // Street-facing rows sit just behind the sidewalks, using the same authored
 // house scale as the rest of town. Local +Z is the entrance side.
+//
+// The homes at the southwest bend deliberately follow the curve instead of
+// making a square block. The west-edge row faces east toward the avenue and
+// fills the small residential strip between it and the edge of the world.
+export const GANTON_TURN_HOMES = Object.freeze([
+  [-123.5,-544,-Math.PI/4],
+  [-122,-556,-Math.PI/4],
+]);
+export const GANTON_WEST_EDGE_HOMES = Object.freeze([
+  [-124,-520,Math.PI/2],[-124,-505,Math.PI/2],[-124,-490,Math.PI/2],
+  [-124,-475,Math.PI/2],[-124,-460,Math.PI/2],
+]);
 export const GANTON_HOMES = Object.freeze([
   ...[-94,-83,-72,-61,-50,-39].map(x => [x,-553,0]),
   ...[-94,-83,-72,-61,-50,-39].map(x => [x,-531,Math.PI]),
   ...[-519,-507,-495,-483].map(z => [-101,z,-Math.PI/2]),
   ...[-519,-507,-495,-483].map(z => [-29,z,Math.PI/2]),
   ...[-531,-519,-507,-495,-485].map(z => [-7,z,-Math.PI/2]),
+  ...GANTON_TURN_HOMES,
+  ...GANTON_WEST_EDGE_HOMES,
 ]);
 for (const [x,z,rotation=0] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z,rotation);
 
