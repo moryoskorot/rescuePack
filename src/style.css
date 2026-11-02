@@ -185,3 +185,8 @@
   .dialogue-reply{width:84%;min-height:54px}
   .dialogue-reply strong{font-size:15px}
 }
+
+/* Keep driving controls accessible while navigating with the map. */
+.map-panel{pointer-events:none}
+.map-panel .mission-close{pointer-events:auto}
+.has-touch-controls .touch-controls{z-index:12}

@@ -787,7 +787,7 @@ function renderWorldMap(elapsed = performance.now() / 1000) {
 }
 function openMap() {
   if (!playing || panelOpen || !victoryScreen.classList.contains('hidden')) return;
-  resetInput(); mapOpen = true; mapPanel.classList.remove('hidden');
+  mapOpen = true; mapPanel.classList.remove('hidden');
   mapButton.setAttribute('aria-label', 'Close city map');
   renderWorldMap(); mapClose.focus();
 }
@@ -960,7 +960,7 @@ window.addEventListener('keydown',e=>{
     if (!e.repeat) (mapOpen ? closeMap : openMap)();
     return;
   }
-  if (mapOpen) { if (e.code === 'Escape') closeMap(); return; }
+  if (mapOpen && e.code === 'Escape') { closeMap(); return; }
   if (panelOpen) { if (e.code === 'Escape') closePanel(); return; }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(playing)vehicleSound.start();
@@ -979,7 +979,7 @@ document.querySelector('#start-button').addEventListener('click',()=>{missionSou
 document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closeMap();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
-  if(!playing||!firetruck||panelOpen||mapOpen){physicsAccumulator=0;return;}
+  if(!playing||!firetruck||panelOpen){physicsAccumulator=0;return;}
   const input={
     throttle:(Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')))||touchControls.input.throttle,
     steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
@@ -1190,7 +1190,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const elapsedSeconds=Math.max(0,(now-previous)/1000);
   const dt=Math.min(elapsedSeconds,.05);previous=now;
-  const simulationRunning=playing&&!panelOpen&&!mapOpen;
+  const simulationRunning=playing&&!panelOpen;
   if(simulationRunning)simulationTime+=dt;
   drive(dt);updateCamera(dt);
   if(simulationRunning){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}
