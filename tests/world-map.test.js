@@ -11,6 +11,7 @@ test('the city map reads the world roads, buildings and districts', () => {
   assert.equal(features.roadCurves,ROAD_CURVES);
   assert.equal(features.roadRoundEnds,ROAD_ROUND_ENDS);
   assert.equal(features.buildings, BUILDING_SITES);
+  assert.ok(features.groundZones.some(zone => zone.name === 'Town Hall Plaza'));
   assert.ok(features.parks.some(park => park.name === 'Cedar Green'));
   assert.equal(features.bounds.minZ, LAND_BOUNDS.minZ);
   assert.equal(features.bounds.maxZ, PIER_BOUNDS.maxZ);

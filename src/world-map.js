@@ -1,6 +1,6 @@
 import {
   BOARDWALK_BOUNDS, LAND_BOUNDS, PIER_BOUNDS, ROAD_CURVES, ROAD_ROUND_ENDS,
-  ROAD_HALF_WIDTH, SIDEWALK_OUTER, createRoadSurfaceRects,
+  ROAD_HALF_WIDTH, SIDEWALK_OUTER, GROUND_ZONES, createRoadSurfaceRects,
 } from './world-layout.js';
 import { BUILDING_SITES, CIVIC_ENVELOPES, NEIGHBORHOOD_PARKS, SUBURBAN_MODEL_FOOTPRINTS } from './city-plan.js';
 import { NEW_DISTRICTS, districtAt } from './districts.js';
@@ -33,6 +33,7 @@ export function worldMapFeatures() {
     buildings: BUILDING_SITES,
     civic: CIVIC_ENVELOPES,
     parks: NEIGHBORHOOD_PARKS,
+    groundZones: GROUND_ZONES,
     districts: [...districtCenters.values()].map(center => ({
       name: center.name, x: center.x / center.count, z: center.z / center.count,
     })),
@@ -98,6 +99,8 @@ export function createWorldMap(canvas) {
     context.fillStyle = '#7ac5db'; context.fillRect(0, 0, width, height);
     const frame = mapFrame(features.bounds, width, height);
     drawRectangle(LAND_BOUNDS, frame, '#a8d49a');
+    const zoneColors = { urban: '#9a9185', civic: '#a6a59e', industrial: '#788080', market: '#a48c75' };
+    for (const zone of features.groundZones) drawRectangle(zone, frame, zoneColors[zone.kind]);
     drawRectangle({ ...LAND_BOUNDS, minZ: 82 }, frame, '#eddbad');
     drawRectangle(features.boardwalk, frame, '#bb8455');
     drawRectangle(features.pier, frame, '#bb8455');

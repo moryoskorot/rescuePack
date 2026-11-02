@@ -98,6 +98,9 @@ scene.add(sun);
 const mat = (color, roughness = 1, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const M = {
   grass: mat('#a7cb80'), lawn: mat('#85bd71'), park: mat('#72ba78'), pavement: mat('#ebdfc3'), stone: mat('#d6c6a9'),
+  // Warm city pavers, cool civic stone and sootier industrial concrete keep
+  // each built-up district out of the surrounding green landscape.
+  urbanGround: mat('#958f84'), civicGround: mat('#a3a29b'), industrialGround: mat('#747a79'), marketGround: mat('#9d8874'),
   asphalt: mat('#485e70'), line: mat('#fff2c9'), wall: mat('#fff1d5'), red: mat('#db4d40'), darkRed: mat('#ad342f'),
   blue: mat('#327bb0'), darkBlue: mat('#254b72'), glass: mat('#8fd3df', .18, .18), yellow: mat('#f6c44b'),
   wood: mat('#a86c49'), metal: mat('#697f86', .38, .55), leaves: mat('#5fa968'), flower: mat('#e95375'),
@@ -385,7 +388,9 @@ function clearScenery(x,z,radius=1) {
   return !isReserved(x,z,radius) && !solids.some(b=>Math.abs(x-b.x)<b.w/2+radius&&Math.abs(z-b.z)<b.d/2+radius);
 }
 function tree(x,z,s=5.5) {
-  if(!clearScenery(x,z,.9))return;
+  // Trees are landscaping, never accidental street furniture. Hardscape
+  // districts use planted parks and planters instead of loose roadside trees.
+  if(surfaceAt(x,z)!=='grass'||!clearScenery(x,z,.9))return;
   model('suburban', random()>.35?'tree-large':'tree-small', x,z,s,random()*Math.PI*2,getSurfaceHeight(x,z));
   solid(x,z,.4,.4);
 }

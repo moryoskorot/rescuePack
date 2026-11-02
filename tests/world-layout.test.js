@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {
   AVENUE_X, AVENUE_SEGMENTS, STREET_Z, STREET_SEGMENTS, ROAD_CURVES, ROAD_ROUND_ENDS, ROAD_Y, PAVEMENT_Y, DECK_Y,
   DRIVEWAYS, HYDRANT_LOCATIONS, LOTS, LAND_BOUNDS, PIER_BOUNDS,
-  createRoadSurfaceRects, insideRect, isRoad, isDriveway, isReserved,
+  GROUND_ZONES, createRoadSurfaceRects, groundZoneAt, insideRect, isRoad, isDriveway, isReserved,
   surfaceAt, getSurfaceHeight, footprintOnLandOrPier, vehicleFootprint,
   buildWorldSurfaces,
 } from '../src/world-layout.js';
@@ -24,7 +24,21 @@ test('northern streets form branches and Ganton has a curved western loop', () =
   assert.equal(surfaceAt(-90, -510), 'grass');
   assert.equal(surfaceAt(-90, -576), 'grass');
   assert.equal(isRoad(85, -440), false, 'Skyline Court is not cut into grid squares');
-  assert.equal(surfaceAt(105, -525), 'grass');
+  assert.equal(surfaceAt(105, -525), 'market');
+});
+
+test('hardscape follows district character while parks and residential areas keep grass', () => {
+  assert.ok(GROUND_ZONES.some(zone => zone.name === 'Crowdiecity' && zone.kind === 'urban'));
+  assert.equal(surfaceAt(86, -304), 'urban', 'Crowdiecity uses warm grey paving');
+  assert.equal(surfaceAt(105, -389), 'industrial', 'Brickworks uses yard concrete');
+  assert.equal(surfaceAt(86, -440), 'urban', 'Skyline Court is a paved tower district');
+  assert.equal(surfaceAt(0, -15), 'civic', 'Town Hall has its own civic forecourt');
+  assert.equal(surfaceAt(76, -12), 'industrial', 'the industrial yards are not lawn');
+  assert.equal(surfaceAt(-72, -304), 'grass', 'Crowdie remains a planted residential neighborhood');
+  assert.equal(surfaceAt(-84, -463), 'grass', 'Cedar Park remains green');
+  assert.equal(surfaceAt(18, -304), 'road', 'hardscape never replaces the street network');
+  assert.equal(surfaceAt(13, -304), 'pavement', 'hardscape never replaces sidewalks');
+  assert.equal(groundZoneAt(0, -15)?.name, 'Town Hall Plaza');
 });
 
 test('street ends meet another street, curved bend or rounded turnaround', () => {
@@ -44,7 +58,7 @@ test('street ends meet another street, curved bend or rounded turnaround', () =>
 });
 
 test('curved roads and round ends use exact shared collision and rendering geometry', () => {
-  const palette=Object.fromEntries(['grass','asphalt','pavement','line','wood','stone'].map(name=>[name,new THREE.MeshStandardMaterial()]));
+  const palette=Object.fromEntries(['grass','asphalt','pavement','line','wood','stone','urbanGround','civicGround','industrialGround','marketGround'].map(name=>[name,new THREE.MeshStandardMaterial()]));
   const group=buildWorldSurfaces(THREE,palette);
   assert.equal(ROAD_CURVES.length,2);
   assert.equal(ROAD_ROUND_ENDS.length,2);
@@ -52,7 +66,7 @@ test('curved roads and round ends use exact shared collision and rendering geome
   assert.ok(group.children.some(child=>child.geometry?.type==='CircleGeometry' && child.geometry.parameters.radius===8));
   assert.equal(surfaceAt(112,-542),'road');
   assert.equal(surfaceAt(114.5,-542),'pavement');
-  assert.equal(surfaceAt(115,-542),'grass');
+  assert.equal(surfaceAt(115,-542),'market');
 });
 
 test('road and sidewalk faces form a disjoint partition, including every intersection', () => {
@@ -131,13 +145,14 @@ test('diagonal entry cannot cut over water even when all four corners are on lan
 });
 
 test('renderer and vehicle share the same surface elevations', () => {
-  const palette = Object.fromEntries(['grass', 'asphalt', 'pavement', 'line', 'wood', 'stone'].map(name => [name, new THREE.MeshStandardMaterial()]));
+  const palette = Object.fromEntries(['grass', 'asphalt', 'pavement', 'line', 'wood', 'stone', 'urbanGround', 'civicGround', 'industrialGround', 'marketGround'].map(name => [name, new THREE.MeshStandardMaterial()]));
   const group = buildWorldSurfaces(THREE, palette);
   assert.ok(group.children.length > 0);
   assert.equal(getSurfaceHeight(18, 38), ROAD_Y);
   assert.equal(getSurfaceHeight(25.4, 32.575), PAVEMENT_Y);
   assert.equal(getSurfaceHeight(35, 31), ROAD_Y);
   assert.equal(getSurfaceHeight(12, 90), DECK_Y);
+  assert.equal(getSurfaceHeight(86, -304), getSurfaceHeight(-72, -304));
   assert.equal(surfaceAt(0, 84.99), 'sand');
   assert.equal(surfaceAt(0, 85.01), 'water');
   assert.ok(getSurfaceHeight(0, 85.01) < getSurfaceHeight(0, 84.99));

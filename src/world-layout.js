@@ -45,6 +45,29 @@ export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -590, ma
 export const PIER_BOUNDS = Object.freeze({ minX: 6, maxX: 18, minZ: 79.5, maxZ: 104.5 });
 export const BOARDWALK_BOUNDS = Object.freeze({ minX: -115, maxX: 115, minZ: 76, maxZ: 82 });
 const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -589, maxZ: 74 };
+
+// Green belongs to parks, gardens, farms and residential streets. Dense city
+// blocks instead get a continuous hardscape, so a tall building or a factory
+// never looks as if it was dropped into an unplanned lawn. These areas sit
+// below roads and sidewalks, which keep their own collision and elevation.
+export const GROUND_ZONES = Object.freeze([
+  // The northern extension reads as eight distinct neighborhoods.
+  { name: 'Crowdiecity', kind: 'urban', minX: 18, maxX: 145, minZ: -338, maxZ: -270 },
+  { name: 'Brickworks', kind: 'industrial', minX: 18, maxX: 145, minZ: -406, maxZ: -338 },
+  { name: 'Skyline Court', kind: 'urban', minX: 18, maxX: 145, minZ: -474, maxZ: -406 },
+  { name: 'Market Mile', kind: 'market', minX: 18, maxX: 145, minZ: -576, maxZ: -474 },
+  // Commercial, civic and working areas in the original town use the same
+  // rule. The civic areas are listed later so they override downtown paving.
+  { name: 'North Town shops', kind: 'urban', minX: -51, maxX: 52, minZ: -236, maxZ: -195 },
+  { name: 'Downtown', kind: 'urban', minX: -51, maxX: 52, minZ: -100, maxZ: 5 },
+  { name: 'Mail District', kind: 'industrial', minX: 52, maxX: 145, minZ: -270, maxZ: -195 },
+  { name: 'Workshop District', kind: 'industrial', minX: 52, maxX: 145, minZ: -195, maxZ: -100 },
+  { name: 'Industrial Yards', kind: 'industrial', minX: 52, maxX: 145, minZ: -100, maxZ: 74 },
+  { name: 'Town Hall Plaza', kind: 'civic', minX: -18, maxX: 18, minZ: -30, maxZ: 5 },
+  { name: 'Museum Forecourt', kind: 'civic', minX: 18, maxX: 52, minZ: -62, maxZ: -30 },
+  { name: 'Town Square', kind: 'civic', minX: -18, maxX: 18, minZ: 5, maxZ: 38 },
+  { name: 'Fire Station Apron', kind: 'civic', minX: 18, maxX: 52, minZ: 5, maxZ: 38 },
+].map(zone => Object.freeze(zone)));
 export const DRIVEWAYS = Object.freeze([
   // The station apron meets the near curb and never covers the street itself.
   { name: 'fire-station', minX: 27, maxX: 43, minZ: 27.3, maxZ: 33.4 },
@@ -81,6 +104,16 @@ export function isReserved(x, z, padding = 0) {
   return inRoadNetwork(x, z, SIDEWALK_OUTER + padding) || isDriveway(x, z, padding);
 }
 
+export function groundZoneAt(x, z) {
+  // Later zones have a more specific purpose, for example Town Hall Plaza
+  // inside the wider downtown block.
+  for (let index = GROUND_ZONES.length - 1; index >= 0; index--) {
+    const zone = GROUND_ZONES[index];
+    if (insideRect(x, z, zone)) return zone;
+  }
+  return null;
+}
+
 export function surfaceAt(x, z) {
   if (insideRect(x, z, PIER_BOUNDS) || insideRect(x, z, BOARDWALK_BOUNDS)) return 'deck';
   if (!insideRect(x, z, LAND_BOUNDS)) return 'water';
@@ -88,11 +121,17 @@ export function surfaceAt(x, z) {
   if (isDriveway(x, z)) return 'driveway';
   if (inRoadNetwork(x, z, SIDEWALK_OUTER)) return 'pavement';
   if (z >= 82) return 'sand';
+  const zone = groundZoneAt(x, z);
+  if (zone) return zone.kind;
   return 'grass';
 }
 
 export function getSurfaceHeight(x, z) {
-  return { road: ROAD_Y, driveway: ROAD_Y, pavement: PAVEMENT_Y, deck: DECK_Y, sand: -.055, grass: GROUND_Y, water: -.35 }[surfaceAt(x, z)];
+  return {
+    road: ROAD_Y, driveway: ROAD_Y, pavement: PAVEMENT_Y, deck: DECK_Y,
+    sand: -.055, grass: GROUND_Y, urban: GROUND_Y, civic: GROUND_Y,
+    industrial: GROUND_Y, market: GROUND_Y, water: -.35,
+  }[surfaceAt(x, z)];
 }
 
 // Rectangles partition the union of every road and sidewalk. Intersections are
@@ -231,10 +270,22 @@ export function buildWorldSurfaces(THREE, materials) {
     mesh.position.set(x, y, z); mesh.receiveShadow = true; mesh.castShadow = h > .4; root.add(mesh); return mesh;
   }
   plane({ ...LAND_BOUNDS, maxZ: 82 }, GROUND_Y, materials.grass);
+  const groundMaterial = kind => materials[`${kind}Ground`] ?? materials.pavement;
+  const sidewalkMaterial = (x, z) => {
+    const zone = groundZoneAt(x, z);
+    return zone ? groundMaterial(zone.kind) : materials.pavement;
+  };
+  // Some civic forecourts sit inside a larger downtown zone. Draw their
+  // specific finish a hair higher so the two coplanar surfaces never flicker.
+  GROUND_ZONES.forEach((zone, index) => plane(zone, GROUND_Y + .003 + index * .0001, groundMaterial(zone.kind)));
   plane({ ...LAND_BOUNDS, minZ: 82 }, -.055, sandMaterial);
   const water = plane({ minX: -400, maxX: 400, minZ: 85, maxZ: 440 }, -.35, waterMaterial);
   water.name = 'Ocean beyond the shore';
-  for (const rect of createRoadSurfaceRects()) plane(rect, rect.kind === 'pavement' ? PAVEMENT_Y : ROAD_Y, rect.kind === 'road' ? materials.asphalt : materials.pavement);
+  for (const rect of createRoadSurfaceRects()) {
+    const x = (rect.minX + rect.maxX) / 2, z = (rect.minZ + rect.maxZ) / 2;
+    plane(rect, rect.kind === 'pavement' ? PAVEMENT_Y : ROAD_Y,
+      rect.kind === 'road' ? materials.asphalt : sidewalkMaterial(x, z));
+  }
 
   // Exact annular meshes keep the bends smooth at driving distance. Their
   // straight tangent pieces are supplied by the usual street rectangles.
@@ -252,12 +303,12 @@ export function buildWorldSurfaces(THREE, materials) {
     mesh.receiveShadow=true; root.add(mesh);
   }
   for (const curve of ROAD_CURVES) {
-    arcBand(curve,curve.radius-SIDEWALK_OUTER,curve.radius-ROAD_HALF_WIDTH,PAVEMENT_Y,materials.pavement);
-    arcBand(curve,curve.radius+ROAD_HALF_WIDTH,curve.radius+SIDEWALK_OUTER,PAVEMENT_Y,materials.pavement);
+    arcBand(curve,curve.radius-SIDEWALK_OUTER,curve.radius-ROAD_HALF_WIDTH,PAVEMENT_Y,sidewalkMaterial(curve.x, curve.z));
+    arcBand(curve,curve.radius+ROAD_HALF_WIDTH,curve.radius+SIDEWALK_OUTER,PAVEMENT_Y,sidewalkMaterial(curve.x, curve.z));
     arcBand(curve,curve.radius-ROAD_HALF_WIDTH,curve.radius+ROAD_HALF_WIDTH,ROAD_Y,materials.asphalt);
   }
   for (const end of ROAD_ROUND_ENDS) {
-    const ring=new THREE.Mesh(new THREE.RingGeometry(end.radius,end.radius+SIDEWALK_OUTER-ROAD_HALF_WIDTH,48),materials.pavement);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(end.radius,end.radius+SIDEWALK_OUTER-ROAD_HALF_WIDTH,48),sidewalkMaterial(end.x, end.z));
     ring.rotation.x=-Math.PI/2; ring.position.set(end.x,PAVEMENT_Y,end.z); ring.receiveShadow=true; root.add(ring);
     const asphalt=new THREE.Mesh(new THREE.CircleGeometry(end.radius,48),materials.asphalt);
     asphalt.rotation.x=-Math.PI/2; asphalt.position.set(end.x,ROAD_Y,end.z); asphalt.receiveShadow=true; root.add(asphalt);
