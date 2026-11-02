@@ -22,6 +22,10 @@ export const STREET_SEGMENTS = Object.freeze([
 ].map(road => Object.freeze(road)));
 // Ganton's western road follows two real quarter-circle bends. The eastern
 // Market Mile lanes finish in circular bulbs, never square asphalt pads.
+// When a map edge turns 90 degrees, add a ROAD_CURVES entry that is tangent
+// to both straight segments. Do not fake the corner with two perpendicular
+// ROAD_SEGMENTS: their square road ends leave visible broken asphalt/sidewalk
+// edges and make the collision surface disagree with the rendered road.
 export const ROAD_CURVES = Object.freeze([
   {x:-102,z:-532,radius:10,start:Math.PI,end:Math.PI*1.5},
   {x:-102,z:-450,radius:10,start:Math.PI*.5,end:Math.PI},
