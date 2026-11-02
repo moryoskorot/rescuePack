@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, GANTON_DELIVERY_MISSION, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
 import { NEW_DISTRICTS, districtAt } from '../src/districts.js';
-import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES, GANTON_TURN_HOMES, GANTON_WEST_EDGE_HOMES, NEIGHBORHOOD_PARKS, SKYLINE_H_TOWERS } from '../src/city-plan.js';
+import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES, GANTON_TURN_HOMES, GANTON_WEST_EDGE_HOMES, NEIGHBORHOOD_PARKS, ORCHARD_GROVE_HOMES, SKYLINE_H_TOWERS } from '../src/city-plan.js';
 import { isRoad } from '../src/world-layout.js';
 
 test('Chief Panda has four single-fire calls in each new district', () => {
@@ -55,8 +55,14 @@ test('Crowdie clusters, Crowdiecity towers, Ganton homes and delivery are placed
   assert.ok(isRoad(-90,-542) && isRoad(-112,-510) && isRoad(-90,-440)
     && !isRoad(-90,-510), 'Ganton follows a curved western loop');
   assert.equal(GANTON_HOMES.length, 32, 'Ganton has dense street-facing rows');
-  assert.deepEqual(GANTON_TURN_HOMES.map(([, , rotation]) => rotation), [-Math.PI / 4, -Math.PI / 4], 'homes follow the rounded turn');
+  assert.ok(GANTON_TURN_HOMES.every(([x, z, rotation]) => {
+    const distance = Math.hypot(x + 102, z + 532);
+    const toRoad = { x: -102 - x, z: -532 - z };
+    return distance > 20 && distance < 23
+      && (Math.sin(rotation) * toRoad.x + Math.cos(rotation) * toRoad.z) / distance > .99;
+  }), 'turn homes sit close to and face the rounded road');
   assert.ok(GANTON_WEST_EDGE_HOMES.every(([x, , rotation]) => x < -118.25 && rotation === Math.PI / 2), 'west-edge homes face the avenue from the world edge');
+  assert.ok(ORCHARD_GROVE_HOMES.filter(([x]) => x < -51).every(([, z]) => z <= -379), 'Orchard Grove homes sit close to Cedar Park road');
   assert.ok(BUILDING_SITES.filter(site => site.z > -270 && site.z < -236).length >= 7, 'the old gap has homes');
   for (const park of NEIGHBORHOOD_PARKS) assert.ok(BUILDING_SITES.every(site => Math.hypot(site.x-park.x,site.z-park.z) >= park.radius-3), park.name);
   assert.equal(districtAt(GANTON_DELIVERY_MISSION.target), 'Ganton');

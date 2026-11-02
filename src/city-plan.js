@@ -173,12 +173,13 @@ for (const [pack,name,x,z,scale,width,depth] of [
 // Street-facing rows sit just behind the sidewalks, using the same authored
 // house scale as the rest of town. Local +Z is the entrance side.
 //
-// The homes at the southwest bend deliberately follow the curve instead of
-// making a square block. The west-edge row faces east toward the avenue and
-// fills the small residential strip between it and the edge of the world.
+// The homes at the southwest bend sit just beyond the pavement and point their
+// entrances toward the curve, rather than making a square block. The west-edge
+// row faces east toward the avenue and fills the small residential strip
+// between it and the edge of the world.
 export const GANTON_TURN_HOMES = Object.freeze([
-  [-123.5,-544,-Math.PI/4],
-  [-122,-556,-Math.PI/4],
+  [-122.7,-539.5,Math.atan2(20.7,7.5)],
+  [-109.5,-552.7,Math.atan2(7.5,20.7)],
 ]);
 export const GANTON_WEST_EDGE_HOMES = Object.freeze([
   [-124,-520,Math.PI/2],[-124,-505,Math.PI/2],[-124,-490,Math.PI/2],
@@ -195,11 +196,14 @@ export const GANTON_HOMES = Object.freeze([
 ]);
 for (const [x,z,rotation=0] of GANTON_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z,rotation);
 
-for (const [x,z] of [
-  [-112,-389],[-98,-389],[-82,-389],[-67,-389],[-35,-389],[0,-389],
-  [-112,-355],[-98,-355],[-82,-355],[-67,-355],[0,-355],
+// Pull the Orchard Grove homes north so the labelled row reads with Cedar
+// Park's road instead of looking marooned in the middle of the block.
+export const ORCHARD_GROVE_HOMES = Object.freeze([
+  [-112,-397],[-98,-397],[-82,-397],[-67,-397],[-35,-389],[0,-389],
+  [-112,-379],[-98,-379],[-82,-379],[-67,-379],[0,-355],
   [-35,-423],[0,-423],
-]) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
+]);
+for (const [x,z] of ORCHARD_GROVE_HOMES) houseSite(compactHomes[newHomeIndex++ % compactHomes.length],x,z);
 
 export const NEIGHBORHOOD_PARKS = Object.freeze([
   {name:'Cedar Green',x:-84,z:-463,radius:17},
