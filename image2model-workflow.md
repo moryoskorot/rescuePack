@@ -171,3 +171,25 @@ Blender deliverables:
 
 The validated model contains 43 bone-parented character mesh components and an
 18-bone FK skeleton, including separate wing, crest, tail, leg, and foot bones.
+
+## Local TRELLIS.2 experiment: bunny firefighter
+
+The Apple Silicon TRELLIS.2 installation at `~/AI-3D/trellis-mac` was run on
+`3dtesting/bunny-firefighter-tpose-front.png` with the `512` pipeline and seed
+`42`. `MTL_CAPTURE_ENABLED=1` was needed to avoid a macOS Metal watchdog error
+during mesh decoding.
+
+- `3dtesting/Bunny_Firefighter_Trellis2_Local.glb` is the untextured, full
+  resolution output (about 2.16 million triangles).
+- `3dtesting/Bunny_Firefighter_Trellis2_Colored.glb` is a smaller, static
+  200,000-triangle model with vertex colors sampled from TRELLIS.2's generated
+  color attributes. It is the practical preview asset; it is not rigged.
+- `3dtesting/Bunny_Firefighter_Trellis2_Local_Preview.png` is a front render of
+  the colored model.
+
+The local pipeline's UV unwrapping stalled under heavy memory pressure, so the
+colored export uses vertex colors rather than baked PBR textures. AutoRemesher
+was tested on a simplified mesh, but the TRELLIS.2 output contained thousands
+of disconnected pieces and the quad remesh lost most of the character. Its
+result was discarded. The existing hand-built bunny rig remains the animatable
+asset until a usable retopology and rig are produced.
