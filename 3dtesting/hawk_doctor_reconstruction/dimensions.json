@@ -1,0 +1,29 @@
+{
+  "dimensions_m": {
+    "width": 0.2980956733226776,
+    "depth": 0.178524948656559,
+    "height": 0.30000001192092896
+  },
+  "bounds_min": [
+    -0.1490478366613388,
+    -0.08181170374155045,
+    0.0
+  ],
+  "bounds_max": [
+    0.1490478366613388,
+    0.09671324491500854,
+    0.30000001192092896
+  ],
+  "objects": 63,
+  "evaluated_polygons": 395002,
+  "non_manifold_edges": {},
+  "physical_scale": "300 mm chosen target, matching bunny_firefighter_package/README.txt; height matched exactly; depth inferred from side silhouette; soles at Z=0.",
+  "orientation": "+Z up, -Y forward",
+  "reference_height_px": 1154,
+  "reference_front_wingspan_px": 1144,
+  "limitations": [
+    "Three rendered views are not calibrated orthographic measurements.",
+    "Side wing pose and back face/foot details conflict with the front view.",
+    "Reference-guided reconstruction; not an exact scan, not rigged."
+  ]
+}

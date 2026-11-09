@@ -1,0 +1,85 @@
+{
+  "authoring": "Blender 5.2.2 via Blender MCP",
+  "files": [
+    {
+      "path": "Hawk_Doctor_Reference.blend",
+      "bytes": 8939532,
+      "sha256": "301a84e0fb79171beefdbd2e8b747f72deca03d8dfa6d83592cd5ef99e7243e9"
+    },
+    {
+      "path": "Hawk_Doctor_Reference.glb",
+      "bytes": 13558372,
+      "sha256": "1a888ed79e5de31e362a41dfa2eae4a472fd29472bda0cc13a533e7f0f3b2fd7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4145,
+      "sha256": "21c009d8d3991c530d6e9ae067824a85b0e9861ec0024b8293036730a16f186d"
+    },
+    {
+      "path": "back.png",
+      "bytes": 937741,
+      "sha256": "c6ab9a274dcabdcffed3574496c282227197fd66ba48cca8dafb2b1e4d371392"
+    },
+    {
+      "path": "back_comparison.png",
+      "bytes": 335978,
+      "sha256": "345aa074bc3344ff4c452eefbcf206114bc271a34fb0b497b54c8f09bff92a73"
+    },
+    {
+      "path": "build_hawk.py",
+      "bytes": 27670,
+      "sha256": "bffce5378a998747a5c19a29a7a9e5503ef1a61e7bd56a53657ab088e326b266"
+    },
+    {
+      "path": "compare_views.py",
+      "bytes": 3057,
+      "sha256": "be210ea6e5eea897da14e1a9ba43a628aae77954d3bf6792021b266309bbe25a"
+    },
+    {
+      "path": "dimensions.json",
+      "bytes": 904,
+      "sha256": "c77586786c822397fa179442feff710c7278165d450d7d910a4d4e73f7e155b9"
+    },
+    {
+      "path": "front.png",
+      "bytes": 984108,
+      "sha256": "9ee0da0289792b53bf5e3160baf2079bbf066c024bb82a1c08b0dfe861428c2b"
+    },
+    {
+      "path": "front_comparison.png",
+      "bytes": 368194,
+      "sha256": "ee4e148f24d6e1ba8c59ff20019143c9a1f6fed97a21ce4bcac4c703eca03d55"
+    },
+    {
+      "path": "likeness.json",
+      "bytes": 992,
+      "sha256": "b805ae4a5833c7206c7bd6493070188ade443e400ffe00657b6912c78938c87a"
+    },
+    {
+      "path": "side.png",
+      "bytes": 848710,
+      "sha256": "8bcb0da1e5fc8dd461507b8007285e3dad7af19e671df97a263b33957157b45c"
+    },
+    {
+      "path": "side_comparison.png",
+      "bytes": 288728,
+      "sha256": "15a164f6064deafac7dbabdca0ccef6537ccff573c155e64735a1b6c53d96970"
+    },
+    {
+      "path": "three_quarter.png",
+      "bytes": 998515,
+      "sha256": "63b1d099a6f5f51eb493ff08b90270ccbb2449a764e3f6992b415d5b1d67fa4c"
+    },
+    {
+      "path": "validate_export.py",
+      "bytes": 3201,
+      "sha256": "7fd390c130238419429a552cf6476794e61d98e48bde8ecec783f19cf24a86c9"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 630,
+      "sha256": "b2d7401e2740e7cdad401eb91eaf7b07b0c925aa4c4f6e1a648e5a39bc96c48d"
+    }
+  ]
+}

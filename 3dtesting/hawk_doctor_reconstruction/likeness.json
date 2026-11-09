@@ -1,0 +1,50 @@
+{
+  "front": {
+    "silhouette_iou": 0.9376005155603122,
+    "reference_crop_px": [
+      27,
+      77,
+      1169,
+      1229
+    ],
+    "render_crop_px": [
+      74,
+      73,
+      1126,
+      1131
+    ],
+    "alignment": "Largest opaque component, uniform height of 850 px, horizontal bounds centered; no nonuniform warp."
+  },
+  "back": {
+    "silhouette_iou": 0.8596317272358397,
+    "reference_crop_px": [
+      23,
+      103,
+      1173,
+      1233
+    ],
+    "render_crop_px": [
+      74,
+      73,
+      1126,
+      1131
+    ],
+    "alignment": "Largest opaque component, uniform height of 850 px, horizontal bounds centered; no nonuniform warp."
+  },
+  "side": {
+    "silhouette_iou": 0.8532200138303331,
+    "reference_crop_px": [
+      32,
+      130,
+      855,
+      1513
+    ],
+    "render_crop_px": [
+      311,
+      73,
+      941,
+      1131
+    ],
+    "alignment": "Largest opaque component, uniform height of 850 px, horizontal bounds centered; no nonuniform warp."
+  }
+}

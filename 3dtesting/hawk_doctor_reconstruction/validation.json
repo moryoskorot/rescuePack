@@ -1,0 +1,26 @@
+{
+  "blend_scenes_in_file": [
+    "Hawk Doctor \u2022 reference reconstruction"
+  ],
+  "blend_model_mesh_count": 51,
+  "packed_reference_images": 3,
+  "glb_meshes": 62,
+  "glb_triangles": 638326,
+  "glb_dimensions_mm": {
+    "width": 298.0956733226776,
+    "depth": 178.524948656559,
+    "height": 300.00001192092896
+  },
+  "height_target_mm": 300,
+  "height_error_mm": 1.1920928955078125e-05,
+  "ground_z_mm": 0.0,
+  "nonfinite_vertices": 0,
+  "zero_area_faces": 0,
+  "zero_area_by_mesh": {},
+  "nonmanifold_after_weld": {},
+  "glb_scenes": 1,
+  "glb_cameras": 0,
+  "glb_animations": 0,
+  "glb_materials": 14,
+  "passes": true
+}
