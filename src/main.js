@@ -629,6 +629,8 @@ const vehicleSound=createVehicleSound(undefined,`${import.meta.env.BASE_URL}asse
 const missionSound=createMissionSound();
 const themeMusic = createThemeMusic(`${import.meta.env.BASE_URL}assets/audio/theme.mp3`);
 const settings = document.querySelector('#settings');
+const returnToMenuButton = document.querySelector('#return-to-menu');
+const returnToMenuDialog = document.querySelector('#return-to-menu-dialog');
 function bindVolumeSlider(id, initialVolume, setVolume) {
   const slider = document.querySelector(`#${id}`);
   const percent = document.querySelector(`#${id}-percent`);
@@ -673,9 +675,14 @@ for (const button of document.querySelectorAll('[data-open-settings]')) {
   button.addEventListener('click', () => {
     resetInput();
     button.focus();
+    returnToMenuButton.hidden = !playing;
     settings.showModal();
   });
 }
+returnToMenuButton.addEventListener('click', () => {
+  returnToMenuButton.focus();
+  returnToMenuDialog.showModal();
+});
 const touchControls=createTouchControls({
   root:document.querySelector('#touch-controls'),
   stick:document.querySelector('#drive-stick'),
@@ -1058,7 +1065,20 @@ for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addE
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();themeMusic.play();helpDeck.startSession();fireDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
-document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;themeMusic.pause();resetInput();closeMap();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
+document.querySelector('#confirm-return-to-menu').addEventListener('click', () => {
+  playing = false;
+  returnToMenuDialog.close();
+  settings.close();
+  themeMusic.pause();
+  resetInput();
+  closeMap();
+  closePanel();
+  finishMission(false, true);
+  fireState.clear();
+  document.querySelector('#menu').classList.remove('hidden');
+  document.querySelector('#hud').classList.add('hidden');
+  document.querySelector('#start-button').focus();
+});
 
 function drive(dt) {
   if(!playing||!firetruck||panelOpen||settings.open){physicsAccumulator=0;return;}

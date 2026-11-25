@@ -41,7 +41,6 @@
             <button id="red-phone-button" class="phone-button phone-button--red" type="button" title="Fire missions from Chief Panda" aria-label="Fire missions from Chief Panda"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b><small>FIRE</small></button>
           </div>
           <button id="map-button" class="round-button map-button" type="button" title="Open city map (M)" aria-label="Open city map">🗺</button>
-          <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
           <button class="round-button hud-settings-button" type="button" data-open-settings aria-haspopup="dialog" aria-label="Settings" title="Settings">⚙</button>
         </header>
         <div id="fire-status" class="fire-status hidden" role="status" aria-live="polite"></div>
@@ -128,7 +127,17 @@
         </div>
         <input id="sfx-volume" type="range" min="0" max="100" value="100" />
         <form method="dialog">
+          <button id="return-to-menu" class="settings-button" type="button" aria-haspopup="dialog" hidden>Return to menu</button>
           <button class="settings-button" type="submit">Done</button>
+        </form>
+      </dialog>
+
+      <dialog id="return-to-menu-dialog" class="settings-dialog" aria-labelledby="return-to-menu-title" aria-describedby="return-to-menu-warning">
+        <h2 id="return-to-menu-title">Are you sure?</h2>
+        <p id="return-to-menu-warning">Current mission progress will not be saved.</p>
+        <form method="dialog">
+          <button class="settings-button" type="submit" autofocus>Cancel</button>
+          <button id="confirm-return-to-menu" class="settings-button" type="button">Return to menu</button>
         </form>
       </dialog>
     </div>

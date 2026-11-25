@@ -221,7 +221,13 @@
   accent-color: #17477c;
   cursor: pointer;
 }
-.settings-dialog form { text-align: right; }
+.settings-dialog p { margin: 0 0 16px; }
+.settings-dialog form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .settings-button:focus-visible, .settings-dialog input[type="range"]:focus-visible {
   outline: 3px solid #237bb6;
   outline-offset: 3px;
