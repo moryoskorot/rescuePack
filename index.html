@@ -27,6 +27,7 @@
             <span class="button-arrow">➜</span>
           </button>
           <div class="menu-tip">EXPLORE THE CITY · TAP THE PHONE FOR A MISSION</div>
+          <button class="settings-button" type="button" data-open-settings aria-haspopup="dialog">Settings</button>
           <a class="tuning-link" href="./watertuning/">Tune water hose ↗</a>
         </div>
       </div>
@@ -41,6 +42,7 @@
           </div>
           <button id="map-button" class="round-button map-button" type="button" title="Open city map (M)" aria-label="Open city map">🗺</button>
           <button id="menu-button" class="round-button" type="button" title="Return to menu" aria-label="Return to menu">☰</button>
+          <button class="round-button hud-settings-button" type="button" data-open-settings aria-haspopup="dialog" aria-label="Settings" title="Settings">⚙</button>
         </header>
         <div id="fire-status" class="fire-status hidden" role="status" aria-live="polite"></div>
         <div id="mission-status" class="mission-status" role="status" aria-live="polite">📱 Tap the phone for a mission</div>
@@ -112,6 +114,18 @@
           </div>
         </div>
       </div>
+
+      <dialog id="settings" class="settings-dialog" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <div class="music-volume-label">
+          <label for="music-volume">Music volume</label>
+          <span id="music-volume-percent" aria-hidden="true">25%</span>
+        </div>
+        <input id="music-volume" type="range" min="0" max="100" value="25" autofocus />
+        <form method="dialog">
+          <button class="settings-button" type="submit">Done</button>
+        </form>
+      </dialog>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

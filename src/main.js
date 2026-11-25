@@ -17,6 +17,7 @@ import { createWaterBoostState, stepWaterBoost } from './water-boost.js';
 import { createWaterEffect } from './water-effect.js';
 import { createVehicleSound } from './vehicle-sound.js';
 import { createMissionSound } from './mission-sound.js';
+import { createThemeMusic } from './theme-music.js';
 import { createFirefightingProgress, nearestBurningBuilding, HOSE_RANGE } from './firefighting.js';
 import { createFirefightingEffect } from './firefighting-effect.js';
 import { firetruckNozzleWorld } from './firetruck-nozzle.js';
@@ -622,6 +623,28 @@ const keys = new Set();
 let playing=false, orbit=-.28, pitch=.7, zoom=36, cameraPointer=null, lastX=0,lastY=0;
 const vehicleSound=createVehicleSound(undefined,`${import.meta.env.BASE_URL}assets/tire-skid.mp3`);
 const missionSound=createMissionSound();
+const themeMusic = createThemeMusic(`${import.meta.env.BASE_URL}assets/audio/theme.mp3`);
+const settings = document.querySelector('#settings');
+const musicVolume = document.querySelector('#music-volume');
+const musicVolumePercent = document.querySelector('#music-volume-percent');
+function updateMusicVolumeLabel() {
+  const label = `${musicVolume.value}%`;
+  musicVolumePercent.textContent = label;
+  musicVolume.setAttribute('aria-valuetext', label);
+}
+musicVolume.value = Math.round(themeMusic.volume * 100);
+updateMusicVolumeLabel();
+musicVolume.addEventListener('input', () => {
+  themeMusic.setVolume(musicVolume.valueAsNumber / 100);
+  updateMusicVolumeLabel();
+});
+for (const button of document.querySelectorAll('[data-open-settings]')) {
+  button.addEventListener('click', () => {
+    resetInput();
+    button.focus();
+    settings.showModal();
+  });
+}
 const touchControls=createTouchControls({
   root:document.querySelector('#touch-controls'),
   stick:document.querySelector('#drive-stick'),
@@ -959,6 +982,7 @@ document.querySelector('#mission-close').addEventListener('click', closePanel);
 mapButton.addEventListener('click', () => mapOpen ? closeMap() : openMap());
 mapClose.addEventListener('click', closeMap);
 window.addEventListener('keydown',e=>{
+  if (settings.open || !playing) return;
   if (!victoryScreen.classList.contains('hidden')) { if (e.code === 'Escape') victoryContinue.click(); return; }
   if (e.code === 'KeyM' && playing && !panelOpen) {
     e.preventDefault();
@@ -968,23 +992,30 @@ window.addEventListener('keydown',e=>{
   if (mapOpen && e.code === 'Escape') { closeMap(); return; }
   if (panelOpen) { if (e.code === 'Escape') closePanel(); return; }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
-  if(playing)vehicleSound.start();
+  vehicleSound.start();
   keys.add(e.code);
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('pointerdown',()=>{if(playing)vehicleSound.start();},{passive:true});
 window.addEventListener('blur',resetInput);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInput();});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    resetInput();
+    themeMusic.pause();
+  } else if (playing) {
+    themeMusic.play();
+  }
+});
 canvas.addEventListener('pointerdown',e=>{if(!playing||cameraPointer!==null||e.button!==0)return;cameraPointer=e.pointerId;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId!==cameraPointer)return;orbit-=(e.clientX-lastX)*.006;pitch=THREE.MathUtils.clamp(pitch+(e.clientY-lastY)*.004,.15,1.18);lastX=e.clientX;lastY=e.clientY;});
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
 canvas.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.018,14,55);},{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();helpDeck.startSession();fireDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
-document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;resetInput();closeMap();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
+document.querySelector('#start-button').addEventListener('click',()=>{missionSound.unlock();themeMusic.play();helpDeck.startSession();fireDeck.startSession();resetInput();startFires();playing=true;updateMissionStatus();vehicleSound.start();document.querySelector('#menu').classList.add('hidden');document.querySelector('#hud').classList.remove('hidden');canvas.style.cursor='grab';});
+document.querySelector('#menu-button').addEventListener('click',()=>{playing=false;themeMusic.pause();resetInput();closeMap();closePanel();finishMission(false,true);fireState.clear();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#hud').classList.add('hidden');});
 
 function drive(dt) {
-  if(!playing||!firetruck||panelOpen){physicsAccumulator=0;return;}
+  if(!playing||!firetruck||panelOpen||settings.open){physicsAccumulator=0;return;}
   const input={
     throttle:(Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')))||touchControls.input.throttle,
     steer:(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')))||touchControls.input.steer,
@@ -1195,7 +1226,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const elapsedSeconds=Math.max(0,(now-previous)/1000);
   const dt=Math.min(elapsedSeconds,.05);previous=now;
-  const simulationRunning=playing&&!panelOpen;
+  const simulationRunning=playing&&!panelOpen&&!settings.open;
   if(simulationRunning)simulationTime+=dt;
   drive(dt);updateCamera(dt);
   if(simulationRunning){fireState.update(elapsedSeconds);fireEffect.update(dt,camera);}

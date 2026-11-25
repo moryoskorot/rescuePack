@@ -190,3 +190,42 @@
 .map-panel{pointer-events:none}
 .map-panel .mission-close{pointer-events:auto}
 .has-touch-controls .touch-controls{z-index:12}
+
+.settings-button {
+  padding: 8px 17px;
+  border: 2px solid #fff8df;
+  border-radius: 12px;
+  background: #17477c;
+  color: #fff;
+  font: 600 16px Fredoka, Arial, sans-serif;
+}
+.settings-button:hover { background: #225b98; }
+.settings-dialog {
+  width: min(340px, calc(100vw - 24px));
+  padding: 20px;
+  border: 4px solid #fff8df;
+  border-radius: 22px;
+  background: #d8f4fa;
+  box-shadow: 0 8px 0 #275f9a, 0 20px 40px #0b285b8c;
+  color: #173f75;
+  font: 500 17px Fredoka, Arial, sans-serif;
+}
+.settings-dialog::backdrop { background: #0c2f66bb; }
+.settings-dialog h2 { margin: 0 0 16px; }
+.music-volume-label { display: flex; justify-content: space-between; }
+#music-volume {
+  display: block;
+  width: 100%;
+  height: 38px;
+  margin: 2px 0 12px;
+  accent-color: #17477c;
+  cursor: pointer;
+}
+.settings-dialog form { text-align: right; }
+.settings-button:focus-visible, #music-volume:focus-visible {
+  outline: 3px solid #237bb6;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .hud-settings-button { position: absolute; top: calc(100% + 10px); right: 0; }
+}
