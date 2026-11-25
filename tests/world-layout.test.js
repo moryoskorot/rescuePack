@@ -63,7 +63,21 @@ test('curved roads and round ends use exact shared collision and rendering geome
   assert.equal(ROAD_CURVES.length,11, 'every endpoint-to-endpoint turn is a tangent curve');
   assert.equal(ROAD_ROUND_ENDS.length,2);
   assert.ok(group.children.some(child=>child.geometry?.type==='BufferGeometry' && child.geometry.getAttribute('position')?.count===66));
-  assert.ok(group.children.some(child=>child.geometry?.type==='CircleGeometry' && child.geometry.parameters.radius===8));
+  group.updateMatrixWorld(true);
+  const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
+  for (const end of ROAD_ROUND_ENDS) {
+    for (const [dx, dz] of [[-10.1, 0.3], [-9.1, 0.3], [-7.7, 0.3], [-5.1, 4.9],
+      [-7.2, 4.9], [-6.1, 6.6], [0.3, 7.9], [0.3, 8.1], [8.9, -0.3], [10.1, 0.3]]) {
+      const x = end.x + dx, z = end.z + dz;
+      ray.ray.origin.set(x, 1, z);
+      const surfaces = ray.intersectObjects(group.children, false)
+        .map(hit => hit.point.y)
+        .filter(y => [ROAD_Y, PAVEMENT_Y].some(height => Math.abs(y - height) < 1e-6));
+      const surface = surfaceAt(x, z);
+      const expected = surface === 'road' ? [ROAD_Y] : surface === 'pavement' ? [PAVEMENT_Y] : [];
+      assert.deepEqual(surfaces.map(y => Math.round(y * 100) / 100), expected, `turnaround at ${x},${z}`);
+    }
+  }
   assert.equal(surfaceAt(112,-542),'road');
   assert.equal(surfaceAt(114.5,-542),'pavement');
   assert.equal(surfaceAt(115,-542),'market');

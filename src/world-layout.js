@@ -57,6 +57,12 @@ export const LAND_BOUNDS = Object.freeze({ minX: -130, maxX: 145, minZ: -590, ma
 export const PIER_BOUNDS = Object.freeze({ minX: 6, maxX: 18, minZ: 79.5, maxZ: 104.5 });
 export const BOARDWALK_BOUNDS = Object.freeze({ minX: -115, maxX: 115, minZ: 76, maxZ: 82 });
 const ROAD_BOUNDS = { minX: -122, maxX: 134, minZ: -589, maxZ: 74 };
+const sidewalkWidth = SIDEWALK_OUTER - ROAD_HALF_WIDTH;
+const roundEndSeamX = end => end.x - end.radius - sidewalkWidth;
+const STRAIGHT_MESH_STREETS = STREET_SEGMENTS.map(street => {
+  const end = ROAD_ROUND_ENDS.find(end => end.x === street.maxX && end.z === street.z);
+  return end ? { ...street, maxX: roundEndSeamX(end) } : street;
+});
 
 // Green belongs to parks, gardens, farms and residential streets. Dense city
 // blocks instead get a continuous hardscape, so a tall building or a factory
@@ -98,10 +104,13 @@ function inCurvedRoad(x, z, halfWidth) {
   }) || ROAD_ROUND_ENDS.some(end => Math.hypot(x-end.x,z-end.z) <= end.radius + halfWidth - ROAD_HALF_WIDTH);
 }
 
-function inRoadNetwork(x, z, halfWidth, includeCurves = true) {
+function inStraightRoad(x, z, halfWidth, streets = STREET_SEGMENTS) {
   return AVENUE_SEGMENTS.some(road => Math.abs(x - road.x) <= halfWidth && z >= road.minZ && z <= road.maxZ)
-    || STREET_SEGMENTS.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX)
-    || (includeCurves && inCurvedRoad(x,z,halfWidth));
+    || streets.some(road => Math.abs(z - road.z) <= halfWidth && x >= road.minX && x <= road.maxX);
+}
+
+function inRoadNetwork(x, z, halfWidth) {
+  return inStraightRoad(x, z, halfWidth) || inCurvedRoad(x, z, halfWidth);
 }
 
 export function isRoad(x, z, padding = 0) {
@@ -148,14 +157,14 @@ export function getSurfaceHeight(x, z) {
 
 // Rectangles partition the union of every road and sidewalk. Intersections are
 // part of this partition, so there is exactly one visible surface at any point.
-export function createRoadSurfaceRects() {
+export function createRoadSurfaceRects(streets = STREET_SEGMENTS) {
   const xCuts = new Set([ROAD_BOUNDS.minX, ROAD_BOUNDS.maxX]);
   const zCuts = new Set([ROAD_BOUNDS.minZ, ROAD_BOUNDS.maxZ]);
   for (const road of AVENUE_SEGMENTS) {
     for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) xCuts.add(road.x + offset);
     zCuts.add(road.minZ); zCuts.add(road.maxZ);
   }
-  for (const road of STREET_SEGMENTS) {
+  for (const road of streets) {
     for (const offset of [-SIDEWALK_OUTER, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, SIDEWALK_OUTER]) zCuts.add(road.z + offset);
     xCuts.add(road.minX); xCuts.add(road.maxX);
   }
@@ -168,7 +177,9 @@ export function createRoadSurfaceRects() {
     const row = [];
     for (let ix = 0; ix < xs.length - 1; ix++) {
       const x = (xs[ix] + xs[ix + 1]) / 2, z = (zs[iz] + zs[iz + 1]) / 2;
-      const kind = inRoadNetwork(x,z,ROAD_HALF_WIDTH,false) ? 'road' : isDriveway(x, z) ? 'driveway' : inRoadNetwork(x, z, SIDEWALK_OUTER,false) ? 'pavement' : null;
+      const kind = inStraightRoad(x, z, ROAD_HALF_WIDTH, streets) ? 'road'
+        : isDriveway(x, z) ? 'driveway'
+        : inStraightRoad(x, z, SIDEWALK_OUTER, streets) ? 'pavement' : null;
       if (!kind) continue;
       const previous = row[row.length - 1];
       if (previous?.kind === kind && previous.maxX === xs[ix]) previous.maxX = xs[ix + 1];
@@ -300,7 +311,7 @@ export function buildWorldSurfaces(THREE, materials) {
   plane({ ...LAND_BOUNDS, minZ: 82 }, -.055, sandMaterial);
   const water = plane({ minX: -400, maxX: 400, minZ: 85, maxZ: 440 }, -.35, waterMaterial);
   water.name = 'Ocean beyond the shore';
-  for (const rect of createRoadSurfaceRects()) {
+  for (const rect of createRoadSurfaceRects(STRAIGHT_MESH_STREETS)) {
     const x = (rect.minX + rect.maxX) / 2, z = (rect.minZ + rect.maxZ) / 2;
     plane(rect, rect.kind === 'pavement' ? PAVEMENT_Y : ROAD_Y,
       rect.kind === 'road' ? materials.asphalt : sidewalkMaterial(x, z));
@@ -327,10 +338,32 @@ export function buildWorldSurfaces(THREE, materials) {
     arcBand(curve,curve.radius-ROAD_HALF_WIDTH,curve.radius+ROAD_HALF_WIDTH,ROAD_Y,materials.asphalt);
   }
   for (const end of ROAD_ROUND_ENDS) {
-    const ring=new THREE.Mesh(new THREE.RingGeometry(end.radius,end.radius+SIDEWALK_OUTER-ROAD_HALF_WIDTH,48),sidewalkMaterial(end.x, end.z));
-    ring.rotation.x=-Math.PI/2; ring.position.set(end.x,PAVEMENT_Y,end.z); ring.receiveShadow=true; root.add(ring);
-    const asphalt=new THREE.Mesh(new THREE.CircleGeometry(end.radius,48),materials.asphalt);
-    asphalt.rotation.x=-Math.PI/2; asphalt.position.set(end.x,ROAD_Y,end.z); asphalt.receiveShadow=true; root.add(asphalt);
+    // Follow the union of the approach and circle. Each arc meets the straight
+    // street edges at its own intersection, leaving the asphalt entrance open.
+    const seam = roundEndSeamX(end) - end.x;
+    function outline(radius, halfWidth) {
+      const angle = Math.PI - Math.asin(halfWidth / radius);
+      const steps = 64;
+      return [new THREE.Vector2(seam, halfWidth),
+        ...Array.from({ length: steps + 1 }, (_, index) => {
+          const theta = angle * (1 - 2 * index / steps);
+          return new THREE.Vector2(radius * Math.cos(theta), radius * Math.sin(theta));
+        }),
+        new THREE.Vector2(seam, -halfWidth)];
+    }
+    const road = outline(end.radius, ROAD_HALF_WIDTH);
+    const outer = outline(end.radius + sidewalkWidth, SIDEWALK_OUTER);
+    const sidewalk = [...outer, ...road.slice().reverse()];
+    for (const [points, y, mat] of [
+      [road, ROAD_Y, materials.asphalt],
+      [sidewalk, PAVEMENT_Y, sidewalkMaterial(end.x, end.z)],
+    ]) {
+      const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(points)), mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(end.x, y, end.z);
+      mesh.receiveShadow = true;
+      root.add(mesh);
+    }
   }
 
   const markingMaterial = materials.line.clone();
