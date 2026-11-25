@@ -11,11 +11,24 @@ class FakeAudioContext {
     this.state = 'running';
     this.destination = {};
     this.notes = [];
+    this.gains = [];
   }
   resume() { this.state = 'running'; return Promise.resolve(); }
-  createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {}, value: 0 }, connect() { return this; }, disconnect() {} }; }
+  createGain() {
+    const node = {
+      gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {}, value: 0 },
+      connect(target) { this.output = target; return target; },
+      disconnect() {},
+    };
+    this.gains.push(node);
+    return node;
+  }
+  createMediaElementSource(media) {
+    this.mediaSource = { media, connect(target) { this.output = target; return target; } };
+    return this.mediaSource;
+  }
   createOscillator() {
-    const node = { frequency: { value: 0 }, connect() { return this; }, disconnect() {}, stop() {} };
+    const node = { frequency: { value: 0 }, connect(target) { return target; }, disconnect() {}, stop() {} };
     node.start = time => this.notes.push({ time, pitch: node.frequency.value });
     return node;
   }
@@ -55,7 +68,34 @@ test('mission completion uses the selected short trumpet fanfare at 75% volume f
   const sound = createMissionSound(FakeAudioContext, FakeAudio);
   sound.playMissionComplete();
   assert.match(FakeAudio.last.src, /assets\/audio\/mission-complete-fanfare\.mp3$/);
-  assert.equal(FakeAudio.last.volume, .75);
+  const context = FakeAudioContext.last;
+  const { media, output: fanfareGain } = context.mediaSource;
+  const master = fanfareGain.output;
+  assert.equal(media, FakeAudio.last);
+  assert.equal(FakeAudio.last.volume, 1);
+  assert.equal(fanfareGain.gain.value, .75);
+  assert.equal(master.output, context.destination);
   assert.equal(FakeAudio.last.currentTime, 0);
   assert.equal(FakeAudio.last.playCount, 1);
+});
+
+test('SFX volume applies to mission cues and an already playing fanfare', () => {
+  const sound = createMissionSound(FakeAudioContext, FakeAudio);
+  sound.setVolume(.4);
+  sound.playCall();
+  sound.playMissionComplete();
+  const context = FakeAudioContext.last;
+  const master = context.mediaSource.output.output;
+  assert.equal(master.gain.value, .4);
+  assert.ok(context.gains.slice(1).every(node => node.output === master));
+  sound.setVolume(0);
+  assert.equal(master.gain.value, 0);
+  assert.equal(FakeAudio.last.playCount, 1);
+});
+
+test('fanfare respects SFX volume in the media-only fallback', () => {
+  const sound = createMissionSound(null, FakeAudio);
+  sound.setVolume(.4);
+  sound.playMissionComplete();
+  assert.equal(FakeAudio.last.volume, .75 * .4);
 });

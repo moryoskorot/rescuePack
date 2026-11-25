@@ -212,8 +212,8 @@
 }
 .settings-dialog::backdrop { background: #0c2f66bb; }
 .settings-dialog h2 { margin: 0 0 16px; }
-.music-volume-label { display: flex; justify-content: space-between; }
-#music-volume {
+.volume-label { display: flex; justify-content: space-between; }
+.settings-dialog input[type="range"] {
   display: block;
   width: 100%;
   height: 38px;
@@ -222,7 +222,7 @@
   cursor: pointer;
 }
 .settings-dialog form { text-align: right; }
-.settings-button:focus-visible, #music-volume:focus-visible {
+.settings-button:focus-visible, .settings-dialog input[type="range"]:focus-visible {
   outline: 3px solid #237bb6;
   outline-offset: 3px;
 }

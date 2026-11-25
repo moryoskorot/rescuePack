@@ -1,3 +1,8 @@
+import { WATER_SPRAY_TEXTURE } from './water-spray-texture.js';
+
+const HOSE_GAIN = .65;
+const VEHICLE_GAIN = .58;
+
 // Two recorded engine loops are blended as the truck accelerates. Playback
 // rate follows a smoothed virtual RPM; load briefly raises it before road
 // speed catches up, so pressing the pedal sounds responsive at low speed.
@@ -19,7 +24,9 @@ export function soundLevels({speed = 0, throttle = 0, braking = false, handbrake
 
 export function createVehicleSound(AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext, skidUrl = 'assets/tire-skid.mp3') {
   let context, master, fallback, fallbackGain, skidGain, skidBuffer, skidSource;
-  let boostGain, boostFilter, engineFilter, nextBubbleTime = 0;
+  let boostGain, boostFilter, engineFilter, hoseGain, nextBubbleTime = 0;
+  let hoseSpraying = false;
+  let volume = 1;
   let idleLoop, fastLoop, pauseTimer, audible = false;
   let lastInput = {};
   const assetBase = skidUrl.slice(0, skidUrl.lastIndexOf('/') + 1);
@@ -129,6 +136,18 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     boostGain = context.createGain();
     boostGain.gain.value = 0;
     noise.connect(boostFilter).connect(boostGain).connect(master);
+    hoseGain = context.createGain();
+    hoseGain.gain.value = 0;
+    hoseGain.connect(master);
+    for (const layer of WATER_SPRAY_TEXTURE) {
+      const filter = context.createBiquadFilter();
+      filter.type = layer.filter;
+      filter.frequency.value = layer.frequency;
+      filter.Q.value = layer.q;
+      const layerGain = context.createGain();
+      layerGain.gain.value = layer.gain;
+      noise.connect(filter).connect(layerGain).connect(hoseGain);
+    }
     noise.start();
 
     skidGain = context.createGain();
@@ -143,6 +162,15 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
   }
 
   return {
+    setVolume(value) {
+      volume = value;
+      if (audible) ramp(master.gain, volume * VEHICLE_GAIN, .035);
+    },
+    setHoseSpraying(spraying) {
+      if (!audible || hoseSpraying === spraying) return;
+      hoseSpraying = spraying;
+      ramp(hoseGain.gain, spraying ? HOSE_GAIN : 0, spraying ? .025 : .055);
+    },
     start() {
       if (!AudioContextClass) return;
       if (audible && context?.state === 'running') return;
@@ -150,7 +178,7 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
       audible = true;
       clearTimeout(pauseTimer);
       context.resume().catch(() => {});
-      ramp(master.gain, .58, .11);
+      ramp(master.gain, volume * VEHICLE_GAIN, .11);
     },
     update(input) {
       if (!context || !audible) return;
@@ -182,6 +210,8 @@ export function createVehicleSound(AudioContextClass = globalThis.AudioContext |
     pause() {
       if (!context) return;
       audible = false;
+      hoseSpraying = false;
+      ramp(hoseGain.gain, 0, .035);
       nextBubbleTime = 0;
       if (skidSource) { skidSource.stop(); skidSource = null; }
       clearTimeout(pauseTimer);

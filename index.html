@@ -117,11 +117,16 @@
 
       <dialog id="settings" class="settings-dialog" aria-labelledby="settings-title">
         <h2 id="settings-title">Settings</h2>
-        <div class="music-volume-label">
+        <div class="volume-label">
           <label for="music-volume">Music volume</label>
           <span id="music-volume-percent" aria-hidden="true">25%</span>
         </div>
         <input id="music-volume" type="range" min="0" max="100" value="25" autofocus />
+        <div class="volume-label">
+          <label for="sfx-volume">SFX volume</label>
+          <span id="sfx-volume-percent" aria-hidden="true">100%</span>
+        </div>
+        <input id="sfx-volume" type="range" min="0" max="100" value="100" />
         <form method="dialog">
           <button class="settings-button" type="submit">Done</button>
         </form>

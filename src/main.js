@@ -629,18 +629,45 @@ const vehicleSound=createVehicleSound(undefined,`${import.meta.env.BASE_URL}asse
 const missionSound=createMissionSound();
 const themeMusic = createThemeMusic(`${import.meta.env.BASE_URL}assets/audio/theme.mp3`);
 const settings = document.querySelector('#settings');
-const musicVolume = document.querySelector('#music-volume');
-const musicVolumePercent = document.querySelector('#music-volume-percent');
-function updateMusicVolumeLabel() {
-  const label = `${musicVolume.value}%`;
-  musicVolumePercent.textContent = label;
-  musicVolume.setAttribute('aria-valuetext', label);
+function bindVolumeSlider(id, initialVolume, setVolume) {
+  const slider = document.querySelector(`#${id}`);
+  const percent = document.querySelector(`#${id}-percent`);
+  function updateLabel() {
+    const label = `${slider.value}%`;
+    percent.textContent = label;
+    slider.setAttribute('aria-valuetext', label);
+  }
+  slider.value = Math.round(initialVolume * 100);
+  updateLabel();
+  slider.addEventListener('input', () => {
+    setVolume(slider.valueAsNumber / 100);
+    updateLabel();
+  });
 }
-musicVolume.value = Math.round(themeMusic.volume * 100);
-updateMusicVolumeLabel();
-musicVolume.addEventListener('input', () => {
-  themeMusic.setVolume(musicVolume.valueAsNumber / 100);
-  updateMusicVolumeLabel();
+bindVolumeSlider('music-volume', themeMusic.volume, themeMusic.setVolume);
+
+const sfxVolumeKey = 'rescue-pack-sfx-volume';
+let sfxVolume = 1;
+try {
+  const saved = localStorage.getItem(sfxVolumeKey);
+  if (saved !== null && saved !== '' && Number.isFinite(Number(saved))) {
+    sfxVolume = Math.max(0, Math.min(1, Number(saved)));
+  }
+} catch {
+  // The default still applies when storage is blocked.
+}
+function applySfxVolume(volume) {
+  vehicleSound.setVolume(volume);
+  missionSound.setVolume(volume);
+}
+applySfxVolume(sfxVolume);
+bindVolumeSlider('sfx-volume', sfxVolume, volume => {
+  applySfxVolume(volume);
+  try {
+    localStorage.setItem(sfxVolumeKey, String(volume));
+  } catch {
+    // Keep using the new volume for this session.
+  }
 });
 for (const button of document.querySelectorAll('[data-open-settings]')) {
   button.addEventListener('click', () => {
@@ -801,7 +828,14 @@ function openPanel(deck = null) {
   if (selectedMission) missionSound.playCall();
   missionPanel.classList.remove('hidden'); renderMissionPanel();
 }
-function closePanel() { panelOpen = false; missionPanel.classList.add('hidden'); selectedMission = null; selectedDeck = null; updateMissionStatus(); }
+function closePanel() {
+  panelOpen = false;
+  missionPanel.classList.add('hidden');
+  selectedMission = null;
+  selectedDeck = null;
+  updateMissionStatus();
+  resumeVehicleSound();
+}
 function mapMissionPoint() {
   if (!activeMission) return null;
   if (activeMission.type === 'collect' && missionProgress?.stage === 'collecting') {
@@ -1002,14 +1036,20 @@ window.addEventListener('keydown',e=>{
   keys.add(e.code);
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('pointerdown',()=>{if(playing)vehicleSound.start();},{passive:true});
-window.addEventListener('blur',resetInput);
+function resumeVehicleSound() {
+  if (playing && !panelOpen && !settings.open && !document.hidden) vehicleSound.start();
+}
+window.addEventListener('pointerdown', resumeVehicleSound, {passive: true});
+window.addEventListener('blur', resetInput);
+window.addEventListener('focus', resumeVehicleSound);
+settings.addEventListener('close', resumeVehicleSound);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     resetInput();
     themeMusic.pause();
   } else if (playing) {
     themeMusic.play();
+    resumeVehicleSound();
   }
 });
 canvas.addEventListener('pointerdown',e=>{if(!playing||cameraPointer!==null||e.button!==0)return;cameraPointer=e.pointerId;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
@@ -1246,6 +1286,7 @@ function animate(now){
     const target=active?{worldBuildingId,windows:fireTargets.get(worldBuildingId)}:null;
     const result=hose.update(dt,hoseNozzle,hoseForward,target,waterBoost,waterTuning);
     waterBoost.spraying=result.spraying;
+    vehicleSound.setHoseSpraying(result.spraying);
     hoseEffect.update(result.shots,dt,waterTuning,camera,hoseImpacts,renderer.domElement.height);
     hoseImpacts.length=0;
   }

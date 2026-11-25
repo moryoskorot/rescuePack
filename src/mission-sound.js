@@ -10,7 +10,8 @@ export function createMissionSound(
   AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext,
   AudioClass = globalThis.Audio,
 ) {
-  let context;
+  let context, master, fanfareGain;
+  let volume = 1;
   let charging = false;
   let nextBoopAt = 0;
   const missionCompleteFanfare = AudioClass ? new AudioClass(missionCompleteFanfareUrl) : null;
@@ -18,7 +19,12 @@ export function createMissionSound(
 
   function ready() {
     if (!AudioContextClass) return null;
-    context ??= new AudioContextClass();
+    if (!context) {
+      context = new AudioContextClass();
+      master = context.createGain();
+      master.gain.value = volume;
+      master.connect(context.destination);
+    }
     if (context.state !== 'running') context.resume().catch(() => {});
     return context;
   }
@@ -31,13 +37,18 @@ export function createMissionSound(
     gain.gain.setValueAtTime(.001, time);
     gain.gain.exponentialRampToValueAtTime(volume, time + .012);
     gain.gain.exponentialRampToValueAtTime(.001, time + duration);
-    oscillator.connect(gain).connect(context.destination);
+    oscillator.connect(gain).connect(master);
     oscillator.start(time);
     oscillator.stop(time + duration + .01);
     oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   }
 
   return {
+    setVolume(value) {
+      volume = value;
+      if (master) master.gain.value = volume;
+      if (missionCompleteFanfare && !fanfareGain) missionCompleteFanfare.volume = .75 * volume;
+    },
     unlock() { ready(); },
     playCall() {
       if (!ready()) return;
@@ -53,6 +64,12 @@ export function createMissionSound(
     },
     playMissionComplete() {
       if (!missionCompleteFanfare) return;
+      if (ready() && !fanfareGain) {
+        fanfareGain = context.createGain();
+        fanfareGain.gain.value = .75;
+        missionCompleteFanfare.volume = 1;
+        context.createMediaElementSource(missionCompleteFanfare).connect(fanfareGain).connect(master);
+      }
       missionCompleteFanfare.currentTime = 0;
       missionCompleteFanfare.play().catch(() => {});
     },
