@@ -31,6 +31,8 @@ import { PLAYABLE_MISSIONS, GANTON_DELIVERY_MISSION, FIRE_MISSIONS, MULTI_FIRE_M
 import { createMissionDeck } from './mission-deck.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
+import { createRoadNavigation, navigationObjectives } from './road-navigation.js';
+import { createRoadMarkers } from './road-markers.js';
 
 const canvas = document.querySelector('#world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -110,6 +112,8 @@ const worldSurfaces = buildWorldSurfaces(THREE, M);
 scene.add(worldSurfaces);
 groundMarkers = createGroundMarkers(THREE, scene, getSurfaceHeight);
 missionMarkers = createMissionMarkers(THREE, scene, getSurfaceHeight);
+const roadNavigation = createRoadNavigation();
+const roadMarkers = createRoadMarkers(THREE, scene);
 const waterMaterial = worldSurfaces.userData.waterMaterial;
 const avenueX = AVENUE_X;
 
@@ -938,6 +942,8 @@ function finishMission(success, silent = false) {
   missionSound.stopCharge();
   activeMission = null; activeDeck = null; missionProgress = null; selectedMission = null; selectedDeck = null; activeFireSiteIds.clear();
   fireState.clear(); fireEffect.clear(); fireProgress.clear(); missionMarkers.clear();
+  roadNavigation.clear();
+  roadMarkers.update([]);
   fireStatus.classList.add('hidden'); phoneButtons.forEach(button => button.classList.remove('on-mission'));
   if (success) deck?.complete(mission.id);
   updateStars();
@@ -1246,6 +1252,10 @@ function animate(now){
   if(waterEffect&&simulationRunning)waterEffect.update(waterBoost.active,simulationTime,dt);
   groundMarkers.update(simulationRunning?dt:0,playing?renderPose:null,fireState.onFire,simulationTime);
   missionMarkers.update(simulationTime);
+  if (simulationRunning && !panelOpen) {
+    const objectives = navigationObjectives(activeMission, missionProgress, activeFireSiteIds, fireState.onFire, fireSitesById);
+    roadMarkers.update(roadNavigation.update(renderPose, objectives, dt));
+  }
   waterMaterial.color.setHSL(.54,.58,.51+Math.sin(simulationTime*.5)*.01,THREE.SRGBColorSpace);
   if (mapOpen) renderWorldMap(now / 1000);
   renderer.render(scene,camera);
