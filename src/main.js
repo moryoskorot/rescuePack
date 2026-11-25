@@ -29,6 +29,7 @@ import { interpolateVehiclePose } from './render-pose.js';
 import { createGroundMarkers } from './ground-markers.js';
 import { PLAYABLE_MISSIONS, GANTON_DELIVERY_MISSION, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION, materializeFireMission, createMissionProgress } from './missions.js';
 import { createMissionDeck } from './mission-deck.js';
+import { firefighterRank } from './firefighter-ranks.js';
 import { dialogueBeats } from './mission-dialogue.js';
 import { createMissionMarkers } from './mission-markers.js';
 import { createRoadNavigation, navigationObjectives } from './road-navigation.js';
@@ -735,6 +736,9 @@ const bluePhoneButton = document.querySelector('#blue-phone-button');
 const redPhoneButton = document.querySelector('#red-phone-button');
 const phoneButtons = [bluePhoneButton, redPhoneButton];
 const starCounter = document.querySelector('#star-counter');
+const rankInsignia = document.querySelector('#rank-insignia');
+const rankName = document.querySelector('#rank-name');
+const fireXp = document.querySelector('#fire-xp');
 const playingCharacterId = 'bunny';
 const victoryCards = {
   bunny: 'good-job-bunny.png',
@@ -748,11 +752,20 @@ const helpDeck = createMissionDeck(
 const fireDeck = createMissionDeck([...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION], globalThis.localStorage, Math.random, 'rescue-pack-fire-mission-progress-v1');
 let activeMission = null, activeDeck = null, missionProgress = null, selectedMission = null, selectedDeck = null, activeFireSiteIds = new Set(), panelOpen = false, mapOpen = false;
 let pendingVictoryMission = null;
-function updateStars() {
-  const completed = helpDeck.completedCount + fireDeck.completedCount;
+function updateMissionHud() {
+  const fireCompleted = fireDeck.completedCount;
+  const completed = helpDeck.completedCount + fireCompleted;
   const total = helpDeck.total + fireDeck.total;
-  starCounter.textContent = `★ ${completed}/${total} MISSIONS`;
-  starCounter.setAttribute('aria-label', `Stars: ${completed} out of ${total} missions`);
+  const rank = firefighterRank(fireCompleted, fireDeck.total);
+  const rankLabel = `Rank ${rank.number} · ${rank.name}`;
+  const xpLabel = `${fireCompleted}/${fireDeck.total} fire XP`;
+  const missionLabel = `★ ${completed}/${total} MISSIONS`;
+  if (rankName.textContent !== rankLabel) {
+    rankInsignia.src = `${import.meta.env.BASE_URL}assets/ranks/${rank.insignia}`;
+    rankName.textContent = rankLabel;
+  }
+  if (fireXp.textContent !== xpLabel) fireXp.textContent = xpLabel;
+  if (starCounter.textContent !== missionLabel) starCounter.textContent = missionLabel;
   for (const [button, deck, label] of [[bluePhoneButton, helpDeck, 'collect, fix and delivery'], [redPhoneButton, fireDeck, 'fire']]) {
     button.classList.toggle('all-complete', deck.isComplete);
     button.querySelector('b').textContent = deck.isComplete ? '★' : '!';
@@ -762,7 +775,7 @@ function updateStars() {
     button.title = phoneLabel;
   }
 }
-updateStars();
+updateMissionHud();
 function missionPortrait(path) { return portraitUrls[`../${path}`] ?? ''; }
 function makeDialogue(mission, line, onReply, bunnyTurn = false, phase = 'start', nextLabel = 'Continue', onSkip = null) {
   const scene = document.createElement('div'); scene.className = `mission-dialogue ${bunnyTurn ? 'dialogue-bunny-turn' : 'dialogue-caller-turn'}`;
@@ -830,7 +843,7 @@ function appendDialogueSequence(mission, phase, onDone, onSkip = null) {
 function openPanel(deck = null) {
   if (!playing) return;
   if (!activeMission && deck) { selectedDeck = deck; selectedMission = deck.next();
-    if (selectedMission?.type === 'fire') selectedMission = materializeFireMission(selectedMission); updateStars(); }
+    if (selectedMission?.type === 'fire') selectedMission = materializeFireMission(selectedMission); updateMissionHud(); }
   panelOpen = true; resetInput();
   if (selectedMission) missionSound.playCall();
   missionPanel.classList.remove('hidden'); renderMissionPanel();
@@ -945,14 +958,14 @@ function startMission(mission) {
   fireStatus.classList.toggle('hidden', mission.type !== 'fire');
   lastFireCount = -1;
   phoneButtons.forEach(button => button.classList.add('on-mission'));
-  updateStars();
+  updateMissionHud();
   updateMissionStatus(); refreshMissionMarkers(); closePanel();
 }
 function skipMission(mission) {
   if (mission !== selectedMission) return;
   selectedDeck?.skip(mission.id);
   selectedMission = null;
-  updateStars();
+  updateMissionHud();
   closePanel();
 }
 function showMissionResult(mission, success) {
@@ -987,7 +1000,7 @@ function finishMission(success, silent = false) {
   roadMarkers.update([]);
   fireStatus.classList.add('hidden'); phoneButtons.forEach(button => button.classList.remove('on-mission'));
   if (success) deck?.complete(mission.id);
-  updateStars();
+  updateMissionHud();
   updateMissionStatus();
   if (silent) return;
   if (success) missionSound.playMissionComplete();

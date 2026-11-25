@@ -34,7 +34,12 @@
 
       <div id="hud" class="hud hidden">
         <header class="hud-top">
-          <div class="brand"><span class="brand-icon">🚒</span><div><strong>RESCUE PACK</strong><small id="star-counter" class="star-counter" aria-label="Stars: 0 out of 39 missions">★ 0/39 MISSIONS</small></div></div>
+          <div class="rank-card" role="status" aria-atomic="true">
+            <img id="rank-insignia" class="rank-insignia" alt="" width="46" height="46" />
+            <strong id="rank-name" class="rank-name"></strong>
+            <span id="fire-xp" class="fire-xp"></span>
+          </div>
+          <div id="star-counter" class="star-counter" role="status" aria-atomic="true"></div>
           <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
           <div class="mission-phones" aria-label="Mission phones">
             <button id="blue-phone-button" class="phone-button phone-button--blue" type="button" title="Collect and fix missions" aria-label="Collect and fix missions"><span aria-hidden="true">☎</span><b aria-hidden="true">!</b><small>HELP</small></button>
