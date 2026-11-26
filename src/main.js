@@ -754,12 +754,10 @@ let activeMission = null, activeDeck = null, missionProgress = null, selectedMis
 let pendingVictoryMission = null;
 function updateMissionHud() {
   const fireCompleted = fireDeck.completedCount;
-  const completed = helpDeck.completedCount + fireCompleted;
-  const total = helpDeck.total + fireDeck.total;
   const rank = firefighterRank(fireCompleted, fireDeck.total);
   const rankLabel = `Rank ${rank.number} · ${rank.name}`;
   const xpLabel = `${fireCompleted}/${fireDeck.total} fire XP`;
-  const missionLabel = `★ ${completed}/${total} MISSIONS`;
+  const missionLabel = `★ ${helpDeck.completedCount}/${helpDeck.total} MISSIONS`;
   if (rankName.textContent !== rankLabel) {
     rankInsignia.src = `${import.meta.env.BASE_URL}assets/ranks/${rank.insignia}`;
     rankName.textContent = rankLabel;
