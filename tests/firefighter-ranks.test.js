@@ -3,20 +3,23 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { firefighterRank } from '../src/firefighter-ranks.js';
 
-test('firefighter rank starts at Rookie and advances with fire completion percentage', () => {
-  assert.deepEqual(firefighterRank(0, 0), firefighterRank(0, 90));
-  assert.equal(firefighterRank(0, 90).name, 'Rookie');
-  assert.equal(firefighterRank(9, 90).number, 1);
-  assert.equal(firefighterRank(10, 90).name, 'Ember Scout');
-  assert.equal(firefighterRank(5, 45).number, 2);
-  assert.equal(firefighterRank(89, 90).number, 9);
-  assert.equal(firefighterRank(90, 90).name, 'Supreme Chief');
+const thresholds = [0, 50, 150, 300, 550, 825, 1125, 1450, 1800, 2175];
+
+test('firefighter ranks advance at the specified XP thresholds', () => {
+  assert.equal(firefighterRank(0).name, 'Rookie');
+  for (const [index, xp] of thresholds.entries()) {
+    const rank = firefighterRank(xp);
+    assert.equal(rank.number, index + 1);
+    assert.equal(rank.startXp, xp);
+    assert.equal(rank.nextXp, thresholds[index + 1] ?? null);
+    if (index) assert.equal(firefighterRank(xp - 25).number, index);
+  }
+  assert.equal(firefighterRank(3025).name, 'Supreme Chief');
 });
 
 test('every promotion has its numbered insignia asset', () => {
-  for (let completed = 0; completed <= 9; completed++) {
-    const rank = firefighterRank(completed, 9);
-    assert.equal(rank.number, completed + 1);
+  for (const xp of thresholds) {
+    const rank = firefighterRank(xp);
     assert.ok(rank.insignia.startsWith(String(rank.number).padStart(2, '0')));
     assert.ok(existsSync(new URL(`../public/assets/ranks/${rank.insignia}`, import.meta.url)));
   }

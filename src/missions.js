@@ -111,7 +111,12 @@ export const PLAYABLE_MISSIONS = library.missions.map((mission,index) => {
   if (!position) throw new Error(`Missing city destination for ${mission.id}`);
   const target = {x:position[0],z:position[1]};
   const result = { ...mission, label: mission.destination_label, target };
-  if (position.length === 4) result.fireSite = {x:position[2],z:position[3]};
+  if (position.length === 4) {
+    const [, , x, z] = position;
+    const site = BUILDING_SITES.find(site => site.worldBuildingId && site.x === x && site.z === z);
+    result.fireSite = { x, z, worldBuildingId: site?.worldBuildingId };
+    if (mission.type === 'fire') result.fireCount = 1;
+  }
   if (mission.type === 'collect') {
     const [pickupLabel,markerKind] = itemKinds[mission.id];
     Object.assign(result,{pickupLabel,markerKind,returnLabel:mission.destination_label,
@@ -167,6 +172,7 @@ const chiefDialogue = (text, success = 'Great work! The building is safe again.'
 function fireMissionBlueprint(id, district, fireCount, candidates, title, opening) {
   return {
     id, character_id: 'panda', title, type: 'fire', district, label: district, fireCount,
+    minimumFireRank: fireCount === 10 ? 9 : fireCount === 3 ? 8 : 4,
     fireCandidates: candidates.map(siteChoice),
     objective: `Put out all ${fireCount} fires in the ${district}`,
     mechanics: { interaction: 'drive_to_site_then_extinguish_all', target_marker: 'fire' },
@@ -176,7 +182,7 @@ function fireMissionBlueprint(id, district, fireCount, candidates, title, openin
 
 // These calls keep a district roster, not a fixed building assignment. The
 // actual burning buildings are randomly selected only when the phone rings.
-export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
+const singleFireCalls = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
   Array.from({ length: newDistrictNames.has(district) ? 4 : 3 }, (_, index) => fireMissionBlueprint(
     `chief-fire-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
     district, 1, sites, `Fire in ${district}`,
@@ -184,10 +190,15 @@ export const FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([distr
   )),
 );
 
+const singleFireDistricts = new Set(['Suburbs', 'Downtown', 'Parks District', 'Ganton']);
+const keepSingleFireCall = mission => singleFireDistricts.has(mission.district) && mission.id.endsWith('-1');
+export const FIRE_MISSIONS = singleFireCalls.filter(keepSingleFireCall);
+export const RETIRED_FIRE_MISSIONS = singleFireCalls.filter(mission => !keepSingleFireCall(mission));
+
 export const MULTI_FIRE_MISSIONS = Object.entries(fireSitesByDistrict).flatMap(([district, sites]) =>
   Array.from({ length: newDistrictNames.has(district) ? 4 : 1 }, (_, index) => fireMissionBlueprint(
     `chief-multiple-fires-${district.toLowerCase().replace(/[^a-z0-9]+/g, '-')}${newDistrictNames.has(district) ? `-${index + 1}` : ''}`,
-    district, index % 2 === 0 ? 2 : 3, sites, `Multiple fires in ${district}`,
+    district, index % 2 === 0 ? 2 : 3, sites, `${index % 2 === 0 ? 'Two' : 'Three'} fires in ${district}`,
     `Multiple fires started in the ${district}! We need you there quickly!`,
   )),
 );
@@ -218,7 +229,8 @@ export function materializeFireMission(mission, random = Math.random) {
     target: { x: fireSites[0].x, z: fireSites[0].z },
     fireSite: fireSites[0],
     fireSites,
-    objective: `Put out all ${fireSites.length} fires${isCitywide ? ' around the city' : ` in the ${mission.district}`}`,
+    objective: isMultiple ? `Put out all ${fireSites.length} fires${isCitywide ? ' around the city' : ` in ${mission.district}`}`
+      : `Put out the fire at ${buildingNames}`,
     dialogue: chiefDialogue(text, isMultiple ? 'Every fire is out. Outstanding teamwork!' : undefined),
   };
 }
@@ -228,7 +240,8 @@ export function validateMissionPoints(mission) {
     if (mission.fireCandidates) return mission.fireCandidates.length >= mission.fireCount
       && new Set(mission.fireCandidates.map(site => site.worldBuildingId)).size === mission.fireCandidates.length;
     if (!mission.fireSites) return BUILDING_SITES.some(site => site.worldBuildingId
-      && site.x === mission.fireSite?.x && site.z === mission.fireSite?.z);
+      && site.worldBuildingId === mission.fireSite?.worldBuildingId
+      && site.x === mission.fireSite.x && site.z === mission.fireSite.z);
     return mission.fireSites.length > 0
       && new Set(mission.fireSites.map(site => site.worldBuildingId)).size === mission.fireSites.length
       && mission.fireSites.every(fireSite => BUILDING_SITES.some(site => site.worldBuildingId === fireSite.worldBuildingId

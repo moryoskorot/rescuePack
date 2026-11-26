@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PLAYABLE_MISSIONS } from '../src/missions.js';
+import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, RETIRED_FIRE_MISSIONS, validateMissionPoints } from '../src/missions.js';
 import { createMissionDeck } from '../src/mission-deck.js';
+import { firefighterRank } from '../src/firefighter-ranks.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -59,4 +60,58 @@ test('a skipped call stays unfinished and returns after the waiting calls', () =
   assert.notEqual(third.id, skipped.id);
   deck.complete(third.id);
   assert.equal(deck.next().id, skipped.id);
+});
+
+
+const namedFireCalls = bunnyCalls.filter(mission => mission.type === 'fire');
+const fireCalls = [...namedFireCalls, ...FIRE_MISSIONS, ...MULTI_FIRE_MISSIONS, CITYWIDE_FIRE_MISSION];
+const fireSaveKey = 'test-fire-save';
+
+test('fresh fire decks reach rank 10 and finish every call across shuffle orders', () => {
+  assert.equal(namedFireCalls.length, 13);
+  assert.equal(fireCalls.length, 57);
+  assert.equal(MULTI_FIRE_MISSIONS.filter(mission => mission.fireCount === 2).length, 23);
+  assert.equal(MULTI_FIRE_MISSIONS.filter(mission => mission.fireCount === 3).length, 16);
+  for (const random of [() => 0, () => .5, () => .99]) {
+    const deck = createMissionDeck(fireCalls, memoryStorage(), random);
+    for (let completed = 0; completed < fireCalls.length; completed++) {
+      const rank = firefighterRank(deck.fireXp).number;
+      const call = deck.next();
+      assert.ok(call, `stalled at rank ${rank} after ${completed} calls`);
+      assert.ok(validateMissionPoints(call), call.id);
+      if (rank < 4) assert.ok(namedFireCalls.includes(call), call.id);
+      if (call.fireCandidates) {
+        const minimum = { 1: 4, 2: 4, 3: 8, 10: 9 }[call.fireCount];
+        assert.ok(rank >= minimum, `${call.id} offered early at rank ${rank}`);
+      }
+      deck.complete(call.id);
+    }
+    assert.equal(deck.fireXp, 3025);
+    assert.equal(firefighterRank(deck.fireXp).number, 10);
+    assert.ok(deck.isComplete);
+    assert.equal(deck.next(), null);
+  }
+});
+
+test('retired calls retain XP and partial fire credit survives reload without double awards', () => {
+  const storage = memoryStorage();
+  const call = MULTI_FIRE_MISSIONS.find(mission => mission.fireCount === 2);
+  const retired = RETIRED_FIRE_MISSIONS.slice(0, 12);
+  storage.setItem(fireSaveKey, JSON.stringify({ completedIds: retired.map(mission => mission.id) }));
+  const openDeck = () => createMissionDeck([call], storage, () => .5, fireSaveKey, retired);
+  const first = openDeck();
+  assert.equal(first.fireXp, 300);
+  assert.equal(first.completedCount, 0);
+  assert.equal(first.next().id, call.id);
+  first.recordFires(call.id, 1);
+  assert.equal(first.fireXp, 325);
+  const restored = openDeck();
+  assert.equal(restored.fireXp, 325);
+  assert.equal(restored.next().id, call.id);
+  restored.recordFires(call.id, 1);
+  assert.equal(restored.fireXp, 325);
+  restored.recordFires(call.id, 2);
+  restored.complete(call.id);
+  assert.equal(openDeck().fireXp, 350);
+  assert.equal(openDeck().completedCount, 1);
 });

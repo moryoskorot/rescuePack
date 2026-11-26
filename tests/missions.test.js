@@ -1,30 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, GANTON_DELIVERY_MISSION, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
+import { CITYWIDE_FIRE_MISSION, FIRE_MISSIONS, GANTON_DELIVERY_MISSION, MULTI_FIRE_MISSIONS, PLAYABLE_MISSIONS, RETIRED_FIRE_MISSIONS, createMissionProgress, materializeFireMission, validateMissionPoints } from '../src/missions.js';
 import { NEW_DISTRICTS, districtAt } from '../src/districts.js';
 import { BUILDING_SITES, CROWDIE_HOUSE_GROUPS, CROWDIECITY_TOWERS, GANTON_HOMES, GANTON_TURN_HOMES, GANTON_WEST_EDGE_HOMES, NEIGHBORHOOD_PARKS, ORCHARD_GROVE_HOMES, SKYLINE_H_TOWERS } from '../src/city-plan.js';
 import { isRoad } from '../src/world-layout.js';
 
-test('Chief Panda has four single-fire calls in each new district', () => {
-  const byDistrict = new Map();
+test('Chief Panda has four random single-fire calls and retains the retired IDs for saves', () => {
+  assert.deepEqual(FIRE_MISSIONS.map(mission => mission.district).sort(), ['Downtown', 'Ganton', 'Parks District', 'Suburbs']);
+  assert.equal(RETIRED_FIRE_MISSIONS.length, 49);
+  assert.equal(new Set([...FIRE_MISSIONS, ...RETIRED_FIRE_MISSIONS].map(mission => mission.id)).size, 53);
   for (const mission of FIRE_MISSIONS) {
     assert.equal(mission.character_id, 'panda');
-    assert.equal(mission.type, 'fire');
-    assert.match(mission.dialogue.start[0].text, /^A fire started in the /);
+    assert.equal(mission.fireCount, 1);
+    assert.equal(mission.minimumFireRank, 4);
     assert.equal(validateMissionPoints(mission), true, mission.id);
-    const missions = byDistrict.get(mission.district) ?? [];
-    missions.push(mission);
-    byDistrict.set(mission.district, missions);
+    assert.ok(mission.fireCandidates.every(site => districtAt(site) === mission.district));
   }
-  assert.equal(NEW_DISTRICTS.length, 8);
-  for (const [district, missions] of byDistrict) {
-    const expected = NEW_DISTRICTS.some(entry => entry.name === district) ? 4 : 3;
-    assert.equal(missions.length, expected, `${district} has ${expected} fire calls`);
-    assert.ok(missions.every(mission => mission.fireCandidates.length >= expected), `${district} has a building roster`);
-    assert.ok(missions.every(mission => mission.fireCandidates.every(site => districtAt(site) === district)),
-      `${district} only offers its own buildings`);
-  }
-  for (const district of NEW_DISTRICTS) assert.ok(byDistrict.has(district.name), district.name);
 });
 
 test('Chief Panda has four multiple-fire calls in each new district', () => {

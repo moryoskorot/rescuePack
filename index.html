@@ -36,8 +36,11 @@
         <header class="hud-top">
           <div class="rank-card" role="status" aria-atomic="true">
             <img id="rank-insignia" class="rank-insignia" alt="" width="46" height="46" />
-            <strong id="rank-name" class="rank-name"></strong>
-            <span id="fire-xp" class="fire-xp"></span>
+            <div class="rank-details">
+              <strong id="rank-name" class="rank-name"></strong>
+              <progress id="fire-rank-progress" class="fire-rank-progress" aria-label="Progress to the next firefighter rank"></progress>
+              <span id="fire-rank-hint" class="fire-rank-hint"></span>
+            </div>
           </div>
           <div id="star-counter" class="star-counter" role="status" aria-atomic="true"></div>
           <div class="district"><span class="district-dot"></span><span id="district-name">FIRE STATION</span></div>
@@ -77,6 +80,10 @@
             <span class="victory-flash" aria-hidden="true"></span>
             <span class="victory-gleam" aria-hidden="true"></span>
             <img id="victory-image" alt="" />
+          </div>
+          <div class="victory-fire-summary" role="status" aria-atomic="true">
+            <strong id="victory-fire-reward"></strong>
+            <span id="victory-fire-unlock"></span>
           </div>
           <button id="victory-continue" class="victory-continue" type="button">Continue ➜</button>
         </section>
